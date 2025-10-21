@@ -486,7 +486,7 @@ export default function VinylScout() {
         </div>
       )}
 
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '20px', maxWidth: '100%', overflow: 'hidden' }}>
         {activeTab === 'scan' && (
           <div style={{ minHeight: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '24px' }}>Cover scannen</h2>
@@ -592,7 +592,7 @@ export default function VinylScout() {
         )}
 
         {activeTab === 'search' && (
-          <div style={{ minHeight: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ minHeight: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', width: '100%' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '24px' }}>Suche</h2>
             
             {/* Eingabefeld ganz oben */}
@@ -602,6 +602,7 @@ export default function VinylScout() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Künstler - Album"
               onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+              autoComplete="off"
               style={{
                 width: '100%',
                 padding: '16px',
@@ -610,12 +611,13 @@ export default function VinylScout() {
                 border: '1px solid rgba(255, 183, 0, 0.4)',
                 borderRadius: '12px',
                 fontSize: '16px',
-                marginBottom: '16px'
+                marginBottom: '16px',
+                boxSizing: 'border-box'
               }}
             />
 
             {/* Erweiterte Suchoptionen */}
-            <details style={{ marginBottom: '16px' }}>
+            <details style={{ marginBottom: '16px', width: '100%' }}>
               <summary style={{
                 padding: '12px',
                 backgroundColor: '#1a1a1a',
@@ -624,9 +626,11 @@ export default function VinylScout() {
                 fontSize: '14px',
                 fontWeight: '600',
                 color: accentColor,
-                border: '1px solid rgba(255, 183, 0, 0.2)'
+                border: '1px solid rgba(255, 183, 0, 0.2)',
+                boxSizing: 'border-box',
+                width: '100%'
               }}>
-                ▼ Erweiterte Suchoptionen
+                ▶ Erweiterte Suchoptionen
               </summary>
               <div style={{
                 padding: '16px',
@@ -634,7 +638,9 @@ export default function VinylScout() {
                 borderRadius: '0 0 8px 8px',
                 marginTop: '-8px',
                 border: '1px solid rgba(255, 183, 0, 0.2)',
-                borderTop: 'none'
+                borderTop: 'none',
+                boxSizing: 'border-box',
+                width: '100%'
               }}>
                 <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px', lineHeight: '1.6' }}>
                   <strong style={{ color: accentColor }}>Suchbegriffe:</strong><br />
