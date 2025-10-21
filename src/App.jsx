@@ -73,51 +73,112 @@ export default function VinylScout() {
     }
   };
 
-  const handleManualSearch = () => {
+  const handleManualSearch = async () => {
     let query = '';
     
     if (showAdvanced) {
       const artist = artistInputRef.current?.value || '';
       const album = albumInputRef.current?.value || '';
       const year = yearInputRef.current?.value || '';
-      const label = labelInputRef.current?.value || '';
-      const catalog = catalogInputRef.current?.value || '';
-      const barcode = barcodeInputRef.current?.value || '';
       
-      query = `${artist} - ${album}`;
+      if (!artist && !album && !year) return;
       
-      setSearchResults({
-        artist: artist || 'Unknown',
-        album: album || 'Unknown',
-        year: year || 2024,
-        genre: 'Rock',
-        label: label,
-        catalog: catalog,
-        barcode: barcode,
-        cover: 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
-        prices: [
-          { shop: 'discogs', price: 15.99, condition: 'Mint' },
-          { shop: 'hhv', price: 12.50, condition: 'Near Mint' },
-          { shop: 'ebay', price: 18.00, condition: 'Very Good' }
-        ]
-      });
+      setLoading(true);
+      
+      try {
+        // Discogs API Search
+        const searchParams = new URLSearchParams();
+        if (artist) searchParams.append('artist', artist);
+        if (album) searchParams.append('release_title', album);
+        if (year) searchParams.append('year', year);
+        searchParams.append('type', 'release');
+        searchParams.append('format', 'vinyl');
+        
+        const headers = discogsToken 
+          ? { 'Authorization': `Discogs token=${discogsToken}` }
+          : { 'User-Agent': 'VinylScout/1.0' };
+        
+        const response = await fetch(
+          `https://api.discogs.com/database/search?${searchParams.toString()}`,
+          { headers }
+        );
+        
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+          // Take top 5 results
+          const results = data.results.slice(0, 5).map(item => ({
+            id: item.id,
+            artist: item.title.split(' - ')[0] || 'Unknown',
+            album: item.title.split(' - ')[1] || item.title,
+            year: item.year || 'N/A',
+            genre: item.genre ? item.genre[0] : 'Unknown',
+            label: item.label ? item.label[0] : '',
+            catalog: item.catno || '',
+            cover: item.cover_image || item.thumb || 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
+            prices: [
+              { shop: 'discogs', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Mint' },
+              { shop: 'hhv', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Near Mint' },
+              { shop: 'ebay', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Very Good' }
+            ]
+          }));
+          
+          setSearchResults(results);
+        } else {
+          alert('Keine Ergebnisse gefunden');
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        alert('Suche fehlgeschlagen: ' + error.message);
+      }
+      
+      setLoading(false);
+      
     } else {
       query = searchInputRef.current ? searchInputRef.current.value : '';
       if (!query.trim()) return;
       
-      const parts = query.split('-').map(p => p.trim());
-      setSearchResults({
-        artist: parts[0] || 'Unknown',
-        album: parts[1] || 'Unknown',
-        year: 2024,
-        genre: 'Rock',
-        cover: 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
-        prices: [
-          { shop: 'discogs', price: 15.99, condition: 'Mint' },
-          { shop: 'hhv', price: 12.50, condition: 'Near Mint' },
-          { shop: 'ebay', price: 18.00, condition: 'Very Good' }
-        ]
-      });
+      setLoading(true);
+      
+      try {
+        const headers = discogsToken 
+          ? { 'Authorization': `Discogs token=${discogsToken}` }
+          : { 'User-Agent': 'VinylScout/1.0' };
+        
+        const response = await fetch(
+          `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&format=vinyl`,
+          { headers }
+        );
+        
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+          const results = data.results.slice(0, 5).map(item => ({
+            id: item.id,
+            artist: item.title.split(' - ')[0] || 'Unknown',
+            album: item.title.split(' - ')[1] || item.title,
+            year: item.year || 'N/A',
+            genre: item.genre ? item.genre[0] : 'Unknown',
+            cover: item.cover_image || item.thumb || 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
+            prices: [
+              { shop: 'discogs', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Mint' },
+              { shop: 'hhv', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Near Mint' },
+              { shop: 'ebay', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Very Good' }
+            ]
+          }));
+          
+          setSearchResults(results);
+        } else {
+          alert('Keine Ergebnisse gefunden');
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        alert('Suche fehlgeschlagen: ' + error.message);
+      }
+      
+      setLoading(false);
     }
   };
 
