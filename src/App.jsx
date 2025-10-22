@@ -153,7 +153,7 @@ export default function VinylScout() {
       </div>
 
       {/* Main Content */}
-      <div className="p-4">
+      <div className="p-4 pb-24">
         {/* Camera Tab */}
         {activeTab === 'camera' && (
           <div className="space-y-4">
@@ -213,7 +213,7 @@ export default function VinylScout() {
               />
             )}
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-stretch">
               <input
                 type="text"
                 value={searchQuery}
@@ -226,13 +226,14 @@ export default function VinylScout() {
               <button
                 onClick={() => handleSearch(searchQuery)}
                 disabled={loading}
-                className="px-6 py-3 rounded-lg font-semibold flex items-center"
+                className="px-4 py-3 rounded-lg font-semibold flex items-center justify-center"
                 style={{ 
                   backgroundColor: settings.accentColor,
-                  color: settings.primaryColor 
+                  color: settings.primaryColor,
+                  minWidth: '60px'
                 }}
               >
-                {loading ? <Loader2 className="animate-spin" /> : <Search />}
+                {loading ? <Loader2 size={24} className="animate-spin" /> : <Search size={24} />}
               </button>
             </div>
 
