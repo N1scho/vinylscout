@@ -442,26 +442,51 @@ export default function VinylScout() {
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 flex" style={{ borderColor: settings.accentColor }}>
-        {[
-          { id: 'search', icon: Search, label: 'Suchen' },
-          { id: 'camera', icon: Camera, label: 'Kamera' },
-          { id: 'collection', icon: Grid3x3, label: 'Sammlung' },
-          { id: 'favorites', icon: Heart, label: 'Favoriten' },
-          { id: 'profile', icon: User, label: 'Profil' }
-        ].map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className="flex-1 py-3 flex flex-col items-center gap-1"
-            style={{ 
-              color: activeTab === id ? settings.accentColor : '#6b7280'
-            }}
-          >
-            <Icon size={24} />
-            <span className="text-xs">{label}</span>
-          </button>
-        ))}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 grid grid-cols-5" style={{ borderColor: settings.accentColor }}>
+        <button
+          onClick={() => setActiveTab('search')}
+          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          style={{ color: activeTab === 'search' ? settings.accentColor : '#6b7280' }}
+        >
+          <Search size={24} />
+          <span className="text-xs">Suchen</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('camera')}
+          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          style={{ color: activeTab === 'camera' ? settings.accentColor : '#6b7280' }}
+        >
+          <Camera size={24} />
+          <span className="text-xs">Kamera</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('collection')}
+          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          style={{ color: activeTab === 'collection' ? settings.accentColor : '#6b7280' }}
+        >
+          <Grid3x3 size={24} />
+          <span className="text-xs">Sammlung</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('favorites')}
+          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          style={{ color: activeTab === 'favorites' ? settings.accentColor : '#6b7280' }}
+        >
+          <Heart size={24} />
+          <span className="text-xs">Favoriten</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('profile')}
+          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          style={{ color: activeTab === 'profile' ? settings.accentColor : '#6b7280' }}
+        >
+          <User size={24} />
+          <span className="text-xs">Profil</span>
+        </button>
       </div>
     </div>
   );
