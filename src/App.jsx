@@ -213,7 +213,7 @@ export default function VinylScout() {
               />
             )}
             
-            <div className="flex gap-2 items-stretch">
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={searchQuery}
@@ -226,14 +226,13 @@ export default function VinylScout() {
               <button
                 onClick={() => handleSearch(searchQuery)}
                 disabled={loading}
-                className="px-4 py-3 rounded-lg font-semibold flex items-center justify-center"
+                className="px-6 py-3 rounded-lg font-semibold flex items-center"
                 style={{ 
                   backgroundColor: settings.accentColor,
-                  color: settings.primaryColor,
-                  minWidth: '60px'
+                  color: settings.primaryColor 
                 }}
               >
-                {loading ? <Loader2 size={24} className="animate-spin" /> : <Search size={24} />}
+                {loading ? <Loader2 className="animate-spin" /> : <Search />}
               </button>
             </div>
 
