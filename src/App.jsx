@@ -1,795 +1,468 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Search, Heart, Settings, X, Loader2, Plus, Grid } from 'lucide-react';
+import { Camera, Search, Heart, User, Grid3x3, Settings, X, Loader2 } from 'lucide-react';
 
 export default function VinylScout() {
-  const [activeTab, setActiveTab] = useState('scan');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [capturedImage, setCapturedImage] = useState(null);
+  const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
+  const [capturedImage, setCapturedImage] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [collection, setCollection] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
   
-  const [apiKey, setApiKey] = useState(localStorage.getItem('claudeApiKey') || '');
-  const [discogsToken, setDiscogsToken] = useState(localStorage.getItem('discogsToken') || '');
-  const [recognitionMode, setRecognitionMode] = useState('manual');
-  const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-  const [primaryColor, setPrimaryColor] = useState('#000000');
-  const [accentColor, setAccentColor] = useState('#ffb700');
-  
+  const [settings, setSettings] = useState({
+    recognitionMode: 'manual',
+    discogsToken: '',
+    shops: {
+      discogs: true,
+      hhv: true,
+      ebay: true
+    },
+    primaryColor: '#000000',
+    accentColor: '#ffb700'
+  });
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const artistInputRef = useRef(null);
-  const albumInputRef = useRef(null);
-  const yearInputRef = useRef(null);
-  const labelInputRef = useRef(null);
-  const catalogInputRef = useRef(null);
-  const barcodeInputRef = useRef(null);
-  
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const shops = [
-    { id: 'discogs', name: 'Discogs' },
-    { id: 'hhv', name: 'HHV' },
-    { id: 'ebay', name: 'eBay' }
-  ];
+  // Load settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('vinylscout-settings');
+    if (saved) {
+      setSettings(JSON.parse(saved));
+    }
+  }, []);
 
+  // Save settings to localStorage
+  const saveSettings = (newSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('vinylscout-settings', JSON.stringify(newSettings));
+  };
+
+  // Start camera
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'environment' } 
       });
-      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        setCameraActive(true);
       }
-      setShowCamera(true);
     } catch (error) {
       alert('Kamera-Zugriff fehlgeschlagen');
     }
   };
 
+  // Stop camera
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      setCameraActive(false);
     }
-    setShowCamera(false);
-    setCapturedImage(null);
   };
 
+  // Capture photo
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    if (canvas && video) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      setCapturedImage(canvas.toDataURL('image/jpeg'));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const imageData = canvas.toDataURL('image/jpeg');
+      setCapturedImage(imageData);
+      stopCamera();
+      setActiveTab('search');
     }
   };
 
-  const handleManualSearch = async () => {
-    let query = '';
+  // Search function with Discogs API
+  const handleSearch = async (query) => {
+    if (!query.trim()) return;
     
-    if (showAdvanced) {
-      const artist = artistInputRef.current?.value || '';
-      const album = albumInputRef.current?.value || '';
-      const year = yearInputRef.current?.value || '';
+    const token = settings.discogsToken;
+    if (!token) {
+      alert('Bitte füge einen Discogs Token in den Einstellungen hinzu!');
+      setShowSettings(true);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const searchUrl = `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&token=${token}`;
       
-      if (!artist && !album && !year) return;
-      
-      setLoading(true);
-      
-      try {
-        const searchParams = new URLSearchParams();
-        if (artist) searchParams.append('artist', artist);
-        if (album) searchParams.append('release_title', album);
-        if (year) searchParams.append('year', year);
-        searchParams.append('type', 'release');
-        searchParams.append('format', 'vinyl');
-        
-        const headers = discogsToken 
-          ? { 'Authorization': `Discogs token=${discogsToken}` }
-          : { 'User-Agent': 'VinylScout/1.0' };
-        
-        const response = await fetch(
-          `https://api.discogs.com/database/search?${searchParams.toString()}`,
-          { headers }
-        );
-        
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-          const results = data.results.slice(0, 5).map(item => ({
-            id: item.id,
-            artist: item.title.split(' - ')[0] || 'Unknown',
-            album: item.title.split(' - ')[1] || item.title,
-            year: item.year || 'N/A',
-            genre: item.genre ? item.genre[0] : 'Unknown',
-            label: item.label ? item.label[0] : '',
-            catalog: item.catno || '',
-            cover: item.cover_image || item.thumb || 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
-            prices: [
-              { shop: 'discogs', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Mint' },
-              { shop: 'hhv', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Near Mint' },
-              { shop: 'ebay', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Very Good' }
-            ]
-          }));
-          
-          setSearchResults(results);
-        } else {
-          alert('Keine Ergebnisse gefunden');
-          setSearchResults([]);
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'VinylScout/1.0'
         }
-      } catch (error) {
-        console.error('Search error:', error);
-        alert('Suche fehlgeschlagen: ' + error.message);
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Discogs API Error: ${response.status}`);
       }
       
-      setLoading(false);
+      const data = await response.json();
       
-    } else {
-      query = searchInputRef.current ? searchInputRef.current.value : '';
-      if (!query.trim()) return;
-      
-      setLoading(true);
-      
-      try {
-        const headers = discogsToken 
-          ? { 'Authorization': `Discogs token=${discogsToken}` }
-          : { 'User-Agent': 'VinylScout/1.0' };
+      if (data.results && data.results.length > 0) {
+        const firstResult = data.results[0];
         
-        const response = await fetch(
-          `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&format=vinyl`,
-          { headers }
-        );
-        
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-          const results = data.results.slice(0, 5).map(item => ({
-            id: item.id,
-            artist: item.title.split(' - ')[0] || 'Unknown',
-            album: item.title.split(' - ')[1] || item.title,
-            year: item.year || 'N/A',
-            genre: item.genre ? item.genre[0] : 'Unknown',
-            cover: item.cover_image || item.thumb || 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=300&h=300&fit=crop',
-            prices: [
-              { shop: 'discogs', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Mint' },
-              { shop: 'hhv', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Near Mint' },
-              { shop: 'ebay', price: (Math.random() * 30 + 10).toFixed(2), condition: 'Very Good' }
-            ]
-          }));
-          
-          setSearchResults(results);
-        } else {
-          alert('Keine Ergebnisse gefunden');
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-        alert('Suche fehlgeschlagen: ' + error.message);
+        setSearchResults({
+          album: firstResult.title || 'Unknown Album',
+          artist: firstResult.title?.split(' - ')[0] || 'Unknown Artist',
+          year: firstResult.year || 'Unknown',
+          genre: firstResult.genre?.[0] || firstResult.style?.[0] || 'Unknown',
+          cover: firstResult.cover_image || firstResult.thumb || 'https://via.placeholder.com/300x300/1a1a1a/ffb700?text=No+Cover',
+          allResults: data.results.slice(0, 10)
+        });
+      } else {
+        alert('Keine Ergebnisse gefunden');
+        setSearchResults(null);
       }
-      
+    } catch (error) {
+      console.error('Search error:', error);
+      alert(`Fehler bei der Suche: ${error.message}`);
+      setSearchResults(null);
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ 
-      backgroundColor: primaryColor, 
-      color: '#fff', 
-      minHeight: '100vh',
-      width: '100vw',
-      maxWidth: '100vw',
-      overflowX: 'hidden',
-      paddingBottom: '80px', 
-      fontFamily: 'system-ui',
-      position: 'relative',
-      boxSizing: 'border-box'
-    }}>
-      <header style={{ 
-        padding: '16px 20px', 
-        borderBottom: '1px solid #333', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center' 
-      }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>VinylScout</h1>
+    <div 
+      className="min-h-screen pb-20"
+      style={{ 
+        backgroundColor: settings.primaryColor,
+        color: '#ffffff'
+      }}
+    >
+      {/* Header */}
+      <div 
+        className="p-4 flex justify-between items-center border-b-2"
+        style={{ borderColor: settings.accentColor }}
+      >
+        <h1 className="text-2xl font-bold">VinylScout</h1>
         <button 
-          onClick={() => setShowSettings(!showSettings)} 
-          style={{ 
-            background: 'transparent', 
-            border: 'none', 
-            color: accentColor, 
-            cursor: 'pointer' 
-          }}
+          onClick={() => setShowSettings(true)}
+          className="p-2 rounded-full hover:bg-gray-800"
         >
-          <Settings size={24} />
+          <Settings size={24} style={{ color: settings.accentColor }} />
         </button>
-      </header>
+      </div>
 
-      {showSettings && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          backgroundColor: 'rgba(0,0,0,0.95)', 
-          zIndex: 1000,
-          overflowY: 'auto',
-          padding: '20px' 
-        }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Einstellungen</h2>
-              <button 
-                onClick={() => setShowSettings(false)} 
+      {/* Main Content */}
+      <div className="p-4">
+        {/* Camera Tab */}
+        {activeTab === 'camera' && (
+          <div className="space-y-4">
+            {!cameraActive ? (
+              <button
+                onClick={startCamera}
+                className="w-full py-4 rounded-lg font-semibold text-lg"
                 style={{ 
-                  background: 'transparent', 
-                  border: 'none', 
-                  color: '#fff', 
-                  cursor: 'pointer',
-                  padding: 0
+                  backgroundColor: settings.accentColor,
+                  color: settings.primaryColor 
                 }}
               >
-                <X size={28} />
+                <Camera className="inline mr-2" />
+                Kamera starten
               </button>
-            </div>
-            
-            <div style={{ marginBottom: '30px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                Erkennungs-Modus
-              </label>
-              <select 
-                value={recognitionMode} 
-                onChange={(e) => setRecognitionMode(e.target.value)} 
-                style={{ 
-                  width: '100%', 
-                  padding: '12px', 
-                  backgroundColor: '#1a1a1a', 
-                  color: '#fff', 
-                  border: `1px solid ${accentColor}`, 
-                  borderRadius: '8px',
-                  fontSize: '16px'
-                }}
-              >
-                <option value="manual">Manuell (100% kostenlos)</option>
-                <option value="ai">KI-Bilderkennung (API-Key erforderlich)</option>
-              </select>
-            </div>
-            
-            {recognitionMode === 'ai' && (
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                  Claude API-Key
-                  {apiKey && <span style={{ marginLeft: '10px', color: '#4ade80', fontSize: '12px' }}>✓ Aktiv</span>}
-                </label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
-                    localStorage.setItem('claudeApiKey', e.target.value);
-                  }}
-                  placeholder="sk-ant-api03-..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
-                  Hole dir einen API-Key bei console.anthropic.com
-                </p>
-              </div>
-            )}
-            
-            <div style={{ marginBottom: '30px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                Discogs Token (für echte Album-Cover)
-                {discogsToken && <span style={{ marginLeft: '10px', color: '#4ade80', fontSize: '12px' }}>✓ Aktiv</span>}
-              </label>
-              <input
-                type="password"
-                value={discogsToken}
-                onChange={(e) => {
-                  setDiscogsToken(e.target.value);
-                  localStorage.setItem('discogsToken', e.target.value);
-                }}
-                placeholder="Dein Discogs Token"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  backgroundColor: '#1a1a1a',
-                  color: '#fff',
-                  border: `1px solid ${accentColor}`,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
-                Optional: Hole dir einen Token bei discogs.com/settings/developers
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                Shops für Preisvergleich
-              </label>
-              {shops.map(shop => (
-                <label key={shop.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedShops.includes(shop.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedShops([...selectedShops, shop.id]);
-                      } else {
-                        setSelectedShops(selectedShops.filter(s => s !== shop.id));
-                      }
-                    }}
-                    style={{ marginRight: '10px', width: '18px', height: '18px' }}
-                  />
-                  <span>{shop.name}</span>
-                </label>
-              ))}
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                Primärfarbe (Hintergrund)
-              </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  style={{ width: '60px', height: '40px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={primaryColor}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', color: accentColor, fontSize: '14px', fontWeight: '600' }}>
-                Akzentfarbe
-              </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  style={{ width: '60px', height: '40px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={accentColor}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCamera && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          backgroundColor: '#000', 
-          zIndex: 999, 
-          display: 'flex', 
-          flexDirection: 'column' 
-        }}>
-          <div style={{ flex: 1 }}>
-            {!capturedImage ? (
-              <>
-                <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <canvas ref={canvasRef} style={{ display: 'none' }} />
-              </>
             ) : (
-              <img src={capturedImage} alt="Captured" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            )}
-          </div>
-          <div style={{ padding: '20px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={stopCamera} style={{ padding: '12px 24px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Abbrechen</button>
-            {!capturedImage ? (
-              <button onClick={capturePhoto} style={{ padding: '12px 32px', backgroundColor: accentColor, color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>📸 Foto</button>
-            ) : (
-              <>
-                <button onClick={() => setCapturedImage(null)} style={{ padding: '12px 24px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Neu</button>
-                <button onClick={() => { stopCamera(); setActiveTab('search'); }} style={{ padding: '12px 32px', backgroundColor: accentColor, color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✓ OK</button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div style={{ padding: '20px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-        {activeTab === 'scan' && (
-          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 200px)' }}>
-            <h2 style={{ fontSize: '28px', marginBottom: '24px' }}>Cover scannen</h2>
-            <div style={{ backgroundColor: '#1a1a1a', padding: '16px', borderRadius: '12px', marginBottom: '24px', border: `1px solid ${accentColor}` }}>
-              <div style={{ fontSize: '13px', color: accentColor, marginBottom: '8px' }}>MODUS</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{recognitionMode === 'ai' ? '🤖 KI' : '✍️ Manuell'}</div>
-            </div>
-            <div style={{ flex: 1 }}></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <button onClick={startCamera} style={{ padding: '20px', backgroundColor: accentColor, color: '#000', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                <Camera size={24} />
-                Kamera öffnen
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'search' && (
-          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 200px)' }}>
-            <h2 style={{ fontSize: '28px', marginBottom: '24px' }}>Suche</h2>
-            
-            {!showAdvanced ? (
-              <div style={{ marginBottom: '16px' }}>
-                <input 
-                  ref={searchInputRef}
-                  type="text" 
-                  defaultValue=""
-                  placeholder="Künstler - Album" 
-                  onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '16px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '12px', 
-                    fontSize: '16px',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
+              <div className="space-y-4">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-lg"
                 />
-              </div>
-            ) : (
-              <div style={{ marginBottom: '16px' }}>
-                <input 
-                  ref={artistInputRef}
-                  type="text" 
-                  placeholder="Interpret / Künstler"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-                <input 
-                  ref={albumInputRef}
-                  type="text" 
-                  placeholder="Album"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-                <input 
-                  ref={yearInputRef}
-                  type="text" 
-                  placeholder="Jahr (z.B. 1979)"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-                <input 
-                  ref={labelInputRef}
-                  type="text" 
-                  placeholder="Label (z.B. Atlantic Records)"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-                <input 
-                  ref={catalogInputRef}
-                  type="text" 
-                  placeholder="Katalognummer (z.B. SD 16029)"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-                <input 
-                  ref={barcodeInputRef}
-                  type="text" 
-                  placeholder="Barcode (z.B. 075992762526)"
-                  autoComplete="off"
-                  style={{ 
-                    width: '100%', 
-                    padding: '14px', 
-                    backgroundColor: '#1a1a1a', 
-                    color: '#ffffff',
-                    border: `1px solid ${accentColor}`, 
-                    borderRadius: '8px', 
-                    fontSize: '15px',
-                    boxSizing: 'border-box',
-                    WebkitTextFillColor: '#ffffff'
-                  }} 
-                />
-              </div>
-            )}
-
-            <button 
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              style={{
-                padding: '12px',
-                backgroundColor: '#1a1a1a',
-                color: accentColor,
-                border: `1px solid ${accentColor}`,
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                marginBottom: '16px'
-              }}
-            >
-              {showAdvanced ? '▲ Einfache Suche' : '▼ Erweiterte Suche'}
-            </button>
-
-            {searchResults && searchResults.length > 0 && (
-              <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '20px', marginBottom: '16px', color: accentColor }}>
-                  {searchResults.length} Ergebnis{searchResults.length > 1 ? 'se' : ''} gefunden
-                </h3>
-                
-                {searchResults.map((result, idx) => (
-                  <div 
-                    key={result.id || idx}
+                <div className="flex gap-2">
+                  <button
+                    onClick={capturePhoto}
+                    className="flex-1 py-3 rounded-lg font-semibold"
                     style={{ 
-                      backgroundColor: '#1a1a1a', 
-                      borderRadius: '12px', 
-                      padding: '20px', 
-                      border: `1px solid ${accentColor}`, 
-                      marginBottom: '16px' 
+                      backgroundColor: settings.accentColor,
+                      color: settings.primaryColor 
                     }}
                   >
-                    <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                      <img 
-                        src={result.cover} 
-                        alt={result.album} 
-                        style={{ width: '120px', height: '120px', borderRadius: '8px', objectFit: 'cover' }} 
-                      />
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '18px', marginBottom: '4px', fontWeight: 'bold' }}>{result.album}</h3>
-                        <p style={{ color: '#888', marginBottom: '8px' }}>{result.artist}</p>
-                        <p style={{ fontSize: '14px', color: '#666' }}>
-                          {result.year} • {result.genre}
-                          {result.label && ` • ${result.label}`}
-                          {result.catalog && ` • ${result.catalog}`}
-                        </p>
+                    Foto aufnehmen
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    className="px-6 py-3 bg-gray-700 rounded-lg"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+        )}
+
+        {/* Search Tab */}
+        {activeTab === 'search' && (
+          <div className="space-y-4">
+            {capturedImage && (
+              <img 
+                src={capturedImage} 
+                alt="Captured" 
+                className="w-full rounded-lg border-2"
+                style={{ borderColor: settings.accentColor }}
+              />
+            )}
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+                placeholder="Album oder Künstler suchen..."
+                className="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white border-2"
+                style={{ borderColor: settings.accentColor }}
+              />
+              <button
+                onClick={() => handleSearch(searchQuery)}
+                disabled={loading}
+                className="px-6 py-3 rounded-lg font-semibold flex items-center"
+                style={{ 
+                  backgroundColor: settings.accentColor,
+                  color: settings.primaryColor 
+                }}
+              >
+                {loading ? <Loader2 className="animate-spin" /> : <Search />}
+              </button>
+            </div>
+
+            {searchResults && (
+              <div className="space-y-6">
+                {/* Main Result */}
+                <div className="bg-gray-900 rounded-lg overflow-hidden border-2" style={{ borderColor: settings.accentColor }}>
+                  <img 
+                    src={searchResults.cover} 
+                    alt="Album Cover"
+                    className="w-full aspect-square object-cover"
+                  />
+                  <div className="p-4 space-y-2">
+                    <h3 className="font-bold text-xl text-white">{searchResults.artist}</h3>
+                    <p style={{ color: settings.accentColor }}>{searchResults.album}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-400">Jahr:</span>
+                        <span className="ml-2 text-white">{searchResults.year}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Genre:</span>
+                        <span className="ml-2 text-white">{searchResults.genre}</span>
                       </div>
                     </div>
-                    <div style={{ marginBottom: '20px' }}>
-                      <h4 style={{ fontSize: '16px', marginBottom: '12px', color: accentColor }}>Preise</h4>
-                      {result.prices.map((p, i) => (
-                        <div 
-                          key={i} 
-                          style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            padding: '12px', 
-                            backgroundColor: '#0a0a0a', 
-                            borderRadius: '8px', 
-                            marginBottom: '8px' 
-                          }}
-                        >
-                          <span style={{ textTransform: 'capitalize' }}>{p.shop}</span>
-                          <div>
-                            <div style={{ fontWeight: 'bold', color: accentColor }}>€{p.price}</div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>{p.condition}</div>
-                          </div>
+                  </div>
+                </div>
+
+                {/* Additional Results */}
+                {searchResults.allResults && searchResults.allResults.length > 1 && (
+                  <div className="space-y-3">
+                    <h4 style={{ color: settings.accentColor }} className="font-semibold">Weitere Ergebnisse:</h4>
+                    {searchResults.allResults.slice(1).map((result, idx) => (
+                      <div 
+                        key={idx}
+                        className="bg-gray-900 rounded-lg p-3 flex gap-3 cursor-pointer hover:bg-gray-800 transition-colors"
+                        onClick={() => {
+                          setSearchResults({
+                            album: result.title || 'Unknown Album',
+                            artist: result.title?.split(' - ')[0] || 'Unknown Artist',
+                            year: result.year || 'Unknown',
+                            genre: result.genre?.[0] || result.style?.[0] || 'Unknown',
+                            cover: result.cover_image || result.thumb || 'https://via.placeholder.com/150x150/1a1a1a/ffb700?text=No+Cover',
+                            allResults: searchResults.allResults
+                          });
+                        }}
+                      >
+                        <img 
+                          src={result.cover_image || result.thumb || 'https://via.placeholder.com/80x80/1a1a1a/ffb700?text=?'} 
+                          alt={result.title}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">{result.title}</p>
+                          <p className="text-gray-400 text-sm">{result.year || '?'}</p>
+                          <p className="text-xs" style={{ color: settings.accentColor }}>{result.format?.[0] || 'Vinyl'}</p>
                         </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button 
-                        onClick={() => setCollection([...collection, { ...result, id: Date.now() }])}
-                        style={{ 
-                          flex: 1, 
-                          padding: '12px', 
-                          backgroundColor: accentColor, 
-                          color: '#000', 
-                          border: 'none', 
-                          borderRadius: '8px', 
-                          fontWeight: 'bold', 
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        + Collection
-                      </button>
-                      <button 
-                        onClick={() => setWishlist([...wishlist, { ...result, id: Date.now() }])}
-                        style={{ 
-                          flex: 1, 
-                          padding: '12px', 
-                          backgroundColor: '#333', 
-                          color: '#fff', 
-                          border: 'none', 
-                          borderRadius: '8px', 
-                          fontWeight: 'bold', 
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        + Wishlist
-                      </button>
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            <div style={{ flex: 1 }}></div>
-            <button onClick={handleManualSearch} style={{ width: '100%', padding: '16px', backgroundColor: accentColor, color: '#000', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>Suchen</button>
-          </div>
-        )}
-
-        {activeTab === 'wishlist' && (
-          <div>
-            <h2 style={{ fontSize: '28px', marginBottom: '24px' }}>Wishlist</h2>
-            {wishlist.length === 0 ? (
-              <p style={{ color: '#666', textAlign: 'center', padding: '40px' }}>Leer</p>
-            ) : (
-              <div style={{ display: 'grid', gap: '16px' }}>
-                {wishlist.map(item => (
-                  <div key={item.id} style={{ display: 'flex', gap: '16px', backgroundColor: '#1a1a1a', padding: '16px', borderRadius: '12px', border: `1px solid ${accentColor}` }}>
-                    <img src={item.cover} alt={item.album} style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
-                    <div>
-                      <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>{item.album}</h3>
-                      <p style={{ fontSize: '14px', color: '#888' }}>{item.artist}</p>
-                    </div>
-                  </div>
-                ))}
+                <button
+                  onClick={() => setSearchResults(null)}
+                  className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Neue Suche
+                </button>
               </div>
             )}
           </div>
         )}
 
+        {/* Collection Tab */}
         {activeTab === 'collection' && (
-          <div>
-            <h2 style={{ fontSize: '28px', marginBottom: '24px' }}>Collection</h2>
-            {collection.length === 0 ? (
-              <p style={{ color: '#666', textAlign: 'center', padding: '40px' }}>Leer</p>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
-                {collection.map(item => (
-                  <div key={item.id} style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${accentColor}` }}>
-                    <img src={item.cover} alt={item.album} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />
-                    <div style={{ padding: '12px' }}>
-                      <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.album}</h3>
-                      <p style={{ fontSize: '12px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.artist}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="text-center py-12">
+            <Grid3x3 size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-gray-400">Deine Sammlung ist noch leer</p>
+          </div>
+        )}
+
+        {/* Favorites Tab */}
+        {activeTab === 'favorites' && (
+          <div className="text-center py-12">
+            <Heart size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-gray-400">Keine Favoriten gespeichert</p>
+          </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="text-center py-12">
+            <User size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-gray-400">Profil kommt bald</p>
           </div>
         )}
       </div>
 
-      <nav style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        width: '100%',
-        backgroundColor: primaryColor,
-        borderTop: '1px solid #333',
-        display: 'flex',
-        justifyContent: 'space-around',
-        padding: '12px 0',
-        boxSizing: 'border-box',
-        zIndex: 100
-      }}>
-        {[
-          { id: 'search', icon: Search, label: 'Search' },
-          { id: 'wishlist', icon: Heart, label: 'Wishlist' },
-          { id: 'scan', icon: Camera, label: 'Scan' },
-          { id: 'collection', icon: Grid, label: 'Collection' }
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: 'transparent', border: 'none', color: activeTab === tab.id ? accentColor : '#666', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '8px' }}>
-            <tab.icon size={24} />
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gray-900 p-4 border-b-2 flex justify-between items-center" style={{ borderColor: settings.accentColor }}>
+              <h2 className="text-xl font-bold">Einstellungen</h2>
+              <button onClick={() => setShowSettings(false)}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-6">
+              {/* Recognition Mode */}
+              <div>
+                <label className="block mb-2" style={{ color: settings.accentColor }}>Erkennungs-Modus</label>
+                <select
+                  value={settings.recognitionMode}
+                  onChange={(e) => saveSettings({...settings, recognitionMode: e.target.value})}
+                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2"
+                  style={{ borderColor: settings.accentColor }}
+                >
+                  <option value="manual">Manuell (100% kostenlos)</option>
+                </select>
+              </div>
 
-      {loading && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <Loader2 size={48} style={{ animation: 'spin 1s linear infinite', color: accentColor }} />
+              {/* Discogs Token */}
+              <div>
+                <label className="block mb-2" style={{ color: settings.accentColor }}>
+                  Discogs Token (für echte Album-Cover) 
+                  {settings.discogsToken && <span className="text-green-500 ml-2">✓ Aktiv</span>}
+                </label>
+                <input
+                  type="password"
+                  value={settings.discogsToken}
+                  onChange={(e) => saveSettings({...settings, discogsToken: e.target.value})}
+                  placeholder="Token hier einfügen"
+                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2"
+                  style={{ borderColor: settings.accentColor }}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Optional: Hole dir einen Token bei discogs.com/settings/developers
+                </p>
+              </div>
+
+              {/* Shop Selection */}
+              <div>
+                <label className="block mb-2" style={{ color: settings.accentColor }}>Shops für Preisvergleich</label>
+                <div className="space-y-2">
+                  {Object.entries(settings.shops).map(([shop, enabled]) => (
+                    <label key={shop} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={(e) => saveSettings({
+                          ...settings,
+                          shops: {...settings.shops, [shop]: e.target.checked}
+                        })}
+                        className="w-5 h-5"
+                        style={{ accentColor: settings.accentColor }}
+                      />
+                      <span className="capitalize">{shop}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Primary Color */}
+              <div>
+                <label className="block mb-2" style={{ color: settings.accentColor }}>Primärfarbe (Hintergrund)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={settings.primaryColor}
+                    onChange={(e) => saveSettings({...settings, primaryColor: e.target.value})}
+                    className="w-16 h-10 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={settings.primaryColor}
+                    onChange={(e) => saveSettings({...settings, primaryColor: e.target.value})}
+                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2"
+                    style={{ borderColor: settings.accentColor }}
+                  />
+                </div>
+              </div>
+
+              {/* Accent Color */}
+              <div>
+                <label className="block mb-2" style={{ color: settings.accentColor }}>Akzentfarbe</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={settings.accentColor}
+                    onChange={(e) => saveSettings({...settings, accentColor: e.target.value})}
+                    className="w-16 h-10 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={settings.accentColor}
+                    onChange={(e) => saveSettings({...settings, accentColor: e.target.value})}
+                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2"
+                    style={{ borderColor: settings.accentColor }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 flex" style={{ borderColor: settings.accentColor }}>
+        {[
+          { id: 'search', icon: Search, label: 'Suchen' },
+          { id: 'camera', icon: Camera, label: 'Kamera' },
+          { id: 'collection', icon: Grid3x3, label: 'Sammlung' },
+          { id: 'favorites', icon: Heart, label: 'Favoriten' },
+          { id: 'profile', icon: User, label: 'Profil' }
+        ].map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className="flex-1 py-3 flex flex-col items-center gap-1"
+            style={{ 
+              color: activeTab === id ? settings.accentColor : '#6b7280'
+            }}
+          >
+            <Icon size={24} />
+            <span className="text-xs">{label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
