@@ -75,11 +75,23 @@ const VinylPriceFinder = () => {
         if (advancedSearch.label) params.push(`label=${encodeURIComponent(advancedSearch.label)}`);
         if (advancedSearch.genre) params.push(`genre=${encodeURIComponent(advancedSearch.genre)}`);
         
-        searchUrl += params.join('&') + '&per_page=10';
+        if (params.length === 0) {
+          alert('Please fill in at least one search field');
+          setIsLoading(false);
+          return;
+        }
+        
+        searchUrl += params.join('&') + '&per_page=10&type=release';
       } else {
         // Simple search
-        searchUrl += `q=${encodeURIComponent(searchQuery)}&per_page=10`;
+        if (!searchQuery.trim()) {
+          setIsLoading(false);
+          return;
+        }
+        searchUrl += `q=${encodeURIComponent(searchQuery)}&per_page=10&type=release`;
       }
+      
+      console.log('Search URL:', searchUrl);
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -88,11 +100,28 @@ const VinylPriceFinder = () => {
         }
       });
       
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        alert(`Search failed: ${response.status} - Please check your API token`);
+        setIsLoading(false);
+        return;
+      }
+      
       const data = await response.json();
-      setSearchResults(data.results || []);
+      console.log('Search results:', data);
+      
+      if (data.results && data.results.length > 0) {
+        setSearchResults(data.results);
+      } else {
+        setSearchResults([]);
+        alert('No results found. Try different search terms.');
+      }
     } catch (error) {
       console.error('Search error:', error);
-      alert('Error searching. Please check your API token.');
+      alert(`Error searching: ${error.message}`);
     }
     setIsLoading(false);
   };
@@ -341,30 +370,43 @@ const VinylPriceFinder = () => {
 
             {/* Search Results */}
             {searchResults.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3 mt-4">
+                <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
                 {searchResults.map((result) => (
                   <div
                     key={result.id}
                     onClick={() => setSelectedResult(result)}
                     className="bg-white/10 rounded-lg p-3 flex gap-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
                   >
-                    {result.cover_image && (
+                    {result.cover_image && result.cover_image !== '' ? (
                       <img
                         src={result.cover_image}
                         alt={result.title}
-                        className="w-20 h-20 rounded object-cover"
+                        className="w-20 h-20 rounded object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
                       />
+                    ) : (
+                      <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                        <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-white font-semibold text-sm truncate">
-                        {result.title}
+                        {result.title || 'Unknown Title'}
                       </h3>
                       <p className="text-white/60 text-xs mt-1">
                         {result.year || 'Year unknown'}
                       </p>
                       {result.label && result.label[0] && (
-                        <p className="text-white/40 text-xs mt-1">
+                        <p className="text-white/40 text-xs mt-1 truncate">
                           {result.label[0]}
+                        </p>
+                      )}
+                      {result.format && result.format[0] && (
+                        <p className="text-white/40 text-xs truncate">
+                          {result.format[0]}
                         </p>
                       )}
                     </div>
@@ -373,7 +415,7 @@ const VinylPriceFinder = () => {
                         e.stopPropagation();
                         toggleFavorite(result);
                       }}
-                      className="p-2"
+                      className="p-2 flex-shrink-0"
                     >
                       <Heart
                         size={20}
@@ -383,6 +425,13 @@ const VinylPriceFinder = () => {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {!isLoading && searchResults.length === 0 && searchQuery && (
+              <div className="text-center py-8">
+                <p className="text-white/60">No results found</p>
+                <p className="text-white/40 text-sm mt-2">Try different search terms</p>
               </div>
             )}
           </div>
