@@ -223,6 +223,7 @@ const VinylPriceFinder = () => {
     if (!discogsToken) return null;
     
     try {
+      // Get marketplace statistics
       const statsResponse = await fetch(
         `https://api.discogs.com/marketplace/stats/${releaseId}`,
         {
@@ -235,7 +236,26 @@ const VinylPriceFinder = () => {
       
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        return statsData;
+        
+        // Calculate better average price
+        // Use median price if available, otherwise calculate from lowest/highest
+        let displayPrice = null;
+        
+        if (statsData.lowest_price) {
+          // If we have both lowest and highest, calculate a realistic average
+          if (statsData.lowest_price && statsData.num_for_sale > 0) {
+            // Use lowest price but add context
+            displayPrice = {
+              value: statsData.lowest_price.value,
+              currency: statsData.lowest_price.currency,
+              num_for_sale: statsData.num_for_sale,
+              // Store full stats for detail view
+              stats: statsData
+            };
+          }
+        }
+        
+        return displayPrice;
       }
     } catch (error) {
       console.error('Price fetch error:', error);
@@ -246,45 +266,34 @@ const VinylPriceFinder = () => {
   // Fetch prices for all search results
   const fetchAllPrices = async (results) => {
     const prices = {};
-    for (const result of results.slice(0, 10)) { // Limit to first 10 to avoid rate limits
+    for (const result of results.slice(0, 10)) {
       const priceData = await fetchPriceInfo(result.id);
-      if (priceData && priceData.lowest_price) {
-        prices[result.id] = priceData.lowest_price;
+      if (priceData) {
+        prices[result.id] = priceData;
       }
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 400));
     }
     setResultPrices(prices);
   };
 
-  // Calculate average price or single price based on selected shops
-  const calculateDisplayPrice = (discogsPrice) => {
-    if (!discogsPrice) return null;
+  // Calculate display price based on selected shops and available data
+  const calculateDisplayPrice = (priceData) => {
+    if (!priceData) return null;
     
-    // For now, we only have Discogs prices
-    // In the future, you could add HHV and eBay API integrations
-    const prices = [];
+    // Currently only Discogs has API access
+    // HHV and eBay would require web scraping or paid APIs
     
-    if (selectedShops.includes('discogs') && discogsPrice) {
-      prices.push(discogsPrice.value);
-    }
-    
-    if (prices.length === 0) return null;
-    
-    if (prices.length === 1) {
+    if (selectedShops.includes('discogs') && priceData.value) {
       return {
-        value: prices[0].toFixed(2),
-        currency: discogsPrice.currency,
-        type: 'single'
-      };
-    } else {
-      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-      return {
-        value: avg.toFixed(2),
-        currency: discogsPrice.currency,
-        type: 'average'
+        value: priceData.value.toFixed(2),
+        currency: priceData.currency,
+        type: 'discogs',
+        label: 'from' // "from" indicates this is the lowest price
       };
     }
+    
+    return null;
   };
 
   // Shop toggle
@@ -482,10 +491,12 @@ const VinylPriceFinder = () => {
                           </div>
                           <div>
                             {price ? (
-                              <p className="text-lg font-bold" style={{ color: accentColor }}>
-                                {price.currency} {price.value}
-                                {price.type === 'average' && <span className="text-xs ml-1">(avg)</span>}
-                              </p>
+                              <div>
+                                <p className="text-xs text-white/60 mb-1">{price.label} Discogs</p>
+                                <p className="text-lg font-bold" style={{ color: accentColor }}>
+                                  {price.currency} {price.value}
+                                </p>
+                              </div>
                             ) : resultPrices[result.id] === undefined ? (
                               <p className="text-sm" style={{ color: accentColor }}>Loading price...</p>
                             ) : (
@@ -872,17 +883,25 @@ const VinylPriceFinder = () => {
                 <label className="block text-white/80 text-sm mb-2">
                   Price Sources
                 </label>
+                <p className="text-white/60 text-xs mb-3">
+                  Note: Only Discogs has real-time API pricing. HHV and eBay require manual checking via links.
+                </p>
                 <div className="space-y-2">
-                  {['discogs', 'hhv', 'ebay'].map(shop => (
-                    <label key={shop} className="flex items-center gap-3 cursor-pointer">
+                  {[
+                    { id: 'discogs', name: 'Discogs', note: 'API available' },
+                    { id: 'hhv', name: 'HHV Store', note: 'Manual check' },
+                    { id: 'ebay', name: 'eBay', note: 'Manual check' }
+                  ].map(shop => (
+                    <label key={shop.id} className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedShops.includes(shop)}
-                        onChange={() => toggleShop(shop)}
+                        checked={selectedShops.includes(shop.id)}
+                        onChange={() => toggleShop(shop.id)}
                         className="w-5 h-5"
                         style={{ accentColor: accentColor }}
                       />
-                      <span className="text-white capitalize">{shop}</span>
+                      <span className="text-white flex-1">{shop.name}</span>
+                      <span className="text-white/40 text-xs">{shop.note}</span>
                     </label>
                   ))}
                 </div>
@@ -1006,38 +1025,47 @@ const VinylPriceFinder = () => {
             <div className="space-y-3 mb-6">
               {/* Price Information - Prominent */}
               <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <span>Price Information</span>
-                  {resultPrices[selectedResult.id] && (
-                    <span className="text-xs" style={{ color: accentColor }}>
-                      ({selectedShops.length} source{selectedShops.length > 1 ? 's' : ''})
-                    </span>
-                  )}
-                </h3>
+                <h3 className="text-white font-semibold mb-3">Price Information</h3>
                 {resultPrices[selectedResult.id] ? (
-                  <div className="space-y-2">
-                    {(() => {
-                      const price = calculateDisplayPrice(resultPrices[selectedResult.id]);
-                      return price ? (
-                        <div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-white/60">
-                              {price.type === 'average' ? 'Average Price:' : 'Price:'}
-                            </span>
-                            <span className="text-2xl font-bold" style={{ color: accentColor }}>
-                              {price.currency} {price.value}
-                            </span>
-                          </div>
-                          {resultPrices[selectedResult.id].num_for_sale && (
-                            <p className="text-white/60 text-sm mt-2">
-                              {resultPrices[selectedResult.id].num_for_sale} listings available
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-white/60">No price data available</p>
-                      );
-                    })()}
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-white/60 text-sm mb-1">Discogs Marketplace:</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60">Lowest Price:</span>
+                        <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                          {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
+                        </span>
+                      </div>
+                      {resultPrices[selectedResult.id].num_for_sale && (
+                        <p className="text-white/60 text-sm mt-2">
+                          {resultPrices[selectedResult.id].num_for_sale} listings available
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Additional price context */}
+                    {resultPrices[selectedResult.id].stats && (
+                      <div className="border-t border-white/10 pt-3 space-y-1 text-sm">
+                        <p className="text-white/80">
+                          <span className="text-white/60">Note:</span> Prices vary by condition (Mint, VG+, etc.)
+                        </p>
+                        <p className="text-white/60 text-xs">
+                          Click "View on Discogs" below to see all available copies and conditions
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Note about other sources */}
+                    {(selectedShops.includes('hhv') || selectedShops.includes('ebay')) && (
+                      <div className="bg-white/5 rounded p-3 mt-3">
+                        <p className="text-white/80 text-sm mb-2">
+                          <strong>Note:</strong> HHV and eBay prices require manual checking
+                        </p>
+                        <p className="text-white/60 text-xs">
+                          Use the links below to compare prices on these platforms
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-white/60">Loading price data...</p>
@@ -1045,16 +1073,16 @@ const VinylPriceFinder = () => {
                 
                 {/* Links to shops */}
                 <div className="mt-4 space-y-2">
-                  <p className="text-white/60 text-xs mb-2">View on marketplace:</p>
+                  <p className="text-white/60 text-sm font-semibold mb-2">Compare prices on:</p>
                   {selectedShops.includes('discogs') && (
                     <a
                       href={`https://www.discogs.com${selectedResult.uri}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-3 py-2 rounded text-sm text-center border"
-                      style={{ borderColor: accentColor, color: accentColor }}
+                      className="block px-4 py-3 rounded text-sm font-semibold text-center border"
+                      style={{ borderColor: accentColor, color: accentColor, backgroundColor: 'rgba(255, 183, 0, 0.1)' }}
                     >
-                      Discogs <ExternalLink size={12} style={{ display: 'inline' }} />
+                      View All Listings on Discogs <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
                   )}
                   {selectedShops.includes('hhv') && (
@@ -1062,21 +1090,21 @@ const VinylPriceFinder = () => {
                       href={`https://www.hhv.de/search?term=${encodeURIComponent(selectedResult.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-3 py-2 rounded text-sm text-center border"
-                      style={{ borderColor: accentColor, color: accentColor }}
+                      className="block px-4 py-3 rounded text-sm font-semibold text-center border hover:bg-white/5"
+                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor }}
                     >
-                      HHV Store <ExternalLink size={12} style={{ display: 'inline' }} />
+                      Search on HHV Store <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
                   )}
                   {selectedShops.includes('ebay') && (
                     <a
-                      href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(selectedResult.title)}`}
+                      href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(selectedResult.title + ' vinyl')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-3 py-2 rounded text-sm text-center border"
-                      style={{ borderColor: accentColor, color: accentColor }}
+                      className="block px-4 py-3 rounded text-sm font-semibold text-center border hover:bg-white/5"
+                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor }}
                     >
-                      eBay <ExternalLink size={12} style={{ display: 'inline' }} />
+                      Search on eBay <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
                   )}
                 </div>
