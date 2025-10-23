@@ -194,13 +194,25 @@ const VinylPriceFinder = () => {
 
   return (
     <div 
-      className="flex flex-col h-screen w-full overflow-hidden"
-      style={{ backgroundColor: primaryColor, minHeight: '100vh', minHeight: '100dvh' }}
+      className="w-full h-full"
+      style={{ 
+        backgroundColor: primaryColor,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
     >
       {/* Fixed Header */}
       <div 
-        className="flex-shrink-0 px-4 py-4 text-white flex justify-between items-center"
-        style={{ backgroundColor: primaryColor }}
+        className="px-4 py-4 text-white flex justify-between items-center"
+        style={{ 
+          backgroundColor: primaryColor,
+          flexShrink: 0
+        }}
       >
         <h1 className="text-2xl font-bold" style={{ color: accentColor }}>
           VinylScout
@@ -214,7 +226,14 @@ const VinylPriceFinder = () => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto pb-24 px-4">
+      <div 
+        className="px-4"
+        style={{ 
+          flex: 1,
+          overflowY: 'auto',
+          paddingBottom: '90px'
+        }}
+      >
         {/* Search Tab */}
         {activeTab === 'search' && (
           <div className="space-y-4">
@@ -498,10 +517,16 @@ const VinylPriceFinder = () => {
 
       {/* Fixed Bottom Navigation - EXACTLY 5 BUTTONS IN ONE ROW */}
       <div 
-        className="flex-shrink-0 flex items-center justify-around px-4 py-3 border-t"
+        className="flex items-center justify-around px-2 py-3 border-t"
         style={{ 
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
           backgroundColor: primaryColor,
-          borderColor: 'rgba(255, 255, 255, 0.1)'
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          zIndex: 1000,
+          flexShrink: 0
         }}
       >
         <button
