@@ -517,29 +517,47 @@ const VinylPriceFinder = () => {
 
       {/* Fixed Bottom Navigation - EXACTLY 5 BUTTONS IN ONE ROW */}
       <div 
-        className="flex items-center justify-around px-2 py-3 border-t"
         style={{ 
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           backgroundColor: primaryColor,
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
           zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          padding: '12px 8px',
           flexShrink: 0
         }}
       >
         <button
           onClick={() => setActiveTab('search')}
-          className="flex flex-col items-center gap-1 min-w-0 flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
         >
           <Search 
-            size={24} 
+            size={22} 
             style={{ color: activeTab === 'search' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
-            className="text-xs"
-            style={{ color: activeTab === 'search' ? accentColor : 'rgba(255,255,255,0.5)' }}
+            style={{ 
+              fontSize: '10px',
+              color: activeTab === 'search' ? accentColor : 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Search
           </span>
@@ -547,15 +565,29 @@ const VinylPriceFinder = () => {
 
         <button
           onClick={() => setActiveTab('camera')}
-          className="flex flex-col items-center gap-1 min-w-0 flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
         >
           <Camera 
-            size={24} 
+            size={22} 
             style={{ color: activeTab === 'camera' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
-            className="text-xs"
-            style={{ color: activeTab === 'camera' ? accentColor : 'rgba(255,255,255,0.5)' }}
+            style={{ 
+              fontSize: '10px',
+              color: activeTab === 'camera' ? accentColor : 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Camera
           </span>
@@ -563,15 +595,29 @@ const VinylPriceFinder = () => {
 
         <button
           onClick={() => setActiveTab('collection')}
-          className="flex flex-col items-center gap-1 min-w-0 flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
         >
           <Music 
-            size={24} 
+            size={22} 
             style={{ color: activeTab === 'collection' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
-            className="text-xs"
-            style={{ color: activeTab === 'collection' ? accentColor : 'rgba(255,255,255,0.5)' }}
+            style={{ 
+              fontSize: '10px',
+              color: activeTab === 'collection' ? accentColor : 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Collection
           </span>
@@ -579,15 +625,29 @@ const VinylPriceFinder = () => {
 
         <button
           onClick={() => setActiveTab('favorites')}
-          className="flex flex-col items-center gap-1 min-w-0 flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
         >
           <Heart 
-            size={24} 
+            size={22} 
             style={{ color: activeTab === 'favorites' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
-            className="text-xs"
-            style={{ color: activeTab === 'favorites' ? accentColor : 'rgba(255,255,255,0.5)' }}
+            style={{ 
+              fontSize: '10px',
+              color: activeTab === 'favorites' ? accentColor : 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Favorites
           </span>
@@ -595,15 +655,29 @@ const VinylPriceFinder = () => {
 
         <button
           onClick={() => setActiveTab('profile')}
-          className="flex flex-col items-center gap-1 min-w-0 flex-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
         >
           <User 
-            size={24} 
+            size={22} 
             style={{ color: activeTab === 'profile' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
-            className="text-xs"
-            style={{ color: activeTab === 'profile' ? accentColor : 'rgba(255,255,255,0.5)' }}
+            style={{ 
+              fontSize: '10px',
+              color: activeTab === 'profile' ? accentColor : 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Profile
           </span>
@@ -612,10 +686,34 @@ const VinylPriceFinder = () => {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000,
+            overflowY: 'auto'
+          }}
+        >
           <div 
-            className="w-full max-w-md rounded-lg p-6 max-h-[80vh] overflow-y-auto"
-            style={{ backgroundColor: primaryColor, border: `1px solid ${accentColor}` }}
+            style={{
+              width: '100%',
+              maxWidth: '448px',
+              backgroundColor: primaryColor,
+              border: `1px solid ${accentColor}`,
+              borderRadius: '8px',
+              padding: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 'auto'
+            }}
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">Settings</h2>
@@ -726,10 +824,34 @@ const VinylPriceFinder = () => {
 
       {/* Result Detail Modal */}
       {selectedResult && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000,
+            overflowY: 'auto'
+          }}
+        >
           <div 
-            className="w-full max-w-md rounded-lg p-6 max-h-[80vh] overflow-y-auto"
-            style={{ backgroundColor: primaryColor, border: `1px solid ${accentColor}` }}
+            style={{
+              width: '100%',
+              maxWidth: '448px',
+              backgroundColor: primaryColor,
+              border: `1px solid ${accentColor}`,
+              borderRadius: '8px',
+              padding: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 'auto'
+            }}
           >
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-xl font-bold text-white pr-4">
