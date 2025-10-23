@@ -4,6 +4,14 @@ import { Search, Camera, Music, Heart, User, Settings, X, ChevronRight, External
 const VinylPriceFinder = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedSearch, setAdvancedSearch] = useState({
+    artist: '',
+    album: '',
+    year: '',
+    label: '',
+    genre: ''
+  });
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -48,7 +56,7 @@ const VinylPriceFinder = () => {
   };
 
   // Search Discogs API
-  const searchDiscogs = async (query) => {
+  const searchDiscogs = async (isAdvanced = false) => {
     if (!discogsToken) {
       alert('Please add your Discogs API token in Settings');
       return;
@@ -56,15 +64,29 @@ const VinylPriceFinder = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=10`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
+      let searchUrl = 'https://api.discogs.com/database/search?';
+      
+      if (isAdvanced) {
+        // Advanced search with individual fields
+        const params = [];
+        if (advancedSearch.artist) params.push(`artist=${encodeURIComponent(advancedSearch.artist)}`);
+        if (advancedSearch.album) params.push(`release_title=${encodeURIComponent(advancedSearch.album)}`);
+        if (advancedSearch.year) params.push(`year=${encodeURIComponent(advancedSearch.year)}`);
+        if (advancedSearch.label) params.push(`label=${encodeURIComponent(advancedSearch.label)}`);
+        if (advancedSearch.genre) params.push(`genre=${encodeURIComponent(advancedSearch.genre)}`);
+        
+        searchUrl += params.join('&') + '&per_page=10';
+      } else {
+        // Simple search
+        searchUrl += `q=${encodeURIComponent(searchQuery)}&per_page=10`;
+      }
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'Authorization': `Discogs token=${discogsToken}`,
+          'User-Agent': 'VinylScout/1.0'
         }
-      );
+      });
       
       const data = await response.json();
       setSearchResults(data.results || []);
@@ -77,8 +99,12 @@ const VinylPriceFinder = () => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      searchDiscogs(searchQuery);
+      searchDiscogs(false);
     }
+  };
+
+  const handleAdvancedSearch = () => {
+    searchDiscogs(true);
   };
 
   const handleKeyPress = (e) => {
@@ -169,7 +195,7 @@ const VinylPriceFinder = () => {
   return (
     <div 
       className="flex flex-col h-screen w-full overflow-hidden"
-      style={{ backgroundColor: primaryColor }}
+      style={{ backgroundColor: primaryColor, minHeight: '100vh', minHeight: '100dvh' }}
     >
       {/* Fixed Header */}
       <div 
@@ -192,15 +218,98 @@ const VinylPriceFinder = () => {
         {/* Search Tab */}
         {activeTab === 'search' && (
           <div className="space-y-4">
+            {/* Simple Search Bar */}
             <div className="space-y-3">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Search artist or album..."
+                placeholder="Quick search..."
                 className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
               />
+            </div>
+
+            {/* Advanced Search Toggle */}
+            <button
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              className="w-full py-2 text-sm flex items-center justify-center gap-2"
+              style={{ color: accentColor }}
+            >
+              {showAdvancedSearch ? '▲' : '▼'} Advanced Search
+            </button>
+
+            {/* Advanced Search Fields */}
+            {showAdvancedSearch && (
+              <div className="space-y-3 bg-white/5 rounded-lg p-4 border border-white/10">
+                <div>
+                  <label className="block text-white/60 text-xs mb-1">Artist</label>
+                  <input
+                    type="text"
+                    value={advancedSearch.artist}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, artist: e.target.value})}
+                    placeholder="e.g. Pink Floyd"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/60 text-xs mb-1">Album</label>
+                  <input
+                    type="text"
+                    value={advancedSearch.album}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, album: e.target.value})}
+                    placeholder="e.g. Dark Side of the Moon"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/60 text-xs mb-1">Year of Release</label>
+                  <input
+                    type="text"
+                    value={advancedSearch.year}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, year: e.target.value})}
+                    placeholder="e.g. 1973"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/60 text-xs mb-1">Publisher/Label</label>
+                  <input
+                    type="text"
+                    value={advancedSearch.label}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, label: e.target.value})}
+                    placeholder="e.g. Columbia Records"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/60 text-xs mb-1">Genre</label>
+                  <input
+                    type="text"
+                    value={advancedSearch.genre}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, genre: e.target.value})}
+                    placeholder="e.g. Rock, Jazz, Electronic"
+                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAdvancedSearch}
+                  disabled={isLoading}
+                  className="w-full py-3 rounded-lg font-semibold transition-all mt-2"
+                  style={{ backgroundColor: accentColor, color: primaryColor }}
+                >
+                  {isLoading ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+            )}
+
+            {/* Quick Search Button (only show when advanced is closed) */}
+            {!showAdvancedSearch && (
               <button
                 onClick={handleSearch}
                 disabled={isLoading}
@@ -209,7 +318,7 @@ const VinylPriceFinder = () => {
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
-            </div>
+            )}
 
             {/* Search Results */}
             {searchResults.length > 0 && (
