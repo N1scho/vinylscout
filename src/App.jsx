@@ -13,9 +13,12 @@ const VinylPriceFinder = () => {
     genre: ''
   });
   const [searchResults, setSearchResults] = useState([]);
+  const [resultPrices, setResultPrices] = useState({}); // Store prices for each result
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
+  const [priceInfo, setPriceInfo] = useState(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
   const [collection, setCollection] = useState([]);
   const [favorites, setFavorites] = useState([]);
   
@@ -115,8 +118,11 @@ const VinylPriceFinder = () => {
       
       if (data.results && data.results.length > 0) {
         setSearchResults(data.results);
+        // Fetch prices for all results
+        fetchAllPrices(data.results);
       } else {
         setSearchResults([]);
+        setResultPrices({});
         alert('No results found. Try different search terms.');
       }
     } catch (error) {
@@ -211,6 +217,75 @@ const VinylPriceFinder = () => {
   };
 
   const isFavorited = (item) => favorites.some(f => f.id === item.id);
+
+  // Fetch price information for a single result
+  const fetchPriceInfo = async (releaseId) => {
+    if (!discogsToken) return null;
+    
+    try {
+      const statsResponse = await fetch(
+        `https://api.discogs.com/marketplace/stats/${releaseId}`,
+        {
+          headers: {
+            'Authorization': `Discogs token=${discogsToken}`,
+            'User-Agent': 'VinylScout/1.0'
+          }
+        }
+      );
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        return statsData;
+      }
+    } catch (error) {
+      console.error('Price fetch error:', error);
+    }
+    return null;
+  };
+
+  // Fetch prices for all search results
+  const fetchAllPrices = async (results) => {
+    const prices = {};
+    for (const result of results.slice(0, 10)) { // Limit to first 10 to avoid rate limits
+      const priceData = await fetchPriceInfo(result.id);
+      if (priceData && priceData.lowest_price) {
+        prices[result.id] = priceData.lowest_price;
+      }
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    setResultPrices(prices);
+  };
+
+  // Calculate average price or single price based on selected shops
+  const calculateDisplayPrice = (discogsPrice) => {
+    if (!discogsPrice) return null;
+    
+    // For now, we only have Discogs prices
+    // In the future, you could add HHV and eBay API integrations
+    const prices = [];
+    
+    if (selectedShops.includes('discogs') && discogsPrice) {
+      prices.push(discogsPrice.value);
+    }
+    
+    if (prices.length === 0) return null;
+    
+    if (prices.length === 1) {
+      return {
+        value: prices[0].toFixed(2),
+        currency: discogsPrice.currency,
+        type: 'single'
+      };
+    } else {
+      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+      return {
+        value: avg.toFixed(2),
+        currency: discogsPrice.currency,
+        type: 'average'
+      };
+    }
+  };
 
   // Shop toggle
   const toggleShop = (shop) => {
@@ -372,59 +447,56 @@ const VinylPriceFinder = () => {
             {searchResults.length > 0 && (
               <div className="space-y-3 mt-4">
                 <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    onClick={() => setSelectedResult(result)}
-                    className="bg-white/10 rounded-lg p-3 flex gap-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
-                  >
-                    {result.cover_image && result.cover_image !== '' ? (
-                      <img
-                        src={result.cover_image}
-                        alt={result.title}
-                        className="w-20 h-20 rounded object-cover flex-shrink-0"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
-                        <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-sm truncate">
-                        {result.title || 'Unknown Title'}
-                      </h3>
-                      <p className="text-white/60 text-xs mt-1">
-                        {result.year || 'Year unknown'}
-                      </p>
-                      {result.label && result.label[0] && (
-                        <p className="text-white/40 text-xs mt-1 truncate">
-                          {result.label[0]}
-                        </p>
-                      )}
-                      {result.format && result.format[0] && (
-                        <p className="text-white/40 text-xs truncate">
-                          {result.format[0]}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(result);
-                      }}
-                      className="p-2 flex-shrink-0"
+                {searchResults.map((result) => {
+                  const price = calculateDisplayPrice(resultPrices[result.id]);
+                  return (
+                    <div
+                      key={result.id}
+                      onClick={() => setSelectedResult(result)}
+                      className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
                     >
-                      <Heart
-                        size={20}
-                        style={{ color: accentColor }}
-                        fill={isFavorited(result) ? accentColor : 'none'}
-                      />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex gap-3">
+                        {result.cover_image && result.cover_image !== '' ? (
+                          <img
+                            src={result.cover_image}
+                            alt={result.title}
+                            className="w-24 h-24 rounded object-cover flex-shrink-0"
+                            style={{ objectFit: 'cover', width: '96px', height: '96px' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-white font-bold text-base mb-1" style={{ lineHeight: '1.2' }}>
+                              {result.title ? result.title.split(' - ')[0] : 'Unknown Artist'}
+                            </h3>
+                            <p className="text-white/80 text-sm mb-2" style={{ lineHeight: '1.2' }}>
+                              {result.title ? (result.title.split(' - ')[1] || result.title) : 'Unknown Album'}
+                            </p>
+                          </div>
+                          <div>
+                            {price ? (
+                              <p className="text-lg font-bold" style={{ color: accentColor }}>
+                                {price.currency} {price.value}
+                                {price.type === 'average' && <span className="text-xs ml-1">(avg)</span>}
+                              </p>
+                            ) : resultPrices[result.id] === undefined ? (
+                              <p className="text-sm" style={{ color: accentColor }}>Loading price...</p>
+                            ) : (
+                              <p className="text-sm text-white/60">Price unavailable</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -903,9 +975,14 @@ const VinylPriceFinder = () => {
             }}
           >
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-bold text-white pr-4">
-                {selectedResult.title}
-              </h2>
+              <div className="pr-4 flex-1">
+                <h2 className="text-xl font-bold text-white mb-1">
+                  {selectedResult.title ? selectedResult.title.split(' - ')[0] : 'Unknown Artist'}
+                </h2>
+                <p className="text-white/80 text-lg">
+                  {selectedResult.title ? (selectedResult.title.split(' - ')[1] || selectedResult.title) : 'Unknown Album'}
+                </p>
+              </div>
               <button onClick={() => setSelectedResult(null)}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
@@ -915,11 +992,101 @@ const VinylPriceFinder = () => {
               <img
                 src={selectedResult.cover_image}
                 alt={selectedResult.title}
-                className="w-full rounded-lg mb-4"
+                style={{ 
+                  width: '100%', 
+                  maxHeight: '400px',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  backgroundColor: 'rgba(255,255,255,0.05)'
+                }}
               />
             )}
 
             <div className="space-y-3 mb-6">
+              {/* Price Information - Prominent */}
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <span>Price Information</span>
+                  {resultPrices[selectedResult.id] && (
+                    <span className="text-xs" style={{ color: accentColor }}>
+                      ({selectedShops.length} source{selectedShops.length > 1 ? 's' : ''})
+                    </span>
+                  )}
+                </h3>
+                {resultPrices[selectedResult.id] ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const price = calculateDisplayPrice(resultPrices[selectedResult.id]);
+                      return price ? (
+                        <div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60">
+                              {price.type === 'average' ? 'Average Price:' : 'Price:'}
+                            </span>
+                            <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                              {price.currency} {price.value}
+                            </span>
+                          </div>
+                          {resultPrices[selectedResult.id].num_for_sale && (
+                            <p className="text-white/60 text-sm mt-2">
+                              {resultPrices[selectedResult.id].num_for_sale} listings available
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-white/60">No price data available</p>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-white/60">Loading price data...</p>
+                )}
+                
+                {/* Links to shops */}
+                <div className="mt-4 space-y-2">
+                  <p className="text-white/60 text-xs mb-2">View on marketplace:</p>
+                  {selectedShops.includes('discogs') && (
+                    <a
+                      href={`https://www.discogs.com${selectedResult.uri}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-3 py-2 rounded text-sm text-center border"
+                      style={{ borderColor: accentColor, color: accentColor }}
+                    >
+                      Discogs <ExternalLink size={12} style={{ display: 'inline' }} />
+                    </a>
+                  )}
+                  {selectedShops.includes('hhv') && (
+                    <a
+                      href={`https://www.hhv.de/search?term=${encodeURIComponent(selectedResult.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-3 py-2 rounded text-sm text-center border"
+                      style={{ borderColor: accentColor, color: accentColor }}
+                    >
+                      HHV Store <ExternalLink size={12} style={{ display: 'inline' }} />
+                    </a>
+                  )}
+                  {selectedShops.includes('ebay') && (
+                    <a
+                      href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(selectedResult.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-3 py-2 rounded text-sm text-center border"
+                      style={{ borderColor: accentColor, color: accentColor }}
+                    >
+                      eBay <ExternalLink size={12} style={{ display: 'inline' }} />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Details */}
+              <div className="border-t border-white/10 pt-3">
+                <h3 className="text-white font-semibold mb-2">Details</h3>
+              </div>
+              
               {selectedResult.year && (
                 <div className="flex justify-between">
                   <span className="text-white/60">Year:</span>
@@ -936,6 +1103,18 @@ const VinylPriceFinder = () => {
                 <div className="flex justify-between">
                   <span className="text-white/60">Genre:</span>
                   <span className="text-white">{selectedResult.genre[0]}</span>
+                </div>
+              )}
+              {selectedResult.format && selectedResult.format[0] && (
+                <div className="flex justify-between">
+                  <span className="text-white/60">Format:</span>
+                  <span className="text-white">{selectedResult.format[0]}</span>
+                </div>
+              )}
+              {selectedResult.country && (
+                <div className="flex justify-between">
+                  <span className="text-white/60">Country:</span>
+                  <span className="text-white">{selectedResult.country}</span>
                 </div>
               )}
             </div>
