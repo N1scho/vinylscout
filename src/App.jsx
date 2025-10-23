@@ -132,75 +132,29 @@ export default function VinylScout() {
 
   return (
     <div 
-      className="min-h-screen pb-20"
+      className="h-screen flex flex-col"
       style={{ 
         backgroundColor: settings.primaryColor,
         color: '#ffffff'
       }}
     >
-      {/* Header */}
+      {/* Header - Fixed */}
       <div 
-        className="p-4 flex justify-between items-center border-b-2"
+        className="flex-shrink-0 p-4 flex justify-between items-center border-b-2"
         style={{ borderColor: settings.accentColor }}
       >
         <h1 className="text-2xl font-bold">VinylScout</h1>
         <button 
           onClick={() => setShowSettings(true)}
-          className="p-2 rounded-full hover:bg-gray-800"
+          className="p-2 rounded-full hover:bg-gray-800 transition-colors"
         >
           <Settings size={24} style={{ color: settings.accentColor }} />
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="p-4 pb-24">
-        {/* Camera Tab */}
-        {activeTab === 'camera' && (
-          <div className="space-y-4">
-            {!cameraActive ? (
-              <button
-                onClick={startCamera}
-                className="w-full py-4 rounded-lg font-semibold text-lg"
-                style={{ 
-                  backgroundColor: settings.accentColor,
-                  color: settings.primaryColor 
-                }}
-              >
-                <Camera className="inline mr-2" />
-                Kamera starten
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full rounded-lg"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={capturePhoto}
-                    className="flex-1 py-3 rounded-lg font-semibold"
-                    style={{ 
-                      backgroundColor: settings.accentColor,
-                      color: settings.primaryColor 
-                    }}
-                  >
-                    Foto aufnehmen
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    className="px-6 py-3 bg-gray-700 rounded-lg"
-                  >
-                    Abbrechen
-                  </button>
-                </div>
-              </div>
-            )}
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-        )}
-
+      {/* Main Content - Scrollable with proper padding for bottom nav */}
+      <div className="flex-1 overflow-y-auto p-4" style={{ paddingBottom: '100px' }}>
+        
         {/* Search Tab */}
         {activeTab === 'search' && (
           <div className="space-y-4">
@@ -213,32 +167,36 @@ export default function VinylScout() {
               />
             )}
             
-            <div className="flex gap-2">
+            {/* Search Input */}
+            <div className="flex gap-2 items-stretch">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
                 placeholder="Album oder Künstler suchen..."
-                className="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white border-2"
+                className="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white border-2 focus:outline-none"
                 style={{ borderColor: settings.accentColor }}
               />
               <button
                 onClick={() => handleSearch(searchQuery)}
                 disabled={loading}
-                className="px-6 py-3 rounded-lg font-semibold flex items-center"
+                className="px-4 py-3 rounded-lg font-semibold flex items-center justify-center transition-all"
                 style={{ 
                   backgroundColor: settings.accentColor,
-                  color: settings.primaryColor 
+                  color: settings.primaryColor,
+                  minWidth: '60px',
+                  opacity: loading ? 0.7 : 1
                 }}
               >
-                {loading ? <Loader2 className="animate-spin" /> : <Search />}
+                {loading ? <Loader2 size={24} className="animate-spin" /> : <Search size={24} />}
               </button>
             </div>
 
+            {/* Search Results */}
             {searchResults && (
               <div className="space-y-6">
-                {/* Main Result */}
+                {/* Main Result Card */}
                 <div className="bg-gray-900 rounded-lg overflow-hidden border-2" style={{ borderColor: settings.accentColor }}>
                   <img 
                     src={searchResults.cover} 
@@ -247,57 +205,73 @@ export default function VinylScout() {
                   />
                   <div className="p-4 space-y-2">
                     <h3 className="font-bold text-xl text-white">{searchResults.artist}</h3>
-                    <p style={{ color: settings.accentColor }}>{searchResults.album}</p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <p className="font-medium" style={{ color: settings.accentColor }}>{searchResults.album}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm pt-2">
                       <div>
                         <span className="text-gray-400">Jahr:</span>
-                        <span className="ml-2 text-white">{searchResults.year}</span>
+                        <span className="ml-2 text-white font-medium">{searchResults.year}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Genre:</span>
-                        <span className="ml-2 text-white">{searchResults.genre}</span>
+                        <span className="ml-2 text-white font-medium">{searchResults.genre}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Additional Results */}
+                {/* Additional Results List */}
                 {searchResults.allResults && searchResults.allResults.length > 1 && (
                   <div className="space-y-3">
-                    <h4 style={{ color: settings.accentColor }} className="font-semibold">Weitere Ergebnisse:</h4>
-                    {searchResults.allResults.slice(1).map((result, idx) => (
-                      <div 
-                        key={idx}
-                        className="bg-gray-900 rounded-lg p-3 flex gap-3 cursor-pointer hover:bg-gray-800 transition-colors"
-                        onClick={() => {
-                          setSearchResults({
-                            album: result.title || 'Unknown Album',
-                            artist: result.title?.split(' - ')[0] || 'Unknown Artist',
-                            year: result.year || 'Unknown',
-                            genre: result.genre?.[0] || result.style?.[0] || 'Unknown',
-                            cover: result.cover_image || result.thumb || 'https://via.placeholder.com/150x150/1a1a1a/ffb700?text=No+Cover',
-                            allResults: searchResults.allResults
-                          });
-                        }}
-                      >
-                        <img 
-                          src={result.cover_image || result.thumb || 'https://via.placeholder.com/80x80/1a1a1a/ffb700?text=?'} 
-                          alt={result.title}
-                          className="w-20 h-20 object-cover rounded"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium truncate">{result.title}</p>
-                          <p className="text-gray-400 text-sm">{result.year || '?'}</p>
-                          <p className="text-xs" style={{ color: settings.accentColor }}>{result.format?.[0] || 'Vinyl'}</p>
+                    <h4 style={{ color: settings.accentColor }} className="font-semibold text-lg">
+                      Weitere Ergebnisse ({searchResults.allResults.length - 1}):
+                    </h4>
+                    <div className="space-y-2">
+                      {searchResults.allResults.slice(1).map((result, idx) => (
+                        <div 
+                          key={idx}
+                          className="bg-gray-900 rounded-lg p-3 flex gap-3 cursor-pointer hover:bg-gray-800 transition-all border border-gray-800 hover:border-gray-600"
+                          onClick={() => {
+                            setSearchResults({
+                              album: result.title || 'Unknown Album',
+                              artist: result.title?.split(' - ')[0] || 'Unknown Artist',
+                              year: result.year || 'Unknown',
+                              genre: result.genre?.[0] || result.style?.[0] || 'Unknown',
+                              cover: result.cover_image || result.thumb || 'https://via.placeholder.com/150x150/1a1a1a/ffb700?text=No+Cover',
+                              allResults: searchResults.allResults
+                            });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          <img 
+                            src={result.cover_image || result.thumb || 'https://via.placeholder.com/80x80/1a1a1a/ffb700?text=?'} 
+                            alt={result.title}
+                            className="w-20 h-20 object-cover rounded flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">{result.title}</p>
+                            <p className="text-gray-400 text-sm">{result.year || '?'}</p>
+                            <p className="text-xs mt-1" style={{ color: settings.accentColor }}>
+                              {result.format?.join(', ') || 'Vinyl'} • {result.country || '?'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
 
+                {/* New Search Button */}
                 <button
-                  onClick={() => setSearchResults(null)}
-                  className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  onClick={() => {
+                    setSearchResults(null);
+                    setSearchQuery('');
+                    setCapturedImage(null);
+                  }}
+                  className="w-full py-3 rounded-lg font-semibold transition-all hover:opacity-90"
+                  style={{ 
+                    backgroundColor: settings.accentColor,
+                    color: settings.primaryColor 
+                  }}
                 >
                   Neue Suche
                 </button>
@@ -306,38 +280,89 @@ export default function VinylScout() {
           </div>
         )}
 
+        {/* Camera Tab */}
+        {activeTab === 'camera' && (
+          <div className="space-y-4">
+            {!cameraActive ? (
+              <button
+                onClick={startCamera}
+                className="w-full py-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                style={{ 
+                  backgroundColor: settings.accentColor,
+                  color: settings.primaryColor 
+                }}
+              >
+                <Camera size={24} />
+                Kamera starten
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-lg border-2"
+                  style={{ borderColor: settings.accentColor }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={capturePhoto}
+                    className="flex-1 py-3 rounded-lg font-semibold transition-all hover:opacity-90"
+                    style={{ 
+                      backgroundColor: settings.accentColor,
+                      color: settings.primaryColor 
+                    }}
+                  >
+                    Foto aufnehmen
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    className="px-6 py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+        )}
+
         {/* Collection Tab */}
         {activeTab === 'collection' && (
           <div className="text-center py-12">
-            <Grid3x3 size={48} className="mx-auto mb-4 opacity-50" />
+            <Grid3x3 size={48} className="mx-auto mb-4 opacity-50" style={{ color: settings.accentColor }} />
             <p className="text-gray-400">Deine Sammlung ist noch leer</p>
+            <p className="text-sm text-gray-500 mt-2">Gesuchte Alben werden hier gespeichert</p>
           </div>
         )}
 
         {/* Favorites Tab */}
         {activeTab === 'favorites' && (
           <div className="text-center py-12">
-            <Heart size={48} className="mx-auto mb-4 opacity-50" />
+            <Heart size={48} className="mx-auto mb-4 opacity-50" style={{ color: settings.accentColor }} />
             <p className="text-gray-400">Keine Favoriten gespeichert</p>
+            <p className="text-sm text-gray-500 mt-2">Markiere Alben als Favoriten</p>
           </div>
         )}
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="text-center py-12">
-            <User size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-gray-400">Profil kommt bald</p>
+            <User size={48} className="mx-auto mb-4 opacity-50" style={{ color: settings.accentColor }} />
+            <p className="text-gray-400">Profil</p>
+            <p className="text-sm text-gray-500 mt-2">Kommende Features</p>
           </div>
         )}
       </div>
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-900 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gray-900 p-4 border-b-2 flex justify-between items-center" style={{ borderColor: settings.accentColor }}>
+            <div className="sticky top-0 bg-gray-900 p-4 border-b-2 flex justify-between items-center z-10" style={{ borderColor: settings.accentColor }}>
               <h2 className="text-xl font-bold">Einstellungen</h2>
-              <button onClick={() => setShowSettings(false)}>
+              <button onClick={() => setShowSettings(false)} className="hover:bg-gray-800 p-2 rounded-full transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -345,11 +370,11 @@ export default function VinylScout() {
             <div className="p-4 space-y-6">
               {/* Recognition Mode */}
               <div>
-                <label className="block mb-2" style={{ color: settings.accentColor }}>Erkennungs-Modus</label>
+                <label className="block mb-2 font-semibold" style={{ color: settings.accentColor }}>Erkennungs-Modus</label>
                 <select
                   value={settings.recognitionMode}
                   onChange={(e) => saveSettings({...settings, recognitionMode: e.target.value})}
-                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2"
+                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2 focus:outline-none"
                   style={{ borderColor: settings.accentColor }}
                 >
                   <option value="manual">Manuell (100% kostenlos)</option>
@@ -358,7 +383,7 @@ export default function VinylScout() {
 
               {/* Discogs Token */}
               <div>
-                <label className="block mb-2" style={{ color: settings.accentColor }}>
+                <label className="block mb-2 font-semibold" style={{ color: settings.accentColor }}>
                   Discogs Token (für echte Album-Cover) 
                   {settings.discogsToken && <span className="text-green-500 ml-2">✓ Aktiv</span>}
                 </label>
@@ -367,7 +392,7 @@ export default function VinylScout() {
                   value={settings.discogsToken}
                   onChange={(e) => saveSettings({...settings, discogsToken: e.target.value})}
                   placeholder="Token hier einfügen"
-                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2"
+                  className="w-full px-4 py-2 rounded bg-gray-800 text-white border-2 focus:outline-none"
                   style={{ borderColor: settings.accentColor }}
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -377,10 +402,10 @@ export default function VinylScout() {
 
               {/* Shop Selection */}
               <div>
-                <label className="block mb-2" style={{ color: settings.accentColor }}>Shops für Preisvergleich</label>
+                <label className="block mb-2 font-semibold" style={{ color: settings.accentColor }}>Shops für Preisvergleich</label>
                 <div className="space-y-2">
                   {Object.entries(settings.shops).map(([shop, enabled]) => (
-                    <label key={shop} className="flex items-center gap-2">
+                    <label key={shop} className="flex items-center gap-2 cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors">
                       <input
                         type="checkbox"
                         checked={enabled}
@@ -399,19 +424,19 @@ export default function VinylScout() {
 
               {/* Primary Color */}
               <div>
-                <label className="block mb-2" style={{ color: settings.accentColor }}>Primärfarbe (Hintergrund)</label>
+                <label className="block mb-2 font-semibold" style={{ color: settings.accentColor }}>Primärfarbe (Hintergrund)</label>
                 <div className="flex gap-2">
                   <input
                     type="color"
                     value={settings.primaryColor}
                     onChange={(e) => saveSettings({...settings, primaryColor: e.target.value})}
-                    className="w-16 h-10 rounded"
+                    className="w-16 h-10 rounded cursor-pointer"
                   />
                   <input
                     type="text"
                     value={settings.primaryColor}
                     onChange={(e) => saveSettings({...settings, primaryColor: e.target.value})}
-                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2"
+                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2 focus:outline-none"
                     style={{ borderColor: settings.accentColor }}
                   />
                 </div>
@@ -419,19 +444,19 @@ export default function VinylScout() {
 
               {/* Accent Color */}
               <div>
-                <label className="block mb-2" style={{ color: settings.accentColor }}>Akzentfarbe</label>
+                <label className="block mb-2 font-semibold" style={{ color: settings.accentColor }}>Akzentfarbe</label>
                 <div className="flex gap-2">
                   <input
                     type="color"
                     value={settings.accentColor}
                     onChange={(e) => saveSettings({...settings, accentColor: e.target.value})}
-                    className="w-16 h-10 rounded"
+                    className="w-16 h-10 rounded cursor-pointer"
                   />
                   <input
                     type="text"
                     value={settings.accentColor}
                     onChange={(e) => saveSettings({...settings, accentColor: e.target.value})}
-                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2"
+                    className="flex-1 px-4 py-2 rounded bg-gray-800 text-white border-2 focus:outline-none"
                     style={{ borderColor: settings.accentColor }}
                   />
                 </div>
@@ -441,51 +466,54 @@ export default function VinylScout() {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t-2 grid grid-cols-5" style={{ borderColor: settings.accentColor }}>
+      {/* Bottom Navigation - Fixed at bottom with highest z-index */}
+      <div 
+        className="flex-shrink-0 bg-gray-900 border-t-2 grid grid-cols-5 z-40"
+        style={{ borderColor: settings.accentColor }}
+      >
         <button
           onClick={() => setActiveTab('search')}
-          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          className="py-3 flex flex-col items-center gap-1 transition-all hover:bg-gray-800"
           style={{ color: activeTab === 'search' ? settings.accentColor : '#6b7280' }}
         >
           <Search size={24} />
-          <span className="text-xs">Suchen</span>
+          <span className="text-xs font-medium">Suchen</span>
         </button>
 
         <button
           onClick={() => setActiveTab('camera')}
-          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          className="py-3 flex flex-col items-center gap-1 transition-all hover:bg-gray-800"
           style={{ color: activeTab === 'camera' ? settings.accentColor : '#6b7280' }}
         >
           <Camera size={24} />
-          <span className="text-xs">Kamera</span>
+          <span className="text-xs font-medium">Kamera</span>
         </button>
 
         <button
           onClick={() => setActiveTab('collection')}
-          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          className="py-3 flex flex-col items-center gap-1 transition-all hover:bg-gray-800"
           style={{ color: activeTab === 'collection' ? settings.accentColor : '#6b7280' }}
         >
           <Grid3x3 size={24} />
-          <span className="text-xs">Sammlung</span>
+          <span className="text-xs font-medium">Sammlung</span>
         </button>
 
         <button
           onClick={() => setActiveTab('favorites')}
-          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          className="py-3 flex flex-col items-center gap-1 transition-all hover:bg-gray-800"
           style={{ color: activeTab === 'favorites' ? settings.accentColor : '#6b7280' }}
         >
           <Heart size={24} />
-          <span className="text-xs">Favoriten</span>
+          <span className="text-xs font-medium">Favoriten</span>
         </button>
 
         <button
           onClick={() => setActiveTab('profile')}
-          className="py-3 flex flex-col items-center gap-1 transition-colors"
+          className="py-3 flex flex-col items-center gap-1 transition-all hover:bg-gray-800"
           style={{ color: activeTab === 'profile' ? settings.accentColor : '#6b7280' }}
         >
           <User size={24} />
-          <span className="text-xs">Profil</span>
+          <span className="text-xs font-medium">Profil</span>
         </button>
       </div>
     </div>
