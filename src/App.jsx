@@ -21,6 +21,8 @@ const VinylPriceFinder = () => {
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [collection, setCollection] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [collectionView, setCollectionView] = useState('grid'); // 'grid' or 'list'
+  const [collectionSort, setCollectionSort] = useState('artist-asc'); // sort option
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
@@ -194,13 +196,24 @@ const VinylPriceFinder = () => {
 
   // Collection & Favorites
   const addToCollection = (item) => {
-    const newCollection = [...collection, item];
+    // Add price data if available
+    const itemWithPrice = {
+      ...item,
+      price: resultPrices[item.id] || null,
+      addedAt: new Date().toISOString()
+    };
+    const newCollection = [...collection, itemWithPrice];
     setCollection(newCollection);
     localStorage.setItem('collection', JSON.stringify(newCollection));
   };
 
   const addToFavorites = (item) => {
-    const newFavorites = [...favorites, item];
+    const itemWithPrice = {
+      ...item,
+      price: resultPrices[item.id] || null,
+      addedAt: new Date().toISOString()
+    };
+    const newFavorites = [...favorites, itemWithPrice];
     setFavorites(newFavorites);
     localStorage.setItem('favorites', JSON.stringify(newFavorites));
   };
@@ -303,6 +316,64 @@ const VinylPriceFinder = () => {
         ? prev.filter(s => s !== shop)
         : [...prev, shop]
     );
+  };
+
+  // Sort collection
+  const sortCollection = (items, sortBy) => {
+    const sorted = [...items];
+    switch(sortBy) {
+      case 'artist-asc':
+        return sorted.sort((a, b) => {
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return aArtist.localeCompare(bArtist);
+        });
+      case 'artist-desc':
+        return sorted.sort((a, b) => {
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return bArtist.localeCompare(aArtist);
+        });
+      case 'album-asc':
+        return sorted.sort((a, b) => {
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
+        });
+      case 'album-desc':
+        return sorted.sort((a, b) => {
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return bAlbum.localeCompare(aAlbum);
+        });
+      case 'price-asc':
+        return sorted.sort((a, b) => {
+          const aPrice = a.price?.value || 0;
+          const bPrice = b.price?.value || 0;
+          return aPrice - bPrice;
+        });
+      case 'price-desc':
+        return sorted.sort((a, b) => {
+          const aPrice = a.price?.value || 0;
+          const bPrice = b.price?.value || 0;
+          return bPrice - aPrice;
+        });
+      default:
+        return sorted;
+    }
+  };
+
+  // Calculate total collection value
+  const calculateCollectionValue = () => {
+    const total = collection.reduce((sum, item) => {
+      if (item.price && item.price.value) {
+        return sum + item.price.value;
+      }
+      return sum;
+    }, 0);
+    
+    const currency = collection.find(item => item.price?.currency)?.price?.currency || 'EUR';
+    return { value: total.toFixed(2), currency };
   };
 
   return (
@@ -549,27 +620,110 @@ const VinylPriceFinder = () => {
         {/* Collection Tab */}
         {activeTab === 'collection' && (
           <div className="space-y-3">
-            <h2 className="text-xl font-bold text-white mb-4">My Collection</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">My Collection</h2>
+              <div className="flex gap-2">
+                <select
+                  value={collectionSort}
+                  onChange={(e) => setCollectionSort(e.target.value)}
+                  className="px-3 py-2 rounded bg-white/10 text-white border border-white/20 text-xs"
+                  style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em', paddingRight: '1.75rem' }}
+                >
+                  <option value="artist-asc" style={{ backgroundColor: primaryColor }}>Artist A-Z</option>
+                  <option value="artist-desc" style={{ backgroundColor: primaryColor }}>Artist Z-A</option>
+                  <option value="album-asc" style={{ backgroundColor: primaryColor }}>Album A-Z</option>
+                  <option value="album-desc" style={{ backgroundColor: primaryColor }}>Album Z-A</option>
+                  <option value="price-asc" style={{ backgroundColor: primaryColor }}>Price ↑</option>
+                  <option value="price-desc" style={{ backgroundColor: primaryColor }}>Price ↓</option>
+                </select>
+                <select
+                  value={collectionView}
+                  onChange={(e) => setCollectionView(e.target.value)}
+                  className="px-3 py-2 rounded bg-white/10 text-white border border-white/20 text-xs"
+                  style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em', paddingRight: '1.75rem' }}
+                >
+                  <option value="grid" style={{ backgroundColor: primaryColor }}>Grid</option>
+                  <option value="list" style={{ backgroundColor: primaryColor }}>List</option>
+                </select>
+              </div>
+            </div>
+
             {collection.length === 0 ? (
               <p className="text-white/60 text-center py-8">
                 No records in collection yet
               </p>
             ) : (
-              collection.map((item, idx) => (
-                <div key={idx} className="bg-white/10 rounded-lg p-3 flex gap-3 border border-white/10">
-                  {item.cover_image && (
-                    <img
-                      src={item.cover_image}
-                      alt={item.title}
-                      className="w-20 h-20 rounded object-cover"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold text-sm">{item.title}</h3>
-                    <p className="text-white/60 text-xs mt-1">{item.year}</p>
+              <div className={collectionView === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>
+                {sortCollection(collection, collectionSort).map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedResult(item)}
+                    className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                  >
+                    {collectionView === 'grid' ? (
+                      // Grid View - Compact
+                      <div className="flex flex-col">
+                        {item.cover_image ? (
+                          <img
+                            src={item.cover_image}
+                            alt={item.title}
+                            className="w-full aspect-square rounded object-cover mb-2"
+                          />
+                        ) : (
+                          <div className="w-full aspect-square rounded bg-white/5 flex items-center justify-center mb-2">
+                            <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                          </div>
+                        )}
+                        <h3 className="text-white font-bold text-xs mb-1 line-clamp-1">
+                          {item.title?.split(' - ')[0] || 'Unknown'}
+                        </h3>
+                        <p className="text-white/70 text-xs mb-2 line-clamp-1">
+                          {item.title?.split(' - ')[1] || item.title || 'Unknown'}
+                        </p>
+                        {item.price ? (
+                          <p className="text-sm font-bold" style={{ color: accentColor }}>
+                            {item.price.currency} {item.price.value.toFixed(2)}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-white/40">No price</p>
+                        )}
+                      </div>
+                    ) : (
+                      // List View - Detailed
+                      <div className="flex gap-3">
+                        {item.cover_image ? (
+                          <img
+                            src={item.cover_image}
+                            alt={item.title}
+                            className="w-20 h-20 rounded object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-white font-bold text-sm mb-1">
+                              {item.title?.split(' - ')[0] || 'Unknown Artist'}
+                            </h3>
+                            <p className="text-white/70 text-sm mb-1">
+                              {item.title?.split(' - ')[1] || item.title || 'Unknown Album'}
+                            </p>
+                          </div>
+                          {item.price ? (
+                            <p className="text-base font-bold" style={{ color: accentColor }}>
+                              {item.price.currency} {item.price.value.toFixed(2)}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-white/40">No price</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -584,28 +738,54 @@ const VinylPriceFinder = () => {
               </p>
             ) : (
               favorites.map((item, idx) => (
-                <div key={idx} className="bg-white/10 rounded-lg p-3 flex gap-3 border border-white/10">
-                  {item.cover_image && (
-                    <img
-                      src={item.cover_image}
-                      alt={item.title}
-                      className="w-20 h-20 rounded object-cover"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold text-sm">{item.title}</h3>
-                    <p className="text-white/60 text-xs mt-1">{item.year}</p>
+                <div
+                  key={idx}
+                  onClick={() => setSelectedResult(item)}
+                  className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                >
+                  <div className="flex gap-3">
+                    {item.cover_image ? (
+                      <img
+                        src={item.cover_image}
+                        alt={item.title}
+                        className="w-20 h-20 rounded object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                        <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-white font-bold text-sm mb-1">
+                          {item.title?.split(' - ')[0] || 'Unknown Artist'}
+                        </h3>
+                        <p className="text-white/70 text-sm">
+                          {item.title?.split(' - ')[1] || item.title || 'Unknown Album'}
+                        </p>
+                      </div>
+                      {item.price ? (
+                        <p className="text-base font-bold mt-1" style={{ color: accentColor }}>
+                          {item.price.currency} {item.price.value.toFixed(2)}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-white/40 mt-1">No price</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item);
+                      }}
+                      className="p-2 flex-shrink-0"
+                    >
+                      <Heart
+                        size={20}
+                        style={{ color: accentColor }}
+                        fill={accentColor}
+                      />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggleFavorite(item)}
-                    className="p-2"
-                  >
-                    <Heart
-                      size={20}
-                      style={{ color: accentColor }}
-                      fill={accentColor}
-                    />
-                  </button>
                 </div>
               ))
             )}
@@ -616,6 +796,7 @@ const VinylPriceFinder = () => {
         {activeTab === 'profile' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
+            
             <div className="bg-white/10 rounded-lg p-4 space-y-3 border border-white/10">
               <div className="flex items-center gap-3">
                 <div 
@@ -633,7 +814,23 @@ const VinylPriceFinder = () => {
               </div>
             </div>
             
+            {/* Collection Value */}
+            <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+              <h3 className="text-white font-semibold mb-3">Collection Value</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-white/60">Total Value:</span>
+                <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                  {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                </span>
+              </div>
+              <p className="text-white/40 text-xs mt-2">
+                Based on {collection.filter(item => item.price).length} records with price data
+              </p>
+            </div>
+
+            {/* Statistics */}
             <div className="bg-white/10 rounded-lg p-4 space-y-2 border border-white/10">
+              <h3 className="text-white font-semibold mb-2">Statistics</h3>
               <div className="flex justify-between">
                 <span className="text-white/60">Total Records</span>
                 <span className="text-white font-semibold">{collection.length}</span>
@@ -642,6 +839,30 @@ const VinylPriceFinder = () => {
                 <span className="text-white/60">Favorites</span>
                 <span className="text-white font-semibold">{favorites.length}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-white/60">With Prices</span>
+                <span className="text-white font-semibold">
+                  {collection.filter(item => item.price).length}
+                </span>
+              </div>
+            </div>
+
+            {/* Sort Collection */}
+            <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+              <h3 className="text-white font-semibold mb-3">Sort Collection By</h3>
+              <select
+                value={collectionSort}
+                onChange={(e) => setCollectionSort(e.target.value)}
+                className="w-full px-4 py-2 rounded bg-white/10 text-white border border-white/20"
+                style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.2em 1.2em', paddingRight: '2.5rem' }}
+              >
+                <option value="artist-asc" style={{ backgroundColor: primaryColor }}>Artist Name (A-Z)</option>
+                <option value="artist-desc" style={{ backgroundColor: primaryColor }}>Artist Name (Z-A)</option>
+                <option value="album-asc" style={{ backgroundColor: primaryColor }}>Album Name (A-Z)</option>
+                <option value="album-desc" style={{ backgroundColor: primaryColor }}>Album Name (Z-A)</option>
+                <option value="price-asc" style={{ backgroundColor: primaryColor }}>Price (Low to High)</option>
+                <option value="price-desc" style={{ backgroundColor: primaryColor }}>Price (High to Low)</option>
+              </select>
             </div>
           </div>
         )}
