@@ -26,6 +26,7 @@ const VinylPriceFinder = () => {
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
+  const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
   const [primaryColor, setPrimaryColor] = useState('#000000');
   const [accentColor, setAccentColor] = useState('#ffb700');
@@ -37,6 +38,7 @@ const VinylPriceFinder = () => {
   // Load settings from localStorage
   useEffect(() => {
     const savedToken = localStorage.getItem('discogsToken');
+    const savedAnthropicToken = localStorage.getItem('anthropicToken');
     const savedShops = localStorage.getItem('selectedShops');
     const savedPrimaryColor = localStorage.getItem('primaryColor');
     const savedAccentColor = localStorage.getItem('accentColor');
@@ -44,6 +46,7 @@ const VinylPriceFinder = () => {
     const savedFavorites = localStorage.getItem('favorites');
     
     if (savedToken) setDiscogsToken(savedToken);
+    if (savedAnthropicToken) setAnthropicToken(savedAnthropicToken);
     if (savedShops) setSelectedShops(JSON.parse(savedShops));
     if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
     if (savedAccentColor) setAccentColor(savedAccentColor);
@@ -54,6 +57,7 @@ const VinylPriceFinder = () => {
   // Save settings to localStorage
   const saveSettings = () => {
     localStorage.setItem('discogsToken', discogsToken);
+    localStorage.setItem('anthropicToken', anthropicToken);
     localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
     localStorage.setItem('primaryColor', primaryColor);
     localStorage.setItem('accentColor', accentColor);
@@ -61,7 +65,7 @@ const VinylPriceFinder = () => {
   };
 
   // Search Discogs API
-  const searchDiscogs = async (isAdvanced = false) => {
+  const searchDiscogs = async (isAdvanced = false, queryOverride = null) => {
     if (!discogsToken) {
       alert('Please add your Discogs API token in Settings');
       return;
@@ -88,12 +92,13 @@ const VinylPriceFinder = () => {
         
         searchUrl += params.join('&') + '&per_page=10&type=release';
       } else {
-        // Simple search
-        if (!searchQuery.trim()) {
+        // Simple search - use override if provided (from AI)
+        const query = queryOverride || searchQuery;
+        if (!query.trim()) {
           setIsLoading(false);
           return;
         }
-        searchUrl += `q=${encodeURIComponent(searchQuery)}&per_page=10&type=release`;
+        searchUrl += `q=${encodeURIComponent(query)}&per_page=10&type=release`;
       }
       
       console.log('Search URL:', searchUrl);
@@ -179,9 +184,69 @@ const VinylPriceFinder = () => {
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
     
-    // Here you would normally send to an image recognition API
-    alert('Photo captured! In production, this would be sent to image recognition API');
+    // Convert canvas to base64
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // If Anthropic token is available, use AI to identify the album
+    if (anthropicToken) {
+      identifyAlbumWithAI(imageData);
+    } else {
+      alert('Please add your Anthropic API token in Settings to use AI image recognition');
+    }
+    
     stopCamera();
+  };
+
+  // AI Image Recognition using Anthropic API
+  const identifyAlbumWithAI = async (imageBase64) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicToken,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 1024,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/jpeg',
+                  data: imageBase64.split(',')[1]
+                }
+              },
+              {
+                type: 'text',
+                text: 'This is a vinyl record album cover. Please identify the artist name and album title. Respond ONLY with the format: "Artist - Album Title". If you cannot identify it, respond with "Unknown - Unknown".'
+              }
+            ]
+          }]
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.content && data.content[0] && data.content[0].text) {
+        const albumInfo = data.content[0].text.trim();
+        // Use the identified info to search Discogs
+        setSearchQuery(albumInfo);
+        searchDiscogs(false, albumInfo);
+        setActiveTab('search');
+      } else {
+        alert('Could not identify the album. Please try again or use manual search.');
+      }
+    } catch (error) {
+      console.error('AI identification error:', error);
+      alert('Error identifying album. Please check your API token or try manual search.');
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -611,9 +676,23 @@ const VinylPriceFinder = () => {
                 </button>
               )}
             </div>
-            <p className="text-white/60 text-sm text-center">
-              Point camera at vinyl cover and tap to capture
-            </p>
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+                <span>📸</span> AI Camera Search
+              </h3>
+              <p className="text-white/60 text-sm mb-2">
+                Point camera at vinyl cover and tap the button to capture
+              </p>
+              {anthropicToken ? (
+                <p className="text-xs" style={{ color: accentColor }}>
+                  ✓ AI recognition enabled
+                </p>
+              ) : (
+                <p className="text-white/60 text-xs">
+                  ⚠️ Add Anthropic API token in Settings to enable AI identification
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -1097,6 +1176,34 @@ const VinylPriceFinder = () => {
                 >
                   Get token <ExternalLink size={12} />
                 </a>
+              </div>
+
+              {/* Anthropic Token */}
+              <div>
+                <label className="block text-white/80 text-sm mb-2">
+                  Anthropic API Token (for AI Camera Search)
+                </label>
+                <input
+                  type="password"
+                  value={anthropicToken}
+                  onChange={(e) => setAnthropicToken(e.target.value)}
+                  placeholder="Enter your Anthropic API key"
+                  className="w-full px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none focus:border-white/40"
+                />
+                <div className="mt-2 space-y-1">
+                  <a 
+                    href="https://console.anthropic.com/settings/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs flex items-center gap-1"
+                    style={{ color: accentColor }}
+                  >
+                    Get API key <ExternalLink size={12} />
+                  </a>
+                  <p className="text-white/60 text-xs">
+                    Required for AI-powered album identification from camera photos
+                  </p>
+                </div>
               </div>
 
               {/* Shop Selection */}
