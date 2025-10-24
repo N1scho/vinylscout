@@ -354,37 +354,75 @@ const VinylPriceFinder = () => {
         return sorted.sort((a, b) => {
           const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
           const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return aArtist.localeCompare(bArtist);
+          const artistCompare = aArtist.localeCompare(bArtist);
+          if (artistCompare !== 0) return artistCompare;
+          // If same artist, sort by album name
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
         });
       case 'artist-desc':
         return sorted.sort((a, b) => {
           const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
           const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return bArtist.localeCompare(aArtist);
+          const artistCompare = bArtist.localeCompare(aArtist);
+          if (artistCompare !== 0) return artistCompare;
+          // If same artist, sort by album name
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
         });
       case 'album-asc':
         return sorted.sort((a, b) => {
           const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
           const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
+          const albumCompare = aAlbum.localeCompare(bAlbum);
+          if (albumCompare !== 0) return albumCompare;
+          // If same album name, sort by artist
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return aArtist.localeCompare(bArtist);
         });
       case 'album-desc':
         return sorted.sort((a, b) => {
           const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
           const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return bAlbum.localeCompare(aAlbum);
+          const albumCompare = bAlbum.localeCompare(aAlbum);
+          if (albumCompare !== 0) return albumCompare;
+          // If same album name, sort by artist
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return aArtist.localeCompare(bArtist);
         });
       case 'price-asc':
         return sorted.sort((a, b) => {
           const aPrice = a.price?.value || 0;
           const bPrice = b.price?.value || 0;
-          return aPrice - bPrice;
+          const priceCompare = aPrice - bPrice;
+          if (priceCompare !== 0) return priceCompare;
+          // If same price, sort by artist then album
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          const artistCompare = aArtist.localeCompare(bArtist);
+          if (artistCompare !== 0) return artistCompare;
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
         });
       case 'price-desc':
         return sorted.sort((a, b) => {
           const aPrice = a.price?.value || 0;
           const bPrice = b.price?.value || 0;
-          return bPrice - aPrice;
+          const priceCompare = bPrice - aPrice;
+          if (priceCompare !== 0) return priceCompare;
+          // If same price, sort by artist then album
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          const artistCompare = aArtist.localeCompare(bArtist);
+          if (artistCompare !== 0) return artistCompare;
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
         });
       default:
         return sorted;
