@@ -10,7 +10,9 @@ const VinylPriceFinder = () => {
     album: '',
     year: '',
     label: '',
-    genre: ''
+    genre: '',
+    format: '',
+    excludeFormat: ''
   });
   const [searchResults, setSearchResults] = useState([]);
   const [resultPrices, setResultPrices] = useState({});
@@ -132,6 +134,7 @@ const VinylPriceFinder = () => {
         if (advancedSearch.year) params.push(`year=${encodeURIComponent(advancedSearch.year)}`);
         if (advancedSearch.label) params.push(`label=${encodeURIComponent(advancedSearch.label)}`);
         if (advancedSearch.genre) params.push(`genre=${encodeURIComponent(advancedSearch.genre)}`);
+        if (advancedSearch.format) params.push(`format=${encodeURIComponent(advancedSearch.format)}`);
         
         if (params.length === 0) {
           alert('Please fill in at least one search field');
@@ -165,9 +168,28 @@ const VinylPriceFinder = () => {
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
-        setSearchResults(data.results);
+        // Filter out excluded formats if specified
+        let filteredResults = data.results;
+        if (isAdvanced && advancedSearch.excludeFormat) {
+          const excludeFormatLower = advancedSearch.excludeFormat.toLowerCase();
+          filteredResults = data.results.filter(result => {
+            if (!result.format) return true;
+            return !result.format.some(format => 
+              format.toLowerCase().includes(excludeFormatLower)
+            );
+          });
+        }
+        
+        if (filteredResults.length === 0) {
+          setSearchResults([]);
+          alert('No results found after filtering');
+          setIsLoading(false);
+          return;
+        }
+        
+        setSearchResults(filteredResults);
         // Fetch prices in background without blocking UI
-        fetchPricesInBackground(data.results);
+        fetchPricesInBackground(filteredResults);
       } else {
         setSearchResults([]);
         alert('No results found');
@@ -181,12 +203,14 @@ const VinylPriceFinder = () => {
 
   // Fetch prices in background
   const fetchPricesInBackground = async (results) => {
-    for (const result of results.slice(0, 5)) {
+    // Fetch ALL results, not just first 5
+    for (const result of results) {
       const priceData = await fetchPriceInfo(result.id);
       if (priceData) {
         setResultPrices(prev => ({ ...prev, [result.id]: priceData }));
       }
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Smaller delay for faster loading
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
   };
 
@@ -520,16 +544,28 @@ const VinylPriceFinder = () => {
 
             {showAdvancedSearch && (
               <div className="space-y-3 rounded-lg p-4" style={{ backgroundColor: `${textColor}05` }}>
-                {['artist', 'album', 'year', 'label', 'genre'].map(field => (
-                  <input
-                    key={field}
-                    type="text"
-                    value={advancedSearch[field]}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, [field]: e.target.value})}
-                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                    className="w-full px-4 py-2 rounded-lg border text-sm focus:outline-none"
-                    style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
-                  />
+                {[
+                  { key: 'artist', label: 'Artist' },
+                  { key: 'album', label: 'Album' },
+                  { key: 'year', label: 'Year' },
+                  { key: 'label', label: 'Label/Publisher' },
+                  { key: 'genre', label: 'Genre' },
+                  { key: 'format', label: 'Format (e.g. Vinyl, LP, 12")' },
+                  { key: 'excludeFormat', label: 'Exclude Format (e.g. CD, Cassette)' }
+                ].map(field => (
+                  <div key={field.key}>
+                    <label className="block text-xs mb-1" style={{ color: `${textColor}60` }}>
+                      {field.label}
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearch[field.key]}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, [field.key]: e.target.value})}
+                      placeholder={field.label}
+                      className="w-full px-4 py-2 rounded-lg border text-sm focus:outline-none"
+                      style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor, color: textColor }}
+                    />
+                  </div>
                 ))}
                 <button
                   onClick={handleAdvancedSearch}
