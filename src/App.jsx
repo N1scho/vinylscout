@@ -262,9 +262,13 @@ const VinylPriceFinder = () => {
   // Collection & Favorites
   const addToCollection = (item) => {
     // Add price data if available
+    const priceData = resultPrices[item.id];
     const itemWithPrice = {
       ...item,
-      price: resultPrices[item.id] || null,
+      price: priceData ? {
+        value: priceData.value,
+        currency: priceData.currency
+      } : null,
       addedAt: new Date().toISOString()
     };
     const newCollection = [...collection, itemWithPrice];
@@ -273,9 +277,13 @@ const VinylPriceFinder = () => {
   };
 
   const addToFavorites = (item) => {
+    const priceData = resultPrices[item.id];
     const itemWithPrice = {
       ...item,
-      price: resultPrices[item.id] || null,
+      price: priceData ? {
+        value: priceData.value,
+        currency: priceData.currency
+      } : null,
       addedAt: new Date().toISOString()
     };
     const newFavorites = [...favorites, itemWithPrice];
@@ -430,15 +438,25 @@ const VinylPriceFinder = () => {
 
   // Calculate total collection value
   const calculateCollectionValue = () => {
-    const total = collection.reduce((sum, item) => {
-      if (item.price && item.price.value) {
-        return sum + item.price.value;
-      }
-      return sum;
-    }, 0);
+    let total = 0;
+    let count = 0;
+    let currency = 'EUR';
     
-    const currency = collection.find(item => item.price?.currency)?.price?.currency || 'EUR';
-    return { value: total.toFixed(2), currency };
+    collection.forEach(item => {
+      if (item.price && item.price.value && typeof item.price.value === 'number') {
+        total += item.price.value;
+        count++;
+        if (item.price.currency) {
+          currency = item.price.currency;
+        }
+      }
+    });
+    
+    return { 
+      value: total.toFixed(2), 
+      currency: currency,
+      count: count
+    };
   };
 
   return (
@@ -746,22 +764,45 @@ const VinylPriceFinder = () => {
                           <img
                             src={item.cover_image}
                             alt={item.title}
-                            className="w-full aspect-square rounded object-cover mb-2"
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              marginBottom: '8px'
+                            }}
                           />
                         ) : (
-                          <div className="w-full aspect-square rounded bg-white/5 flex items-center justify-center mb-2">
+                          <div style={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '8px'
+                          }}>
                             <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
-                        <h3 className="text-white font-bold text-xs mb-1 line-clamp-1">
+                        <h3 className="text-white font-bold text-xs mb-1" style={{ 
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {item.title?.split(' - ')[0] || 'Unknown'}
                         </h3>
-                        <p className="text-white/70 text-xs mb-2 line-clamp-1">
+                        <p className="text-white/70 text-xs mb-2" style={{ 
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {item.title?.split(' - ')[1] || item.title || 'Unknown'}
                         </p>
-                        {item.price ? (
+                        {item.price && item.price.value ? (
                           <p className="text-sm font-bold" style={{ color: accentColor }}>
-                            {item.price.currency} {item.price.value.toFixed(2)}
+                            {item.price.currency} {Number(item.price.value).toFixed(2)}
                           </p>
                         ) : (
                           <p className="text-xs text-white/40">No price</p>
@@ -774,25 +815,48 @@ const VinylPriceFinder = () => {
                           <img
                             src={item.cover_image}
                             alt={item.title}
-                            className="w-20 h-20 rounded object-cover flex-shrink-0"
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              flexShrink: 0
+                            }}
                           />
                         ) : (
-                          <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                          <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '8px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
                             <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
-                            <h3 className="text-white font-bold text-sm mb-1">
+                            <h3 className="text-white font-bold text-sm mb-1" style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
                               {item.title?.split(' - ')[0] || 'Unknown Artist'}
                             </h3>
-                            <p className="text-white/70 text-sm mb-1">
+                            <p className="text-white/70 text-sm mb-1" style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
                               {item.title?.split(' - ')[1] || item.title || 'Unknown Album'}
                             </p>
                           </div>
-                          {item.price ? (
+                          {item.price && item.price.value ? (
                             <p className="text-base font-bold" style={{ color: accentColor }}>
-                              {item.price.currency} {item.price.value.toFixed(2)}
+                              {item.price.currency} {Number(item.price.value).toFixed(2)}
                             </p>
                           ) : (
                             <p className="text-sm text-white/40">No price</p>
@@ -903,7 +967,7 @@ const VinylPriceFinder = () => {
                 </span>
               </div>
               <p className="text-white/40 text-xs mt-2">
-                Based on {collection.filter(item => item.price).length} records with price data
+                Based on {calculateCollectionValue().count} of {collection.length} records with price data
               </p>
             </div>
 
