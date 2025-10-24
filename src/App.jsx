@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, Heart, User, Settings, X, ChevronRight, ExternalLink, Trash2, Edit2, Plus } from 'lucide-react';
 
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {
+      console.log('Service Worker registration failed');
+    });
+  });
+}
+
 const VinylPriceFinder = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -804,7 +813,11 @@ const VinylPriceFinder = () => {
               onKeyPress={handleKeyPress}
               placeholder="Search artist or album..."
               className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none"
-              style={{ borderColor: `${textColor}20`, backgroundColor: `${textColor}05` }}
+              style={{ 
+                borderColor: `${textColor}20`, 
+                backgroundColor: `${textColor}05`,
+                color: textColor
+              }}
             />
 
             <button
@@ -860,6 +873,18 @@ const VinylPriceFinder = () => {
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
+            )}
+
+            {isLoading && (
+              <div className="text-center py-8">
+                <p style={{ color: textColor }}>Searching...</p>
+              </div>
+            )}
+
+            {!isLoading && searchResults.length === 0 && searchQuery && (
+              <div className="text-center py-8">
+                <p style={{ color: `${textColor}60` }}>No results found. Try different search terms.</p>
+              </div>
             )}
 
             {searchResults.length > 0 && (
