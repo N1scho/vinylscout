@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, Music, Heart, User, Settings, X, ChevronRight, ExternalLink, Trash2, Edit2, Plus } from 'lucide-react';
-
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {
-      console.log('Service Worker registration failed');
-    });
-  });
-}
+import { Search, Camera, Music, Heart, User, Settings, X, ChevronRight, ExternalLink, Trash2, Edit2, Palette } from 'lucide-react';
 
 const VinylPriceFinder = () => {
   const [activeTab, setActiveTab] = useState('search');
@@ -30,19 +21,13 @@ const VinylPriceFinder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
-  const [priceInfo, setPriceInfo] = useState(null);
-  const [loadingPrice, setLoadingPrice] = useState(false);
   const [collection, setCollection] = useState([]);
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [showExport, setShowExport] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
-  const [cameraMode, setCameraMode] = useState('photo'); // 'photo' or 'barcode'
-  const [barcodeResult, setBarcodeResult] = useState(null);
+  const [cameraMode, setCameraMode] = useState('photo');
   
-  // User profile
   const [userProfile, setUserProfile] = useState({
     name: '',
     nickname: '',
@@ -52,7 +37,6 @@ const VinylPriceFinder = () => {
     country: ''
   });
   
-  // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
   const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs']);
@@ -61,7 +45,6 @@ const VinylPriceFinder = () => {
   const [textColor, setTextColor] = useState('#FFFFFF');
   const [currentTheme, setCurrentTheme] = useState('dark-orange');
   
-  // Pre-made themes
   const themes = {
     'dark-orange': {
       name: 'Dark Orange (Default)',
@@ -110,11 +93,9 @@ const VinylPriceFinder = () => {
     localStorage.setItem('currentTheme', themeKey);
   };
   
-  const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // Load settings from localStorage
   useEffect(() => {
     const savedToken = localStorage.getItem('discogsToken');
     const savedAnthropicToken = localStorage.getItem('anthropicToken');
@@ -129,29 +110,23 @@ const VinylPriceFinder = () => {
     if (savedCollection) setCollection(JSON.parse(savedCollection));
     if (savedProfile) setUserProfile(JSON.parse(savedProfile));
     
-    // Apply saved theme or default
     if (savedTheme && themes[savedTheme]) {
       applyTheme(savedTheme);
     }
   }, []);
 
-  // Save settings to localStorage
   const saveSettings = () => {
     localStorage.setItem('discogsToken', discogsToken);
     localStorage.setItem('anthropicToken', anthropicToken);
     localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
-    localStorage.setItem('primaryColor', primaryColor);
-    localStorage.setItem('accentColor', accentColor);
     setShowSettings(false);
   };
 
-  // Save profile
   const saveProfile = () => {
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
     setShowEditProfile(false);
   };
 
-  // Fetch price info for single item
   const fetchPriceInfo = async (releaseId) => {
     if (!discogsToken) return null;
     
@@ -182,8 +157,7 @@ const VinylPriceFinder = () => {
     return null;
   };
 
-  // Search Discogs API
-  const searchDiscogs = async (isAdvanced = false, queryOverride = null) => {
+  const searchDiscogs = async (isAdvanced = false, queryOverride = null, page = 1) => {
     if (!discogsToken) {
       alert('Please add your Discogs API token in Settings');
       return;
@@ -210,14 +184,14 @@ const VinylPriceFinder = () => {
           return;
         }
         
-        searchUrl += params.join('&') + '&per_page=10&type=release';
+        searchUrl += params.join('&') + `&per_page=10&page=${page}&type=release`;
       } else {
         const query = queryOverride || searchQuery;
         if (!query.trim()) {
           setIsLoading(false);
           return;
         }
-        searchUrl += `q=${encodeURIComponent(query)}&per_page=10&type=release`;
+        searchUrl += `q=${encodeURIComponent(query)}&per_page=10&page=${page}&type=release`;
       }
       
       const response = await fetch(searchUrl, {
@@ -236,7 +210,6 @@ const VinylPriceFinder = () => {
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
-        // Filter out excluded formats if specified
         let filteredResults = data.results;
         if (isAdvanced && advancedSearch.excludeFormat) {
           const excludeFormatLower = advancedSearch.excludeFormat.toLowerCase();
@@ -256,10 +229,17 @@ const VinylPriceFinder = () => {
         }
         
         setSearchResults(filteredResults);
-        // Fetch prices in background without blocking UI
+        setCurrentPage(page);
+        
+        const totalResults = data.pagination?.items || filteredResults.length;
+        const perPage = data.pagination?.per_page || 10;
+        setTotalPages(Math.ceil(totalResults / perPage));
+        
         fetchPricesInBackground(filteredResults);
       } else {
         setSearchResults([]);
+        setCurrentPage(1);
+        setTotalPages(1);
         alert('No results found');
       }
     } catch (error) {
@@ -269,27 +249,36 @@ const VinylPriceFinder = () => {
     setIsLoading(false);
   };
 
-  // Fetch prices in background
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      searchDiscogs(showAdvancedSearch, searchQuery, currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      searchDiscogs(showAdvancedSearch, searchQuery, currentPage - 1);
+    }
+  };
+
   const fetchPricesInBackground = async (results) => {
-    // Fetch ALL results, not just first 5
     for (const result of results) {
       const priceData = await fetchPriceInfo(result.id);
       if (priceData) {
         setResultPrices(prev => ({ ...prev, [result.id]: priceData }));
       }
-      // Smaller delay for faster loading
       await new Promise(resolve => setTimeout(resolve, 150));
     }
   };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      searchDiscogs(false);
+      searchDiscogs(false, null, 1);
     }
   };
 
   const handleAdvancedSearch = () => {
-    searchDiscogs(true);
+    searchDiscogs(true, null, 1);
   };
 
   const handleKeyPress = (e) => {
@@ -298,7 +287,6 @@ const VinylPriceFinder = () => {
     }
   };
 
-  // Camera functionality
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -329,10 +317,8 @@ const VinylPriceFinder = () => {
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
     if (cameraMode === 'barcode') {
-      // Try to detect barcode in image
-      detectBarcode(canvas, imageData);
+      alert('Barcode scanning feature coming soon!');
     } else {
-      // AI recognition
       if (anthropicToken) {
         identifyAlbumWithAI(imageData);
       } else {
@@ -341,81 +327,6 @@ const VinylPriceFinder = () => {
     }
     
     stopCamera();
-  };
-
-  const detectBarcode = async (canvas, imageData) => {
-    setIsLoading(true);
-    try {
-      // Use BarcodeDetector API if available
-      if ('BarcodeDetector' in window) {
-        const barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-        const barcodes = await barcodeDetector.detect(canvas);
-        
-        if (barcodes.length > 0) {
-          const barcode = barcodes[0].rawValue;
-          setBarcodeResult(barcode);
-          // Search by barcode
-          searchByBarcode(barcode);
-        } else {
-          alert('No barcode detected. Try getting closer or better lighting.');
-        }
-      } else {
-        // Fallback: manual barcode entry
-        const barcode = prompt('Barcode detection not supported on this device. Enter barcode manually:');
-        if (barcode) {
-          searchByBarcode(barcode);
-        }
-      }
-    } catch (error) {
-      console.error('Barcode detection error:', error);
-      alert('Could not detect barcode. Try manual search instead.');
-    }
-    setIsLoading(false);
-  };
-
-  const searchByBarcode = async (barcode) => {
-    if (!discogsToken) {
-      alert('Please add your Discogs API token in Settings');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.discogs.com/database/search?barcode=${barcode}&type=release`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (data.results && data.results.length > 0) {
-        setSearchResults(data.results);
-        setCurrentPage(1);
-        setTotalPages(1);
-        fetchPricesInBackground(data.results);
-        setActiveTab('search');
-      } else {
-        alert('No results found for this barcode');
-      }
-    } catch (error) {
-      console.error('Barcode search error:', error);
-      alert('Error searching by barcode');
-    }
-    setIsLoading(false);
-  };
-
-  // Check for duplicates before adding
-  const checkDuplicate = (newItem) => {
-    return collection.some(item => 
-      item.id === newItem.id || 
-      (item.title?.toLowerCase() === newItem.title?.toLowerCase() && 
-       item.year === newItem.year)
-    );
   };
 
   const identifyAlbumWithAI = async (imageBase64) => {
@@ -456,7 +367,7 @@ const VinylPriceFinder = () => {
       if (data.content && data.content[0] && data.content[0].text) {
         const albumInfo = data.content[0].text.trim();
         setSearchQuery(albumInfo);
-        searchDiscogs(false, albumInfo);
+        searchDiscogs(false, albumInfo, 1);
         setActiveTab('search');
       } else {
         alert('Could not identify album');
@@ -477,9 +388,15 @@ const VinylPriceFinder = () => {
     return () => stopCamera();
   }, [activeTab]);
 
-  // Collection management
+  const checkDuplicate = (newItem) => {
+    return collection.some(item => 
+      item.id === newItem.id || 
+      (item.title?.toLowerCase() === newItem.title?.toLowerCase() && 
+       item.year === newItem.year)
+    );
+  };
+
   const addToCollection = (item) => {
-    // Check for duplicates
     if (checkDuplicate(item)) {
       if (!confirm('This record might already be in your collection. Add anyway?')) {
         return;
@@ -519,15 +436,6 @@ const VinylPriceFinder = () => {
 
   const isFavorited = (item) => item.favorite === true;
 
-  const toggleShop = (shop) => {
-    setSelectedShops(prev => 
-      prev.includes(shop) 
-        ? prev.filter(s => s !== shop)
-        : [...prev, shop]
-    );
-  };
-
-  // Sort collection
   const sortCollection = (items, sortBy) => {
     const sorted = [...items];
     switch(sortBy) {
@@ -535,76 +443,18 @@ const VinylPriceFinder = () => {
         return sorted.sort((a, b) => {
           const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
           const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          const artistCompare = aArtist.localeCompare(bArtist);
-          if (artistCompare !== 0) return artistCompare;
-          // If same artist, sort by album name
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
+          return aArtist.localeCompare(bArtist);
         });
       case 'artist-desc':
         return sorted.sort((a, b) => {
           const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
           const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          const artistCompare = bArtist.localeCompare(aArtist);
-          if (artistCompare !== 0) return artistCompare;
-          // If same artist, sort by album name
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
-        });
-      case 'album-asc':
-        return sorted.sort((a, b) => {
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          const albumCompare = aAlbum.localeCompare(bAlbum);
-          if (albumCompare !== 0) return albumCompare;
-          // If same album name, sort by artist
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return aArtist.localeCompare(bArtist);
-        });
-      case 'album-desc':
-        return sorted.sort((a, b) => {
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          const albumCompare = bAlbum.localeCompare(aAlbum);
-          if (albumCompare !== 0) return albumCompare;
-          // If same album name, sort by artist
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return aArtist.localeCompare(bArtist);
+          return bArtist.localeCompare(aArtist);
         });
       case 'price-asc':
-        return sorted.sort((a, b) => {
-          const aPrice = a.price?.value || 0;
-          const bPrice = b.price?.value || 0;
-          const priceCompare = aPrice - bPrice;
-          if (priceCompare !== 0) return priceCompare;
-          // If same price, sort by artist then album
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          const artistCompare = aArtist.localeCompare(bArtist);
-          if (artistCompare !== 0) return artistCompare;
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
-        });
+        return sorted.sort((a, b) => (a.price?.value || 0) - (b.price?.value || 0));
       case 'price-desc':
-        return sorted.sort((a, b) => {
-          const aPrice = a.price?.value || 0;
-          const bPrice = b.price?.value || 0;
-          const priceCompare = bPrice - aPrice;
-          if (priceCompare !== 0) return priceCompare;
-          // If same price, sort by artist then album
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          const artistCompare = aArtist.localeCompare(bArtist);
-          if (artistCompare !== 0) return artistCompare;
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
-        });
+        return sorted.sort((a, b) => (b.price?.value || 0) - (a.price?.value || 0));
       default:
         return sorted;
     }
@@ -634,134 +484,8 @@ const VinylPriceFinder = () => {
 
   const favorites = collection.filter(item => item.favorite);
 
-  // Statistics calculations
-  const getStatistics = () => {
-    if (collection.length === 0) return null;
-
-    const withPrices = collection.filter(item => item.price?.value);
-    const prices = withPrices.map(item => item.price.value);
-    
-    // Most expensive
-    const mostExpensive = withPrices.length > 0 
-      ? withPrices.reduce((max, item) => item.price.value > max.price.value ? item : max)
-      : null;
-    
-    // Cheapest
-    const cheapest = withPrices.length > 0
-      ? withPrices.reduce((min, item) => item.price.value < min.price.value ? item : min)
-      : null;
-    
-    // Average
-    const avgPrice = prices.length > 0
-      ? (prices.reduce((sum, p) => sum + p, 0) / prices.length).toFixed(2)
-      : 0;
-    
-    // Genre breakdown
-    const genres = {};
-    collection.forEach(item => {
-      if (item.genre && item.genre[0]) {
-        const genre = item.genre[0];
-        genres[genre] = (genres[genre] || 0) + 1;
-      }
-    });
-    const topGenres = Object.entries(genres)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    
-    // Decade breakdown
-    const decades = {};
-    collection.forEach(item => {
-      if (item.year) {
-        const decade = Math.floor(item.year / 10) * 10;
-        decades[decade] = (decades[decade] || 0) + 1;
-      }
-    });
-    const decadeList = Object.entries(decades)
-      .sort((a, b) => a[0] - b[0]);
-    
-    // Artist with most records
-    const artists = {};
-    collection.forEach(item => {
-      const artist = item.title?.split(' - ')[0] || 'Unknown';
-      artists[artist] = (artists[artist] || 0) + 1;
-    });
-    const topArtist = Object.entries(artists)
-      .sort((a, b) => b[1] - a[1])[0];
-    
-    return {
-      mostExpensive,
-      cheapest,
-      avgPrice,
-      topGenres,
-      decadeList,
-      topArtist,
-      currency: withPrices[0]?.price?.currency || 'EUR'
-    };
-  };
-
-  // Export functions
-  const exportToCSV = () => {
-    const headers = ['Artist', 'Album', 'Year', 'Label', 'Genre', 'Format', 'Price', 'Currency', 'Favorite'];
-    const rows = collection.map(item => [
-      item.title?.split(' - ')[0] || 'Unknown',
-      item.title?.split(' - ')[1] || item.title || 'Unknown',
-      item.year || '',
-      item.label?.[0] || '',
-      item.genre?.[0] || '',
-      item.format?.[0] || '',
-      item.price?.value || '',
-      item.price?.currency || '',
-      item.favorite ? 'Yes' : 'No'
-    ]);
-    
-    const csv = [headers, ...rows].map(row => 
-      row.map(cell => `"${cell}"`).join(',')
-    ).join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vinylscout-collection-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  };
-
-  const exportToJSON = () => {
-    const json = JSON.stringify(collection, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vinylscout-collection-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-  };
-
-  const generateShareableText = () => {
-    const stats = calculateCollectionValue();
-    let text = `🎵 My VinylScout Collection\n\n`;
-    text += `📀 Total Records: ${collection.length}\n`;
-    text += `💰 Total Value: ${stats.currency} ${stats.value}\n`;
-    text += `❤️ Favorites: ${favorites.length}\n\n`;
-    text += `Top Albums:\n`;
-    collection.slice(0, 5).forEach((item, idx) => {
-      const artist = item.title?.split(' - ')[0] || 'Unknown';
-      const album = item.title?.split(' - ')[1] || item.title || 'Unknown';
-      text += `${idx + 1}. ${artist} - ${album}\n`;
-    });
-    
-    return text;
-  };
-
-  const copyShareableText = () => {
-    const text = generateShareableText();
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Collection summary copied to clipboard!');
-    });
-  };
-
   return (
     <div 
-      className="w-full h-full"
       style={{ 
         backgroundColor: primaryColor,
         position: 'fixed',
@@ -774,62 +498,72 @@ const VinylPriceFinder = () => {
         color: textColor
       }}
     >
-      {/* Header */}
       <div 
-        className="px-4 py-4 flex justify-between items-center shadow-sm"
         style={{ 
+          padding: '16px',
           backgroundColor: primaryColor,
           flexShrink: 0,
-          borderBottom: `1px solid ${textColor}10`
+          borderBottom: `1px solid ${textColor}10`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}
       >
-        <h1 className="text-2xl font-bold" style={{ color: accentColor }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, margin: 0 }}>
           VinylScout
         </h1>
         <button 
           onClick={() => setShowSettings(true)}
-          className="p-2 rounded-lg hover:bg-gray-100"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}
         >
           <Settings size={24} style={{ color: accentColor }} />
         </button>
       </div>
 
-      {/* Content */}
       <div 
-        className="px-4"
         style={{ 
           flex: 1,
           overflowY: 'auto',
+          padding: '16px',
           paddingBottom: '90px'
         }}
       >
-        {/* Search Tab */}
         {activeTab === 'search' && (
-          <div className="space-y-4 pt-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Search artist or album..."
-              className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none"
               style={{ 
-                borderColor: `${textColor}20`, 
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: `2px solid ${textColor}20`,
                 backgroundColor: `${textColor}05`,
-                color: textColor
+                color: textColor,
+                fontSize: '16px'
               }}
             />
 
             <button
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              className="text-sm"
-              style={{ color: accentColor }}
+              style={{ 
+                fontSize: '14px',
+                color: accentColor,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                padding: 0
+              }}
             >
               {showAdvancedSearch ? '▲' : '▼'} Advanced Search
             </button>
 
             {showAdvancedSearch && (
-              <div className="space-y-3 rounded-lg p-4" style={{ backgroundColor: `${textColor}05` }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderRadius: '12px', padding: '16px', backgroundColor: `${textColor}05` }}>
                 {[
                   { key: 'artist', label: 'Artist' },
                   { key: 'album', label: 'Album' },
@@ -840,7 +574,7 @@ const VinylPriceFinder = () => {
                   { key: 'excludeFormat', label: 'Exclude Format (e.g. CD, Cassette)' }
                 ].map(field => (
                   <div key={field.key}>
-                    <label className="block text-xs mb-1" style={{ color: `${textColor}60` }}>
+                    <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: `${textColor}60` }}>
                       {field.label}
                     </label>
                     <input
@@ -848,16 +582,33 @@ const VinylPriceFinder = () => {
                       value={advancedSearch[field.key]}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, [field.key]: e.target.value})}
                       placeholder={field.label}
-                      className="w-full px-4 py-2 rounded-lg border text-sm focus:outline-none"
-                      style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor, color: textColor }}
+                      style={{ 
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${textColor}20`,
+                        backgroundColor: primaryColor,
+                        color: textColor,
+                        fontSize: '14px'
+                      }}
                     />
                   </div>
                 ))}
                 <button
                   onClick={handleAdvancedSearch}
                   disabled={isLoading}
-                  className="w-full py-3 rounded-lg font-semibold"
-                  style={{ backgroundColor: accentColor, color: primaryColor }}
+                  style={{ 
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: accentColor,
+                    color: primaryColor,
+                    border: 'none',
+                    fontWeight: 'bold',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '16px',
+                    marginTop: '8px'
+                  }}
                 >
                   {isLoading ? 'Searching...' : 'Search'}
                 </button>
@@ -868,148 +619,155 @@ const VinylPriceFinder = () => {
               <button
                 onClick={handleSearch}
                 disabled={isLoading}
-                className="w-full py-3 rounded-lg font-semibold"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
+                style={{ 
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontWeight: 'bold',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '16px'
+                }}
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
             )}
 
-            {isLoading && (
-              <div className="text-center py-8">
-                <p style={{ color: textColor }}>Searching...</p>
-              </div>
-            )}
-
             {!isLoading && searchResults.length === 0 && searchQuery && (
-              <div className="text-center py-8">
-                <p style={{ color: `${textColor}60` }}>No results found. Try different search terms.</p>
+              <div style={{ textAlign: 'center', padding: '32px', color: `${textColor}60` }}>
+                No results found. Try different search terms.
               </div>
             )}
 
             {searchResults.length > 0 && (
-              <div className="space-y-3 mt-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold" style={{ color: textColor }}>
-                    Results ({searchResults.length})
-                  </h3>
-                  <span className="text-sm" style={{ color: `${textColor}60` }}>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                </div>
-                
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {searchResults.map((result) => {
                   const price = resultPrices[result.id];
                   return (
                     <div
                       key={result.id}
                       onClick={() => setSelectedResult(result)}
-                      className="rounded-lg p-3 cursor-pointer transition-all"
                       style={{ 
                         backgroundColor: `${textColor}08`,
                         border: `1px solid ${textColor}15`,
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        borderRadius: '12px',
+                        padding: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        gap: '12px'
                       }}
                     >
-                      <div className="flex gap-3">
-                        {result.cover_image ? (
-                          <img
-                            src={result.cover_image}
-                            alt={result.title}
-                            style={{ 
-                              width: '80px', 
-                              height: '80px', 
-                              objectFit: 'cover', 
-                              borderRadius: '6px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                          />
-                        ) : (
-                          <div style={{ 
+                      {result.cover_image ? (
+                        <img
+                          src={result.cover_image}
+                          alt={result.title}
+                          style={{ 
                             width: '80px', 
                             height: '80px', 
-                            borderRadius: '6px', 
-                            backgroundColor: `${textColor}10`, 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                          }}>
-                            <Music size={32} style={{ color: accentColor, opacity: 0.4 }} />
-                          </div>
-                        )}
-                        <div className="flex-1 flex flex-col justify-between">
-                          <div>
-                            <h3 className="font-bold text-sm mb-1" style={{ color: textColor }}>
-                              {result.title?.split(' - ')[0] || 'Unknown Artist'}
-                            </h3>
-                            <p className="text-xs mb-1" style={{ color: `${textColor}70` }}>
-                              {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
-                            </p>
-                          </div>
-                          {price ? (
-                            <div>
-                              <p className="text-xs mb-1" style={{ color: `${textColor}50` }}>from Discogs</p>
-                              <p className="text-base font-bold" style={{ color: accentColor }}>
-                                {price.currency} {price.value.toFixed(2)}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs" style={{ color: `${textColor}40` }}>Loading price...</p>
-                          )}
+                            objectFit: 'cover', 
+                            borderRadius: '8px'
+                          }}
+                        />
+                      ) : (
+                        <div style={{ 
+                          width: '80px', 
+                          height: '80px', 
+                          borderRadius: '8px', 
+                          backgroundColor: `${textColor}10`, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center' 
+                        }}>
+                          <Music size={32} style={{ color: accentColor, opacity: 0.4 }} />
                         </div>
+                      )}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px', color: textColor }}>
+                            {result.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </div>
+                          <div style={{ fontSize: '12px', marginBottom: '4px', color: `${textColor}70` }}>
+                            {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
+                          </div>
+                        </div>
+                        {price ? (
+                          <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px', color: `${textColor}50` }}>from Discogs</div>
+                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: accentColor }}>
+                              {price.currency} {price.value.toFixed(2)}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '12px', color: `${textColor}40` }}>Loading price...</div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
                 
-                {/* Pagination Controls */}
-                <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: `1px solid ${textColor}15` }}>
-                  <button
-                    onClick={goToPrevPage}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-lg font-semibold text-sm transition-all"
-                    style={{ 
-                      backgroundColor: currentPage === 1 ? `${textColor}10` : accentColor,
-                      color: currentPage === 1 ? `${textColor}40` : primaryColor,
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === 1 ? 0.5 : 1
-                    }}
-                  >
-                    ← Previous
-                  </button>
-                  
-                  <span className="text-sm font-semibold" style={{ color: textColor }}>
-                    {currentPage} / {totalPages}
-                  </span>
-                  
-                  <button
-                    onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-lg font-semibold text-sm transition-all"
-                    style={{ 
-                      backgroundColor: currentPage === totalPages ? `${textColor}10` : accentColor,
-                      color: currentPage === totalPages ? `${textColor}40` : primaryColor,
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === totalPages ? 0.5 : 1
-                    }}
-                  >
-                    Next →
-                  </button>
-                </div>
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${textColor}15` }}>
+                    <button
+                      onClick={goToPrevPage}
+                      disabled={currentPage === 1}
+                      style={{ 
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        backgroundColor: currentPage === 1 ? `${textColor}10` : accentColor,
+                        color: currentPage === 1 ? `${textColor}40` : primaryColor,
+                        border: 'none',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        opacity: currentPage === 1 ? 0.5 : 1
+                      }}
+                    >
+                      ← Previous
+                    </button>
+                    
+                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: textColor }}>
+                      {currentPage} / {totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      style={{ 
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        backgroundColor: currentPage === totalPages ? `${textColor}10` : accentColor,
+                        color: currentPage === totalPages ? `${textColor}40` : primaryColor,
+                        border: 'none',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        opacity: currentPage === totalPages ? 0.5 : 1
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Camera Tab */}
         {activeTab === 'camera' && (
-          <div className="space-y-4 pt-4">
-            {/* Camera Mode Toggle */}
-            <div className="flex gap-2 mb-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               <button
                 onClick={() => setCameraMode('photo')}
-                className="flex-1 py-2 rounded-lg font-semibold text-sm"
                 style={{ 
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  cursor: 'pointer',
                   backgroundColor: cameraMode === 'photo' ? accentColor : `${textColor}10`,
                   color: cameraMode === 'photo' ? primaryColor : textColor
                 }}
@@ -1018,8 +776,14 @@ const VinylPriceFinder = () => {
               </button>
               <button
                 onClick={() => setCameraMode('barcode')}
-                className="flex-1 py-2 rounded-lg font-semibold text-sm"
                 style={{ 
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  cursor: 'pointer',
                   backgroundColor: cameraMode === 'barcode' ? accentColor : `${textColor}10`,
                   color: cameraMode === 'barcode' ? primaryColor : textColor
                 }}
@@ -1028,150 +792,157 @@ const VinylPriceFinder = () => {
               </button>
             </div>
 
-            <div className="relative rounded-lg overflow-hidden bg-black">
-              <video ref={videoRef} autoPlay playsInline className="w-full h-auto" />
+            <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#000' }}>
+              <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: 'auto' }} />
               {isCameraActive && (
                 <button
                   onClick={capturePhoto}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4"
-                  style={{ borderColor: accentColor, backgroundColor: accentColor }}
+                  style={{ 
+                    position: 'absolute',
+                    bottom: '16px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    border: `4px solid ${accentColor}`,
+                    backgroundColor: accentColor,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
-                  <Camera size={28} style={{ color: primaryColor, margin: 'auto' }} />
+                  <Camera size={28} style={{ color: primaryColor }} />
                 </button>
               )}
             </div>
             
-            <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}05` }}>
+            <div style={{ borderRadius: '12px', padding: '16px', backgroundColor: `${textColor}05` }}>
               {cameraMode === 'photo' ? (
-                <>
-                  <h3 className="font-semibold mb-2">📸 AI Photo Recognition</h3>
-                  <p className="text-sm mb-2" style={{ color: `${textColor}80` }}>
+                <div>
+                  <h3 style={{ fontWeight: 'bold', marginBottom: '8px', color: textColor }}>📸 AI Photo Recognition</h3>
+                  <p style={{ fontSize: '14px', marginBottom: '8px', color: `${textColor}80` }}>
                     Point camera at album cover. AI will identify the record.
                   </p>
                   {anthropicToken ? (
-                    <p className="text-xs" style={{ color: accentColor }}>✓ AI enabled</p>
+                    <p style={{ fontSize: '12px', color: accentColor }}>✓ AI enabled</p>
                   ) : (
-                    <p className="text-xs" style={{ color: `${textColor}60` }}>⚠️ Add Anthropic token in Settings</p>
+                    <p style={{ fontSize: '12px', color: `${textColor}60` }}>⚠️ Add Anthropic token in Settings</p>
                   )}
-                </>
+                </div>
               ) : (
-                <>
-                  <h3 className="font-semibold mb-2">📊 Barcode Scanner</h3>
-                  <p className="text-sm mb-2" style={{ color: `${textColor}80` }}>
+                <div>
+                  <h3 style={{ fontWeight: 'bold', marginBottom: '8px', color: textColor }}>📊 Barcode Scanner</h3>
+                  <p style={{ fontSize: '14px', marginBottom: '8px', color: `${textColor}80` }}>
                     Scan the barcode on the back of the record sleeve.
                   </p>
-                  <p className="text-xs" style={{ color: `${textColor}60` }}>
+                  <p style={{ fontSize: '12px', color: `${textColor}60` }}>
                     Works with UPC/EAN barcodes. Most accurate method.
                   </p>
-                </>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Collection Tab */}
         {activeTab === 'collection' && (
-          <div className="space-y-3 pt-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold" style={{ color: textColor }}>My Collection</h2>
-              <div className="flex gap-2">
-                <select
-                  value={collectionSort}
-                  onChange={(e) => setCollectionSort(e.target.value)}
-                  className="px-3 py-2 rounded-lg border text-xs"
-                  style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
-                >
-                  <option value="artist-asc">Artist A-Z</option>
-                  <option value="artist-desc">Artist Z-A</option>
-                  <option value="album-asc">Album A-Z</option>
-                  <option value="album-desc">Album Z-A</option>
-                  <option value="price-asc">Price ↑</option>
-                  <option value="price-desc">Price ↓</option>
-                </select>
-                <select
-                  value={collectionView}
-                  onChange={(e) => setCollectionView(e.target.value)}
-                  className="px-3 py-2 rounded-lg border text-xs"
-                  style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
-                >
-                  <option value="grid">Grid</option>
-                  <option value="list">List</option>
-                </select>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: textColor, margin: 0 }}>My Collection</h2>
+              <select
+                value={collectionSort}
+                onChange={(e) => setCollectionSort(e.target.value)}
+                style={{ 
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${textColor}20`,
+                  backgroundColor: primaryColor,
+                  color: textColor,
+                  fontSize: '12px'
+                }}
+              >
+                <option value="artist-asc">Artist A-Z</option>
+                <option value="artist-desc">Artist Z-A</option>
+                <option value="price-asc">Price ↑</option>
+                <option value="price-desc">Price ↓</option>
+              </select>
             </div>
 
             {collection.length === 0 ? (
-              <p className="text-center py-8" style={{ color: `${textColor}60` }}>
+              <p style={{ textAlign: 'center', padding: '32px', color: `${textColor}60` }}>
                 No records yet
               </p>
             ) : (
-              <div className={collectionView === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                 {sortCollection(collection, collectionSort).map((item, idx) => (
                   <div
                     key={idx}
                     onClick={() => setSelectedResult(item)}
-                    className="rounded-lg p-3 cursor-pointer shadow-sm"
-                    style={{ backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}
+                    style={{ 
+                      borderRadius: '12px',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      backgroundColor: `${textColor}05`,
+                      border: `1px solid ${textColor}10`
+                    }}
                   >
-                    {collectionView === 'grid' ? (
-                      <div className="flex flex-col">
-                        {item.cover_image ? (
-                          <img
-                            src={item.cover_image}
-                            alt={item.title}
-                            style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }}
-                          />
-                        ) : (
-                          <div style={{ width: '100%', aspectRatio: '1', borderRadius: '8px', backgroundColor: `${textColor}10`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
-                            <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
-                          </div>
-                        )}
-                        <h3 className="font-bold text-xs mb-1" style={{ color: textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[0] || 'Unknown'}
-                        </h3>
-                        <p className="text-xs mb-2" style={{ color: `${textColor}70`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[1] || item.title || 'Unknown'}
-                        </p>
-                        {item.price?.value ? (
-                          <p className="text-sm font-bold" style={{ color: accentColor }}>
-                            {item.price.currency} {Number(item.price.value).toFixed(2)}
-                          </p>
-                        ) : (
-                          <p className="text-xs" style={{ color: `${textColor}40` }}>No price</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex gap-3">
-                        {item.cover_image ? (
-                          <img
-                            src={item.cover_image}
-                            alt={item.title}
-                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
-                          />
-                        ) : (
-                          <div style={{ width: '80px', height: '80px', borderRadius: '8px', backgroundColor: `${textColor}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
-                          </div>
-                        )}
-                        <div className="flex-1 flex flex-col justify-between">
-                          <div>
-                            <h3 className="font-bold text-sm mb-1" style={{ color: textColor }}>
-                              {item.title?.split(' - ')[0] || 'Unknown Artist'}
-                            </h3>
-                            <p className="text-sm mb-1" style={{ color: `${textColor}70` }}>
-                              {item.title?.split(' - ')[1] || item.title || 'Unknown Album'}
-                            </p>
-                          </div>
-                          {item.price?.value ? (
-                            <p className="text-base font-bold" style={{ color: accentColor }}>
-                              {item.price.currency} {Number(item.price.value).toFixed(2)}
-                            </p>
-                          ) : (
-                            <p className="text-sm" style={{ color: `${textColor}40` }}>No price</p>
-                          )}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {item.cover_image ? (
+                        <img
+                          src={item.cover_image}
+                          alt={item.title}
+                          style={{ 
+                            width: '100%',
+                            aspectRatio: '1',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            marginBottom: '8px'
+                          }}
+                        />
+                      ) : (
+                        <div style={{ 
+                          width: '100%',
+                          aspectRatio: '1',
+                          borderRadius: '8px',
+                          backgroundColor: `${textColor}10`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '8px'
+                        }}>
+                          <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
                         </div>
-                      </div>
-                    )}
+                      )}
+                      <h3 style={{ 
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        marginBottom: '4px',
+                        color: textColor,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {item.title?.split(' - ')[0] || 'Unknown'}
+                      </h3>
+                      <p style={{ 
+                        fontSize: '12px',
+                        marginBottom: '8px',
+                        color: `${textColor}70`,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {item.title?.split(' - ')[1] || item.title || 'Unknown'}
+                      </p>
+                      {item.price?.value ? (
+                        <p style={{ fontSize: '14px', fontWeight: 'bold', color: accentColor }}>
+                          {item.price.currency} {Number(item.price.value).toFixed(2)}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: `${textColor}40` }}>No price</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1179,152 +950,104 @@ const VinylPriceFinder = () => {
           </div>
         )}
 
-        {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="space-y-4 pt-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold" style={{ color: textColor }}>Profile</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowStats(true)}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-                >
-                  📊 Stats
-                </button>
-                <button
-                  onClick={() => setShowExport(true)}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-                >
-                  📤 Export
-                </button>
-                <button
-                  onClick={() => setShowEditProfile(true)}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: accentColor, color: primaryColor }}
-                >
-                  <Edit2 size={16} style={{ display: 'inline', marginRight: '4px' }} />
-                  Edit
-                </button>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: textColor, margin: 0 }}>Profile</h2>
+              <button
+                onClick={() => setShowEditProfile(true)}
+                style={{ 
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Edit2 size={16} />
+                Edit
+              </button>
             </div>
             
-            <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
-              <div className="flex items-center gap-3 mb-4">
+            <div style={{ borderRadius: '12px', padding: '16px', backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: accentColor }}
+                  style={{ 
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: accentColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
                   <User size={32} style={{ color: primaryColor }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: textColor }}>
+                  <h3 style={{ fontWeight: 'bold', color: textColor, marginBottom: '4px' }}>
                     {userProfile.name || 'Vinyl Collector'}
                   </h3>
-                  <p className="text-sm" style={{ color: `${textColor}60` }}>
+                  <p style={{ fontSize: '14px', color: `${textColor}60` }}>
                     {userProfile.nickname || 'Set your nickname'}
                   </p>
                 </div>
               </div>
               
               {userProfile.email && (
-                <p className="text-sm mb-1" style={{ color: `${textColor}80` }}>
+                <p style={{ fontSize: '14px', marginBottom: '4px', color: `${textColor}80` }}>
                   📧 {userProfile.email}
                 </p>
               )}
               {userProfile.address && (
-                <p className="text-sm" style={{ color: `${textColor}80` }}>
+                <p style={{ fontSize: '14px', color: `${textColor}80` }}>
                   📍 {userProfile.address}, {userProfile.city}, {userProfile.country}
                 </p>
               )}
             </div>
 
-            <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
-              <h3 className="font-semibold mb-3" style={{ color: textColor }}>Collection Value</h3>
-              <div className="flex justify-between items-center mb-2">
+            <div style={{ borderRadius: '12px', padding: '16px', backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
+              <h3 style={{ fontWeight: 'bold', marginBottom: '12px', color: textColor }}>Collection Value</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ color: `${textColor}60` }}>Total:</span>
-                <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                <span style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
                   {calculateCollectionValue().currency} {calculateCollectionValue().value}
                 </span>
               </div>
-              <p className="text-xs" style={{ color: `${textColor}40` }}>
+              <p style={{ fontSize: '12px', color: `${textColor}40` }}>
                 Based on {calculateCollectionValue().count} of {collection.length} records
               </p>
             </div>
 
-            <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
-              <h3 className="font-semibold mb-2" style={{ color: textColor }}>Statistics</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
+            <div style={{ borderRadius: '12px', padding: '16px', backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}>
+              <h3 style={{ fontWeight: 'bold', marginBottom: '8px', color: textColor }}>Statistics</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: `${textColor}60` }}>Total Records</span>
-                  <span className="font-semibold" style={{ color: textColor }}>{collection.length}</span>
+                  <span style={{ fontWeight: 'bold', color: textColor }}>{collection.length}</span>
                 </div>
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: `${textColor}60` }}>Favorites</span>
-                  <span className="font-semibold" style={{ color: textColor }}>{favorites.length}</span>
+                  <span style={{ fontWeight: 'bold', color: textColor }}>{favorites.length}</span>
                 </div>
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: `${textColor}60` }}>With Prices</span>
-                  <span className="font-semibold" style={{ color: textColor }}>
+                  <span style={{ fontWeight: 'bold', color: textColor }}>
                     {collection.filter(item => item.price?.value).length}
                   </span>
                 </div>
               </div>
             </div>
-
-            {favorites.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3" style={{ color: textColor }}>
-                  ❤️ Favorites ({favorites.length})
-                </h3>
-                <div className="space-y-3">
-                  {favorites.map((item, idx) => {
-                    const originalIndex = collection.findIndex(c => c.id === item.id);
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => setSelectedResult(item)}
-                        className="rounded-lg p-3 cursor-pointer shadow-sm"
-                        style={{ backgroundColor: `${textColor}05`, border: `1px solid ${textColor}10` }}
-                      >
-                        <div className="flex gap-3">
-                          {item.cover_image ? (
-                            <img
-                              src={item.cover_image}
-                              alt={item.title}
-                              style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
-                            />
-                          ) : (
-                            <div style={{ width: '60px', height: '60px', borderRadius: '8px', backgroundColor: `${textColor}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Music size={24} style={{ color: accentColor, opacity: 0.5 }} />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <h4 className="font-bold text-sm" style={{ color: textColor }}>
-                              {item.title?.split(' - ')[0] || 'Unknown'}
-                            </h4>
-                            <p className="text-xs" style={{ color: `${textColor}70` }}>
-                              {item.title?.split(' - ')[1] || item.title}
-                            </p>
-                            {item.price?.value && (
-                              <p className="text-sm font-bold mt-1" style={{ color: accentColor }}>
-                                {item.price.currency} {Number(item.price.value).toFixed(2)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Bottom Navigation */}
       <div 
         style={{ 
           position: 'fixed',
@@ -1335,11 +1058,9 @@ const VinylPriceFinder = () => {
           borderTop: `1px solid ${textColor}10`,
           zIndex: 1000,
           display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
           justifyContent: 'space-around',
+          alignItems: 'center',
           padding: '12px 8px',
-          flexShrink: 0,
           boxShadow: '0 -2px 10px rgba(0,0,0,0.1)'
         }}
       >
@@ -1357,8 +1078,7 @@ const VinylPriceFinder = () => {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
-              minWidth: 0,
-              flex: '1 1 0',
+              flex: 1,
               border: 'none',
               background: 'none',
               padding: 0,
@@ -1382,126 +1102,119 @@ const VinylPriceFinder = () => {
         ))}
       </div>
 
-      {/* Settings Modal */}
       {showSettings && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', margin: 'auto' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: textColor }}>Settings</h2>
-              <div className="flex gap-2">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: textColor, margin: 0 }}>Settings</h2>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
                   onClick={() => setShowThemes(true)}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
+                  style={{ 
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: `${accentColor}20`,
+                    color: accentColor,
+                    border: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
                 >
-                  🎨 Themes
+                  <Palette size={16} />
+                  Themes
                 </button>
-                <button onClick={() => setShowSettings(false)}>
+                <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                   <X size={24} style={{ color: accentColor }} />
                 </button>
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div>
-                <label className="block text-sm mb-2" style={{ color: `${textColor}80` }}>Discogs API Token</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: `${textColor}80` }}>Discogs API Token</label>
                 <input
                   type="text"
                   value={discogsToken}
                   onChange={(e) => setDiscogsToken(e.target.value)}
                   placeholder="Enter token"
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
+                  style={{ 
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: `1px solid ${textColor}20`,
+                    backgroundColor: primaryColor,
+                    color: textColor
+                  }}
                 />
                 <a 
                   href="https://www.discogs.com/settings/developers"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs mt-1 flex items-center gap-1"
-                  style={{ color: accentColor }}
+                  style={{ 
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: accentColor,
+                    textDecoration: 'none'
+                  }}
                 >
                   Get token <ExternalLink size={12} />
                 </a>
               </div>
 
               <div>
-                <label className="block text-sm mb-2" style={{ color: `${textColor}80` }}>Anthropic API Token (AI Camera)</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: `${textColor}80` }}>Anthropic API Token (AI Camera)</label>
                 <input
                   type="password"
                   value={anthropicToken}
                   onChange={(e) => setAnthropicToken(e.target.value)}
                   placeholder="Enter API key"
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
+                  style={{ 
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: `1px solid ${textColor}20`,
+                    backgroundColor: primaryColor,
+                    color: textColor
+                  }}
                 />
                 <a 
                   href="https://console.anthropic.com/settings/keys"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs mt-1 flex items-center gap-1"
-                  style={{ color: accentColor }}
+                  style={{ 
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: accentColor,
+                    textDecoration: 'none'
+                  }}
                 >
                   Get API key <ExternalLink size={12} />
                 </a>
               </div>
 
-              <div>
-                <label className="block text-sm mb-2" style={{ color: `${textColor}80` }}>Theme Colors (Custom)</label>
-                <p className="text-xs mb-2" style={{ color: `${textColor}60` }}>
-                  Or use pre-made themes above
-                </p>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={primaryColor}
-                      onChange={(e) => {
-                        setPrimaryColor(e.target.value);
-                        setCurrentTheme('custom');
-                      }}
-                      className="w-12 h-10 rounded cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={primaryColor}
-                      onChange={(e) => {
-                        setPrimaryColor(e.target.value);
-                        setCurrentTheme('custom');
-                      }}
-                      className="flex-1 px-4 py-2 rounded-lg border text-sm"
-                      style={{ borderColor: `${textColor}20` }}
-                      placeholder="Background"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={accentColor}
-                      onChange={(e) => {
-                        setAccentColor(e.target.value);
-                        setCurrentTheme('custom');
-                      }}
-                      className="w-12 h-10 rounded cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={accentColor}
-                      onChange={(e) => {
-                        setAccentColor(e.target.value);
-                        setCurrentTheme('custom');
-                      }}
-                      className="flex-1 px-4 py-2 rounded-lg border text-sm"
-                      style={{ borderColor: `${textColor}20` }}
-                      placeholder="Accent"
-                    />
-                  </div>
-                </div>
-              </div>
-
               <button
                 onClick={saveSettings}
-                className="w-full py-3 rounded-lg font-semibold"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
+                style={{ 
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
               >
                 Save Settings
               </button>
@@ -1510,18 +1223,17 @@ const VinylPriceFinder = () => {
         </div>
       )}
 
-      {/* Themes Modal */}
       {showThemes && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2001, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '500px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: textColor }}>🎨 Choose Theme</h2>
-              <button onClick={() => setShowThemes(false)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: textColor, margin: 0 }}>🎨 Choose Theme</h2>
+              <button onClick={() => setShowThemes(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               {Object.entries(themes).map(([key, theme]) => (
                 <button
                   key={key}
@@ -1529,22 +1241,26 @@ const VinylPriceFinder = () => {
                     applyTheme(key);
                     setShowThemes(false);
                   }}
-                  className="p-4 rounded-lg text-left transition-all"
                   style={{ 
+                    padding: '16px',
+                    borderRadius: '12px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
                     backgroundColor: theme.primary,
                     border: `2px solid ${currentTheme === key ? theme.accent : 'transparent'}`,
-                    boxShadow: currentTheme === key ? `0 0 0 2px ${theme.accent}40` : 'none'
+                    boxShadow: currentTheme === key ? `0 0 0 2px ${theme.accent}40` : 'none',
+                    transition: 'all 0.2s'
                   }}
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold" style={{ color: theme.text }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 'bold', color: theme.text }}>
                       {theme.name}
                     </span>
                     {currentTheme === key && (
                       <span style={{ color: theme.accent }}>✓ Active</span>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <div 
                       style={{ 
                         width: '40px', 
@@ -1575,8 +1291,8 @@ const VinylPriceFinder = () => {
               ))}
             </div>
 
-            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: `${textColor}10` }}>
-              <p className="text-xs" style={{ color: `${textColor}70` }}>
+            <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', backgroundColor: `${textColor}10` }}>
+              <p style={{ fontSize: '12px', color: `${textColor}70`, margin: 0 }}>
                 💡 Tip: You can also customize colors manually in Settings
               </p>
             </div>
@@ -1584,226 +1300,17 @@ const VinylPriceFinder = () => {
         </div>
       )}
 
-      {/* Statistics Modal */}
-      {showStats && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: '500px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: textColor }}>📊 Collection Statistics</h2>
-              <button onClick={() => setShowStats(false)}>
-                <X size={24} style={{ color: accentColor }} />
-              </button>
-            </div>
-
-            {collection.length === 0 ? (
-              <p style={{ color: `${textColor}60`, textAlign: 'center', padding: '40px 0' }}>
-                No records in collection yet
-              </p>
-            ) : (() => {
-              const stats = getStatistics();
-              return (
-                <div className="space-y-4">
-                  {/* Overview */}
-                  <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                    <h3 className="font-semibold mb-3" style={{ color: textColor }}>Overview</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span style={{ color: `${textColor}70` }}>Total Records:</span>
-                        <span className="font-bold" style={{ color: textColor }}>{collection.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: `${textColor}70` }}>With Prices:</span>
-                        <span className="font-bold" style={{ color: textColor }}>{stats.currency && calculateCollectionValue().count}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: `${textColor}70` }}>Average Price:</span>
-                        <span className="font-bold" style={{ color: accentColor }}>
-                          {stats.currency} {stats.avgPrice}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Most Expensive */}
-                  {stats.mostExpensive && (
-                    <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                      <h3 className="font-semibold mb-3" style={{ color: textColor }}>💎 Most Expensive</h3>
-                      <div className="flex gap-3">
-                        {stats.mostExpensive.cover_image && (
-                          <img
-                            src={stats.mostExpensive.cover_image}
-                            alt={stats.mostExpensive.title}
-                            style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }}
-                          />
-                        )}
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: textColor }}>
-                            {stats.mostExpensive.title?.split(' - ')[0]}
-                          </p>
-                          <p className="text-xs mb-1" style={{ color: `${textColor}70` }}>
-                            {stats.mostExpensive.title?.split(' - ')[1] || stats.mostExpensive.title}
-                          </p>
-                          <p className="font-bold" style={{ color: accentColor }}>
-                            {stats.currency} {stats.mostExpensive.price.value.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cheapest */}
-                  {stats.cheapest && (
-                    <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                      <h3 className="font-semibold mb-3" style={{ color: textColor }}>💰 Cheapest</h3>
-                      <div className="flex gap-3">
-                        {stats.cheapest.cover_image && (
-                          <img
-                            src={stats.cheapest.cover_image}
-                            alt={stats.cheapest.title}
-                            style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }}
-                          />
-                        )}
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: textColor }}>
-                            {stats.cheapest.title?.split(' - ')[0]}
-                          </p>
-                          <p className="text-xs mb-1" style={{ color: `${textColor}70` }}>
-                            {stats.cheapest.title?.split(' - ')[1] || stats.cheapest.title}
-                          </p>
-                          <p className="font-bold" style={{ color: accentColor }}>
-                            {stats.currency} {stats.cheapest.price.value.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Top Artist */}
-                  {stats.topArtist && (
-                    <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                      <h3 className="font-semibold mb-2" style={{ color: textColor }}>🎤 Top Artist</h3>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold" style={{ color: textColor }}>{stats.topArtist[0]}</span>
-                        <span className="text-sm" style={{ color: `${textColor}70` }}>
-                          {stats.topArtist[1]} record{stats.topArtist[1] > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Top Genres */}
-                  {stats.topGenres.length > 0 && (
-                    <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                      <h3 className="font-semibold mb-3" style={{ color: textColor }}>🎵 Top Genres</h3>
-                      <div className="space-y-2">
-                        {stats.topGenres.map(([genre, count]) => (
-                          <div key={genre} className="flex justify-between items-center">
-                            <span className="text-sm" style={{ color: textColor }}>{genre}</span>
-                            <div className="flex items-center gap-2">
-                              <div style={{ 
-                                width: `${(count / collection.length) * 100}px`,
-                                height: '8px',
-                                backgroundColor: accentColor,
-                                borderRadius: '4px',
-                                maxWidth: '100px'
-                              }} />
-                              <span className="text-xs" style={{ color: `${textColor}70` }}>{count}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Decades */}
-                  {stats.decadeList.length > 0 && (
-                    <div className="rounded-lg p-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                      <h3 className="font-semibold mb-3" style={{ color: textColor }}>📅 By Decade</h3>
-                      <div className="space-y-2">
-                        {stats.decadeList.map(([decade, count]) => (
-                          <div key={decade} className="flex justify-between items-center">
-                            <span className="text-sm" style={{ color: textColor }}>{decade}s</span>
-                            <div className="flex items-center gap-2">
-                              <div style={{ 
-                                width: `${(count / collection.length) * 100}px`,
-                                height: '8px',
-                                backgroundColor: accentColor,
-                                borderRadius: '4px',
-                                maxWidth: '100px'
-                              }} />
-                              <span className="text-xs" style={{ color: `${textColor}70` }}>{count}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Export Modal */}
-      {showExport && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000 }}>
-          <div style={{ width: '100%', maxWidth: '400px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: textColor }}>📤 Export & Share</h2>
-              <button onClick={() => setShowExport(false)}>
-                <X size={24} style={{ color: accentColor }} />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={exportToCSV}
-                className="w-full py-3 rounded-lg font-semibold text-left px-4 flex items-center justify-between"
-                style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15`, color: textColor }}
-              >
-                <span>Export as CSV</span>
-                <span className="text-xs" style={{ color: `${textColor}60` }}>Excel compatible</span>
-              </button>
-
-              <button
-                onClick={exportToJSON}
-                className="w-full py-3 rounded-lg font-semibold text-left px-4 flex items-center justify-between"
-                style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15`, color: textColor }}
-              >
-                <span>Export as JSON</span>
-                <span className="text-xs" style={{ color: `${textColor}60` }}>Backup format</span>
-              </button>
-
-              <button
-                onClick={copyShareableText}
-                className="w-full py-3 rounded-lg font-semibold"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
-              >
-                📋 Copy Collection Summary
-              </button>
-
-              <div className="rounded-lg p-4 mt-4" style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}15` }}>
-                <p className="text-xs mb-2" style={{ color: `${textColor}70` }}>Preview:</p>
-                <pre className="text-xs whitespace-pre-wrap" style={{ color: textColor }}>
-                  {generateShareableText()}
-                </pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {showEditProfile && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: textColor }}>Edit Profile</h2>
-              <button onClick={() => setShowEditProfile(false)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: textColor, margin: 0 }}>Edit Profile</h2>
+              <button onClick={() => setShowEditProfile(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
                 { key: 'name', label: 'Full Name' },
                 { key: 'nickname', label: 'Nickname' },
@@ -1813,21 +1320,37 @@ const VinylPriceFinder = () => {
                 { key: 'country', label: 'Country' }
               ].map(field => (
                 <div key={field.key}>
-                  <label className="block text-sm mb-1" style={{ color: `${textColor}80` }}>{field.label}</label>
+                  <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: `${textColor}80` }}>{field.label}</label>
                   <input
                     type="text"
                     value={userProfile[field.key]}
                     onChange={(e) => setUserProfile({...userProfile, [field.key]: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border"
-                    style={{ borderColor: `${textColor}20`, backgroundColor: primaryColor }}
+                    style={{ 
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: `1px solid ${textColor}20`,
+                      backgroundColor: primaryColor,
+                      color: textColor
+                    }}
                   />
                 </div>
               ))}
 
               <button
                 onClick={saveProfile}
-                className="w-full py-3 rounded-lg font-semibold mt-4"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
+                style={{ 
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  marginTop: '8px'
+                }}
               >
                 Save Profile
               </button>
@@ -1836,20 +1359,19 @@ const VinylPriceFinder = () => {
         </div>
       )}
 
-      {/* Detail Modal */}
       {selectedResult && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000 }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, borderRadius: '12px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-start mb-4">
-              <div className="pr-4 flex-1">
-                <h2 className="text-xl font-bold mb-1" style={{ color: textColor }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+              <div style={{ paddingRight: '16px', flex: 1 }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: textColor }}>
                   {selectedResult.title?.split(' - ')[0] || 'Unknown Artist'}
                 </h2>
-                <p className="text-lg" style={{ color: `${textColor}80` }}>
+                <p style={{ fontSize: '18px', color: `${textColor}80` }}>
                   {selectedResult.title?.split(' - ')[1] || selectedResult.title || 'Unknown Album'}
                 </p>
               </div>
-              <button onClick={() => setSelectedResult(null)}>
+              <button onClick={() => setSelectedResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
@@ -1858,39 +1380,34 @@ const VinylPriceFinder = () => {
               <img
                 src={selectedResult.cover_image}
                 alt={selectedResult.title}
-                style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px', marginBottom: '16px', backgroundColor: `${textColor}05` }}
+                style={{ 
+                  width: '100%',
+                  maxHeight: '400px',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  backgroundColor: `${textColor}05`
+                }}
               />
             )}
 
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
               {selectedResult.year && (
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: `${textColor}60` }}>Year:</span>
                   <span style={{ color: textColor }}>{selectedResult.year}</span>
                 </div>
               )}
               {selectedResult.label?.[0] && (
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: `${textColor}60` }}>Label:</span>
                   <span style={{ color: textColor }}>{selectedResult.label[0]}</span>
                 </div>
               )}
-              {selectedResult.genre?.[0] && (
-                <div className="flex justify-between">
-                  <span style={{ color: `${textColor}60` }}>Genre:</span>
-                  <span style={{ color: textColor }}>{selectedResult.genre[0]}</span>
-                </div>
-              )}
-              {selectedResult.format?.[0] && (
-                <div className="flex justify-between">
-                  <span style={{ color: `${textColor}60` }}>Format:</span>
-                  <span style={{ color: textColor }}>{selectedResult.format[0]}</span>
-                </div>
-              )}
             </div>
 
-            <div className="space-y-2 mt-6">
-              {collection.find((_, idx) => collection[idx].id === selectedResult.id) !== undefined ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {collection.find(item => item.id === selectedResult.id) ? (
                 <>
                   <button
                     onClick={() => {
@@ -1898,8 +1415,20 @@ const VinylPriceFinder = () => {
                       removeFromCollection(idx);
                       setSelectedResult(null);
                     }}
-                    className="w-full py-3 rounded-lg font-semibold border-2 flex items-center justify-center gap-2"
-                    style={{ borderColor: '#EF4444', color: '#EF4444' }}
+                    style={{ 
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '2px solid #EF4444',
+                      backgroundColor: 'transparent',
+                      color: '#EF4444',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
                   >
                     <Trash2 size={20} />
                     Remove from Collection
@@ -1910,8 +1439,20 @@ const VinylPriceFinder = () => {
                       toggleFavorite(idx);
                       setSelectedResult({...selectedResult, favorite: !selectedResult.favorite});
                     }}
-                    className="w-full py-3 rounded-lg font-semibold border-2 flex items-center justify-center gap-2"
-                    style={{ borderColor: accentColor, color: accentColor }}
+                    style={{ 
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `2px solid ${accentColor}`,
+                      backgroundColor: 'transparent',
+                      color: accentColor,
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
                   >
                     <Heart size={20} fill={isFavorited(selectedResult) ? accentColor : 'none'} />
                     {isFavorited(selectedResult) ? 'Remove from' : 'Add to'} Favorites
@@ -1923,8 +1464,17 @@ const VinylPriceFinder = () => {
                     addToCollection(selectedResult);
                     setSelectedResult(null);
                   }}
-                  className="w-full py-3 rounded-lg font-semibold"
-                  style={{ backgroundColor: accentColor, color: primaryColor }}
+                  style={{ 
+                    width: '100%',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    backgroundColor: accentColor,
+                    color: primaryColor,
+                    border: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                  }}
                 >
                   Add to Collection
                 </button>
