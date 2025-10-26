@@ -33,13 +33,33 @@ const VinylPriceFinder = () => {
       setAccentColor(settings.accentColor || '#ffb700');
     }
     
-    const savedCollection = localStorage.getItem('vinylScoutCollection');
-    if (savedCollection) {
-      try {
-        setCollection(JSON.parse(savedCollection));
-      } catch (e) {
-        console.error('Failed to load collection');
+    // Try to load collection from multiple possible storage keys
+    let loadedCollection = null;
+    const possibleKeys = ['vinylScoutCollection', 'vinylCollection', 'collection'];
+    
+    for (const key of possibleKeys) {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            loadedCollection = parsed.map(item => ({
+              ...item,
+              isFavorite: item.isFavorite || false
+            }));
+            // Migrate to standard key
+            localStorage.setItem('vinylScoutCollection', JSON.stringify(loadedCollection));
+            break;
+          }
+        } catch (e) {
+          console.error('Failed to load from', key);
+        }
       }
+    }
+    
+    if (loadedCollection) {
+      setCollection(loadedCollection);
+      console.log('Loaded', loadedCollection.length, 'items from collection');
     }
     
     const savedView = localStorage.getItem('vinylScoutCollectionView');
@@ -873,9 +893,10 @@ const VinylPriceFinder = () => {
         borderTop: `1px solid ${accentColor}`,
         display: 'flex',
         flexDirection: 'row',
+        flexWrap: 'nowrap',
         justifyContent: 'space-around',
         alignItems: 'center',
-        padding: '12px 8px',
+        padding: '8px 4px',
         zIndex: 1000,
         flexShrink: 0
       }}>
@@ -892,18 +913,29 @@ const VinylPriceFinder = () => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '4px',
+              justifyContent: 'center',
+              gap: '2px',
               flex: '1 1 0',
               minWidth: 0,
+              maxWidth: '25%',
               background: 'none',
               border: 'none',
-              padding: 0,
+              padding: '4px 2px',
               cursor: 'pointer',
-              color: activeTab === id ? accentColor : '#666'
+              color: activeTab === id ? accentColor : '#666',
+              overflow: 'hidden'
             }}
           >
-            <Icon size={24} />
-            <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{label}</span>
+            <Icon size={22} style={{ flexShrink: 0 }} />
+            <span style={{ 
+              fontSize: '10px', 
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%'
+            }}>
+              {label}
+            </span>
           </button>
         ))}
       </div>
