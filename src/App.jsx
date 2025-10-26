@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, Music, User, Settings, X, ChevronRight, ExternalLink, Grid, List, Heart } from 'lucide-react';
+import { Search, Camera, Music, User, Settings, X, ExternalLink, Grid, List, Heart } from 'lucide-react';
 
 const VinylPriceFinder = () => {
   const [activeTab, setActiveTab] = useState('search');
@@ -34,7 +34,13 @@ const VinylPriceFinder = () => {
     }
     
     const savedCollection = localStorage.getItem('vinylScoutCollection');
-    if (savedCollection) setCollection(JSON.parse(savedCollection));
+    if (savedCollection) {
+      try {
+        setCollection(JSON.parse(savedCollection));
+      } catch (e) {
+        console.error('Failed to load collection');
+      }
+    }
     
     const savedView = localStorage.getItem('vinylScoutCollectionView');
     if (savedView) setCollectionView(savedView);
@@ -489,49 +495,76 @@ const VinylPriceFinder = () => {
 
     return (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.95)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}
         onClick={() => setSelectedResult(null)}
       >
         <div 
-          className="rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-          style={{ backgroundColor: primaryColor }}
+          style={{
+            backgroundColor: primaryColor,
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 z-10 p-4 flex justify-between items-center border-b"
-            style={{ backgroundColor: primaryColor, borderColor: accentColor }}
-          >
-            <h3 className="font-bold">Album Details</h3>
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            padding: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: `1px solid ${accentColor}`,
+            backgroundColor: primaryColor,
+            zIndex: 10
+          }}>
+            <h3 style={{ fontWeight: 'bold' }}>Album Details</h3>
             <button onClick={() => setSelectedResult(null)}>
               <X size={24} style={{ color: accentColor }} />
             </button>
           </div>
           
-          <div className="p-4">
+          <div style={{ padding: '16px' }}>
             <img
               src={selectedResult.cover_image || selectedResult.thumb || '/api/placeholder/400/400'}
               alt={selectedResult.title}
-              className="w-full rounded-lg mb-4"
+              style={{ width: '100%', borderRadius: '8px', marginBottom: '16px' }}
             />
             
-            <h2 className="text-xl font-bold mb-2">
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
               {selectedResult.title?.split(' - ')[0] || 'Unknown Artist'}
             </h2>
-            <p className="text-gray-400 mb-4">
+            <p style={{ color: '#9ca3af', marginBottom: '16px' }}>
               {selectedResult.title?.split(' - ')[1] || selectedResult.title}
             </p>
             
             {selectedResult.year && (
-              <p className="text-sm text-gray-500 mb-2">Year: {selectedResult.year}</p>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
+                Year: {selectedResult.year}
+              </p>
             )}
             
             {selectedResult.price && (
-              <div className="mb-4">
-                <p className="text-2xl font-bold" style={{ color: accentColor }}>
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
                   EUR {selectedResult.price.toFixed(2)}
                 </p>
                 {selectedResult.num_for_sale > 0 && (
-                  <p className="text-xs text-gray-400">
+                  <p style={{ fontSize: '12px', color: '#9ca3af' }}>
                     {selectedResult.num_for_sale} available on Discogs
                   </p>
                 )}
@@ -541,11 +574,20 @@ const VinylPriceFinder = () => {
             {isInCollection && (
               <button
                 onClick={() => toggleFavorite(selectedResult.id)}
-                className="w-full mb-2 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                 style={{
+                  width: '100%',
+                  marginBottom: '8px',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
                   backgroundColor: isFavorite ? accentColor : primaryColor,
                   color: isFavorite ? primaryColor : accentColor,
-                  border: `2px solid ${accentColor}`
+                  border: `2px solid ${accentColor}`,
+                  cursor: 'pointer'
                 }}
               >
                 <Heart fill={isFavorite ? primaryColor : 'none'} size={20} />
@@ -553,20 +595,36 @@ const VinylPriceFinder = () => {
               </button>
             )}
             
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: '8px' }}>
               {!isInCollection ? (
                 <button
                   onClick={() => addToCollection(selectedResult)}
-                  className="flex-1 py-3 rounded-lg font-semibold"
-                  style={{ backgroundColor: accentColor, color: primaryColor }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    backgroundColor: accentColor,
+                    color: primaryColor,
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
                 >
                   Add to Collection
                 </button>
               ) : (
                 <button
                   onClick={() => removeFromCollection(selectedResult.id)}
-                  className="flex-1 py-3 rounded-lg font-semibold border-2"
-                  style={{ backgroundColor: primaryColor, borderColor: accentColor, color: accentColor }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    backgroundColor: primaryColor,
+                    border: `2px solid ${accentColor}`,
+                    color: accentColor,
+                    cursor: 'pointer'
+                  }}
                 >
                   Remove from Collection
                 </button>
@@ -577,8 +635,16 @@ const VinylPriceFinder = () => {
                   href={`https://www.discogs.com${selectedResult.uri}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-3 rounded-lg border-2 flex items-center justify-center"
-                  style={{ borderColor: accentColor, color: accentColor }}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: `2px solid ${accentColor}`,
+                    color: accentColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textDecoration: 'none'
+                  }}
                 >
                   <ExternalLink size={20} />
                 </a>
@@ -595,53 +661,89 @@ const VinylPriceFinder = () => {
 
     return (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.95)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}
         onClick={() => setShowSettings(false)}
       >
         <div 
-          className="rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-          style={{ backgroundColor: primaryColor }}
+          style={{
+            backgroundColor: primaryColor,
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 z-10 p-4 flex justify-between items-center border-b"
-            style={{ backgroundColor: primaryColor, borderColor: accentColor }}
-          >
-            <h3 className="font-bold text-lg">Settings</h3>
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            padding: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: `1px solid ${accentColor}`,
+            backgroundColor: primaryColor,
+            zIndex: 10
+          }}>
+            <h3 style={{ fontWeight: 'bold', fontSize: '18px' }}>Settings</h3>
             <button onClick={() => setShowSettings(false)}>
               <X size={24} style={{ color: accentColor }} />
             </button>
           </div>
           
-          <div className="p-4 space-y-6">
-            <div>
-              <label className="block text-sm font-semibold mb-2">Discogs API Token</label>
+          <div style={{ padding: '16px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Discogs API Token
+              </label>
               <input
                 type="password"
                 value={discogsToken}
                 onChange={(e) => setDiscogsToken(e.target.value)}
                 placeholder="Enter your token"
-                className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#1f2937',
+                  color: 'white',
+                  border: 'none'
+                }}
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
                 Get your token at discogs.com/settings/developers
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold mb-2">Price Sources</label>
-              <div className="space-y-2">
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Price Sources
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { id: 'discogs', name: 'Discogs' },
                   { id: 'hhv', name: 'HHV' },
                   { id: 'ebay', name: 'eBay' }
                 ].map(shop => (
-                  <label key={shop.id} className="flex items-center gap-3">
+                  <label key={shop.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <input
                       type="checkbox"
                       checked={selectedShops.includes(shop.id)}
                       onChange={() => toggleShop(shop.id)}
-                      className="w-5 h-5"
+                      style={{ width: '20px', height: '20px' }}
                     />
                     <span>{shop.name}</span>
                   </label>
@@ -649,46 +751,72 @@ const VinylPriceFinder = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold mb-2">Primary Color</label>
-              <div className="flex gap-2">
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Primary Color
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-16 h-10 rounded cursor-pointer"
+                  style={{ width: '64px', height: '40px', borderRadius: '8px', cursor: 'pointer' }}
                 />
                 <input
                   type="text"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-800 text-white"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1f2937',
+                    color: 'white',
+                    border: 'none'
+                  }}
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold mb-2">Accent Color</label>
-              <div className="flex gap-2">
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                Accent Color
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="color"
                   value={accentColor}
                   onChange={(e) => setAccentColor(e.target.value)}
-                  className="w-16 h-10 rounded cursor-pointer"
+                  style={{ width: '64px', height: '40px', borderRadius: '8px', cursor: 'pointer' }}
                 />
                 <input
                   type="text"
                   value={accentColor}
                   onChange={(e) => setAccentColor(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-800 text-white"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1f2937',
+                    color: 'white',
+                    border: 'none'
+                  }}
                 />
               </div>
             </div>
 
             <button
               onClick={saveSettings}
-              className="w-full py-3 rounded-lg font-semibold"
-              style={{ backgroundColor: accentColor, color: primaryColor }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                backgroundColor: accentColor,
+                color: primaryColor,
+                border: 'none',
+                cursor: 'pointer'
+              }}
             >
               Save Settings
             </button>
@@ -699,28 +827,58 @@ const VinylPriceFinder = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen text-white" style={{ backgroundColor: '#1a1a1a' }}>
-      <div 
-        className="flex-shrink-0 px-4 py-4 flex justify-between items-center"
-        style={{ backgroundColor: primaryColor }}
-      >
-        <h1 className="text-2xl font-bold" style={{ color: accentColor }}>VinylScout</h1>
-        <button onClick={() => setShowSettings(true)}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      backgroundColor: '#1a1a1a',
+      color: 'white',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      {/* Header */}
+      <div style={{
+        flexShrink: 0,
+        padding: '16px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: primaryColor
+      }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>VinylScout</h1>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
           <Settings size={24} style={{ color: accentColor }} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4" style={{ paddingBottom: '100px' }}>
+      {/* Content */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px',
+        paddingBottom: '100px'
+      }}>
         {activeTab === 'search' && renderSearchTab()}
         {activeTab === 'camera' && renderCameraTab()}
         {activeTab === 'collection' && renderCollectionTab()}
         {activeTab === 'profile' && renderProfileTab()}
       </div>
 
-      <div 
-        className="flex-shrink-0 grid grid-cols-4 gap-0 border-t"
-        style={{ backgroundColor: primaryColor, borderColor: accentColor }}
-      >
+      {/* Bottom Navigation - FIXED IN ONE ROW */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: primaryColor,
+        borderTop: `1px solid ${accentColor}`,
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        padding: '12px 8px',
+        zIndex: 1000,
+        flexShrink: 0
+      }}>
         {[
           { id: 'search', icon: Search, label: 'Search' },
           { id: 'camera', icon: Camera, label: 'Camera' },
@@ -730,11 +888,22 @@ const VinylPriceFinder = () => {
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className="flex flex-col items-center gap-1 py-3"
-            style={{ color: activeTab === id ? accentColor : '#666' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              flex: '1 1 0',
+              minWidth: 0,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: activeTab === id ? accentColor : '#666'
+            }}
           >
             <Icon size={24} />
-            <span className="text-xs">{label}</span>
+            <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{label}</span>
           </button>
         ))}
       </div>
