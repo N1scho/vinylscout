@@ -24,6 +24,7 @@ const VinylPriceFinder = () => {
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
   const [collectionFilter, setCollectionFilter] = useState('all'); // 'all' or 'favorites'
+  const [showStatsDetail, setShowStatsDetail] = useState(false);
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
@@ -466,6 +467,42 @@ const VinylPriceFinder = () => {
     };
   };
 
+  // Get collection statistics details
+  const getCollectionStats = () => {
+    const itemsWithPrices = collection.filter(item => item.price && item.price.value);
+    
+    if (itemsWithPrices.length === 0) {
+      return {
+        highest: null,
+        lowest: null,
+        oldest: null,
+        newest: null,
+        mostExpensive5: [],
+        cheapest5: []
+      };
+    }
+
+    // Sort by price
+    const sortedByPrice = [...itemsWithPrices].sort((a, b) => b.price.value - a.price.value);
+    
+    // Sort by year
+    const itemsWithYear = collection.filter(item => item.year);
+    const sortedByYear = [...itemsWithYear].sort((a, b) => {
+      const yearA = parseInt(a.year) || 9999;
+      const yearB = parseInt(b.year) || 9999;
+      return yearA - yearB;
+    });
+
+    return {
+      highest: sortedByPrice[0],
+      lowest: sortedByPrice[sortedByPrice.length - 1],
+      oldest: sortedByYear[0],
+      newest: sortedByYear[sortedByYear.length - 1],
+      mostExpensive5: sortedByPrice.slice(0, 5),
+      cheapest5: sortedByPrice.slice(-5).reverse()
+    };
+  };
+
   return (
     <div 
       className="w-full h-full"
@@ -508,26 +545,27 @@ const VinylPriceFinder = () => {
         {activeTab === 'search' && (
           <div className="space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1 }}>
-              {/* Simple Search Bar */}
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Search for albums or artists..."
-                  className="w-full rounded-xl text-white placeholder-white/50 focus:outline-none"
-                  style={{ 
-                    backgroundColor: secondaryColor,
-                    padding: '18px 20px',
-                    fontSize: '16px',
-                    border: '2px solid rgba(255, 255, 255, 0.2)',
-                    borderColor: accentColor + '40'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = accentColor}
-                  onBlur={(e) => e.target.style.borderColor = accentColor + '40'}
-                />
-              </div>
+              {/* Simple Search Bar - FULL WIDTH */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Search for albums or artists..."
+                className="text-white placeholder-white/50 focus:outline-none"
+                style={{ 
+                  backgroundColor: secondaryColor,
+                  padding: '20px 24px',
+                  fontSize: '18px',
+                  border: '3px solid',
+                  borderColor: accentColor + '60',
+                  borderRadius: '16px',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => e.target.style.borderColor = accentColor}
+                onBlur={(e) => e.target.style.borderColor = accentColor + '60'}
+              />
 
               {/* Advanced Search Toggle */}
               <button
@@ -1003,14 +1041,26 @@ const VinylPriceFinder = () => {
             {/* Collection Value */}
             <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-3">Collection Value</h3>
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer"
+                onClick={() => setShowStatsDetail(true)}
+                style={{ transition: 'opacity 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
                 <span className="text-white/60">Total Value:</span>
-                <span className="text-2xl font-bold" style={{ color: accentColor }}>
-                  {calculateCollectionValue().currency} {calculateCollectionValue().value}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                    {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                  </span>
+                  <ChevronRight size={20} style={{ color: accentColor }} />
+                </div>
               </div>
               <p className="text-white/40 text-xs mt-2">
                 Based on {calculateCollectionValue().count} of {collection.length} records with price data
+              </p>
+              <p className="text-white/40 text-xs mt-1">
+                Tap to view detailed statistics →
               </p>
             </div>
 
@@ -1204,6 +1254,170 @@ const VinylPriceFinder = () => {
           </span>
         </button>
       </div>
+
+      {/* Collection Statistics Detail Modal */}
+      {showStatsDetail && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000,
+            overflowY: 'auto'
+          }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: '448px',
+              backgroundColor: primaryColor,
+              border: `1px solid ${accentColor}`,
+              borderRadius: '8px',
+              padding: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 'auto'
+            }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">Collection Statistics</h2>
+              <button onClick={() => setShowStatsDetail(false)}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+
+            {(() => {
+              const stats = getCollectionStats();
+              
+              return (
+                <div className="space-y-4">
+                  {/* Most Expensive */}
+                  {stats.highest && (
+                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                        <span>💎</span> Most Expensive Record
+                      </h3>
+                      <div className="flex gap-3">
+                        {stats.highest.cover_image && (
+                          <img src={stats.highest.cover_image} alt={stats.highest.title} className="w-20 h-20 rounded object-cover" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm">{stats.highest.title?.split(' - ')[0] || 'Unknown'}</p>
+                          <p className="text-white/70 text-xs">{stats.highest.title?.split(' - ')[1] || stats.highest.title}</p>
+                          <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
+                            {stats.highest.price.currency} {Number(stats.highest.price.value).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cheapest */}
+                  {stats.lowest && (
+                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                        <span>💰</span> Cheapest Record
+                      </h3>
+                      <div className="flex gap-3">
+                        {stats.lowest.cover_image && (
+                          <img src={stats.lowest.cover_image} alt={stats.lowest.title} className="w-20 h-20 rounded object-cover" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm">{stats.lowest.title?.split(' - ')[0] || 'Unknown'}</p>
+                          <p className="text-white/70 text-xs">{stats.lowest.title?.split(' - ')[1] || stats.lowest.title}</p>
+                          <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
+                            {stats.lowest.price.currency} {Number(stats.lowest.price.value).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Oldest & Newest */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {stats.oldest && (
+                      <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                        <h3 className="text-white font-semibold mb-2 text-sm flex items-center gap-1">
+                          <span>⏳</span> Oldest
+                        </h3>
+                        {stats.oldest.cover_image && (
+                          <img src={stats.oldest.cover_image} alt={stats.oldest.title} className="w-full aspect-square rounded object-cover mb-2" />
+                        )}
+                        <p className="text-white text-xs font-semibold">{stats.oldest.title?.split(' - ')[0] || 'Unknown'}</p>
+                        <p className="text-white/70 text-xs" style={{ color: accentColor }}>{stats.oldest.year}</p>
+                      </div>
+                    )}
+                    
+                    {stats.newest && (
+                      <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                        <h3 className="text-white font-semibold mb-2 text-sm flex items-center gap-1">
+                          <span>🆕</span> Newest
+                        </h3>
+                        {stats.newest.cover_image && (
+                          <img src={stats.newest.cover_image} alt={stats.newest.title} className="w-full aspect-square rounded object-cover mb-2" />
+                        )}
+                        <p className="text-white text-xs font-semibold">{stats.newest.title?.split(' - ')[0] || 'Unknown'}</p>
+                        <p className="text-white/70 text-xs" style={{ color: accentColor }}>{stats.newest.year}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Top 5 Most Expensive */}
+                  {stats.mostExpensive5.length > 0 && (
+                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                        <span>🏆</span> Top 5 Most Expensive
+                      </h3>
+                      <div className="space-y-2">
+                        {stats.mostExpensive5.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-white/60 text-sm font-bold" style={{ minWidth: '20px' }}>#{idx + 1}</span>
+                              <span className="text-white text-sm truncate">{item.title?.split(' - ')[0] || 'Unknown'}</span>
+                            </div>
+                            <span className="text-white font-bold text-sm" style={{ color: accentColor }}>
+                              {item.price.currency} {Number(item.price.value).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top 5 Cheapest */}
+                  {stats.cheapest5.length > 0 && (
+                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                        <span>🎯</span> Top 5 Cheapest
+                      </h3>
+                      <div className="space-y-2">
+                        {stats.cheapest5.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-white/60 text-sm font-bold" style={{ minWidth: '20px' }}>#{idx + 1}</span>
+                              <span className="text-white text-sm truncate">{item.title?.split(' - ')[0] || 'Unknown'}</span>
+                            </div>
+                            <span className="text-white font-bold text-sm" style={{ color: accentColor }}>
+                              {item.price.currency} {Number(item.price.value).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (
