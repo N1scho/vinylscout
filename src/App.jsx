@@ -13,7 +13,7 @@ const VinylPriceFinder = () => {
     genre: ''
   });
   const [searchResults, setSearchResults] = useState([]);
-  const [resultPrices, setResultPrices] = useState({}); // Store prices for each result
+  const [resultPrices, setResultPrices] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -21,13 +21,14 @@ const VinylPriceFinder = () => {
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [collection, setCollection] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const [collectionView, setCollectionView] = useState('grid'); // 'grid' or 'list'
-  const [collectionSort, setCollectionSort] = useState('artist-asc'); // sort option
+  const [collectionView, setCollectionView] = useState('grid');
+  const [collectionSort, setCollectionSort] = useState('artist-asc');
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
   const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
+  const [selectedTheme, setSelectedTheme] = useState('custom');
   const [primaryColor, setPrimaryColor] = useState('#000000');
   const [accentColor, setAccentColor] = useState('#ffb700');
   
@@ -35,11 +36,25 @@ const VinylPriceFinder = () => {
   const videoRef = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
+  // Theme presets
+  const themePresets = [
+    { id: 'custom', name: 'Custom', primary: primaryColor, accent: accentColor },
+    { id: 'dark', name: 'Dark Mode', primary: '#000000', accent: '#ffb700' },
+    { id: 'midnight', name: 'Midnight Blue', primary: '#0a1929', accent: '#00d4ff' },
+    { id: 'forest', name: 'Forest Green', primary: '#0d1f15', accent: '#4ade80' },
+    { id: 'sunset', name: 'Sunset Orange', primary: '#1a0f0a', accent: '#ff6b35' },
+    { id: 'purple', name: 'Purple Haze', primary: '#1a0a2e', accent: '#c77dff' },
+    { id: 'retro', name: 'Retro Cream', primary: '#2d1b00', accent: '#ffd700' },
+    { id: 'ocean', name: 'Deep Ocean', primary: '#001a33', accent: '#00d9ff' },
+    { id: 'berry', name: 'Berry Pink', primary: '#1a0614', accent: '#ff006e' }
+  ];
+
   // Load settings from localStorage
   useEffect(() => {
     const savedToken = localStorage.getItem('discogsToken');
     const savedAnthropicToken = localStorage.getItem('anthropicToken');
     const savedShops = localStorage.getItem('selectedShops');
+    const savedTheme = localStorage.getItem('selectedTheme');
     const savedPrimaryColor = localStorage.getItem('primaryColor');
     const savedAccentColor = localStorage.getItem('accentColor');
     const savedCollection = localStorage.getItem('collection');
@@ -48,17 +63,31 @@ const VinylPriceFinder = () => {
     if (savedToken) setDiscogsToken(savedToken);
     if (savedAnthropicToken) setAnthropicToken(savedAnthropicToken);
     if (savedShops) setSelectedShops(JSON.parse(savedShops));
+    if (savedTheme) setSelectedTheme(savedTheme);
     if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
     if (savedAccentColor) setAccentColor(savedAccentColor);
     if (savedCollection) setCollection(JSON.parse(savedCollection));
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
   }, []);
 
+  // Apply theme
+  const applyTheme = (themeId) => {
+    setSelectedTheme(themeId);
+    if (themeId !== 'custom') {
+      const theme = themePresets.find(t => t.id === themeId);
+      if (theme) {
+        setPrimaryColor(theme.primary);
+        setAccentColor(theme.accent);
+      }
+    }
+  };
+
   // Save settings to localStorage
   const saveSettings = () => {
     localStorage.setItem('discogsToken', discogsToken);
     localStorage.setItem('anthropicToken', anthropicToken);
     localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
+    localStorage.setItem('selectedTheme', selectedTheme);
     localStorage.setItem('primaryColor', primaryColor);
     localStorage.setItem('accentColor', accentColor);
     setShowSettings(false);
@@ -76,7 +105,6 @@ const VinylPriceFinder = () => {
       let searchUrl = 'https://api.discogs.com/database/search?';
       
       if (isAdvanced) {
-        // Advanced search with individual fields
         const params = [];
         if (advancedSearch.artist) params.push(`artist=${encodeURIComponent(advancedSearch.artist)}`);
         if (advancedSearch.album) params.push(`release_title=${encodeURIComponent(advancedSearch.album)}`);
@@ -92,7 +120,6 @@ const VinylPriceFinder = () => {
         
         searchUrl += params.join('&') + '&per_page=10&type=release';
       } else {
-        // Simple search - use override if provided (from AI)
         const query = queryOverride || searchQuery;
         if (!query.trim()) {
           setIsLoading(false);
@@ -101,16 +128,12 @@ const VinylPriceFinder = () => {
         searchUrl += `q=${encodeURIComponent(query)}&per_page=10&type=release`;
       }
       
-      console.log('Search URL:', searchUrl);
-      
       const response = await fetch(searchUrl, {
         headers: {
           'Authorization': `Discogs token=${discogsToken}`,
           'User-Agent': 'VinylScout/1.0'
         }
       });
-      
-      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -121,11 +144,9 @@ const VinylPriceFinder = () => {
       }
       
       const data = await response.json();
-      console.log('Search results:', data);
       
       if (data.results && data.results.length > 0) {
         setSearchResults(data.results);
-        // Fetch prices for all results
         fetchAllPrices(data.results);
       } else {
         setSearchResults([]);
@@ -184,10 +205,8 @@ const VinylPriceFinder = () => {
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
     
-    // Convert canvas to base64
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
-    // If Anthropic token is available, use AI to identify the album
     if (anthropicToken) {
       identifyAlbumWithAI(imageData);
     } else {
@@ -197,7 +216,7 @@ const VinylPriceFinder = () => {
     stopCamera();
   };
 
-  // AI Image Recognition using Anthropic API
+  // AI Image Recognition
   const identifyAlbumWithAI = async (imageBase64) => {
     setIsLoading(true);
     try {
@@ -235,7 +254,6 @@ const VinylPriceFinder = () => {
       
       if (data.content && data.content[0] && data.content[0].text) {
         const albumInfo = data.content[0].text.trim();
-        // Use the identified info to search Discogs
         setSearchQuery(albumInfo);
         searchDiscogs(false, albumInfo);
         setActiveTab('search');
@@ -261,7 +279,6 @@ const VinylPriceFinder = () => {
 
   // Collection & Favorites
   const addToCollection = (item) => {
-    // Add price data if available
     const priceData = resultPrices[item.id];
     const itemWithPrice = {
       ...item,
@@ -304,12 +321,11 @@ const VinylPriceFinder = () => {
 
   const isFavorited = (item) => favorites.some(f => f.id === item.id);
 
-  // Fetch price information for a single result
+  // Fetch price information
   const fetchPriceInfo = async (releaseId) => {
     if (!discogsToken) return null;
     
     try {
-      // Get marketplace statistics
       const statsResponse = await fetch(
         `https://api.discogs.com/marketplace/stats/${releaseId}`,
         {
@@ -323,19 +339,14 @@ const VinylPriceFinder = () => {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         
-        // Calculate better average price
-        // Use median price if available, otherwise calculate from lowest/highest
         let displayPrice = null;
         
         if (statsData.lowest_price) {
-          // If we have both lowest and highest, calculate a realistic average
           if (statsData.lowest_price && statsData.num_for_sale > 0) {
-            // Use lowest price but add context
             displayPrice = {
               value: statsData.lowest_price.value,
               currency: statsData.lowest_price.currency,
               num_for_sale: statsData.num_for_sale,
-              // Store full stats for detail view
               stats: statsData
             };
           }
@@ -349,7 +360,7 @@ const VinylPriceFinder = () => {
     return null;
   };
 
-  // Fetch prices for all search results
+  // Fetch prices for all results
   const fetchAllPrices = async (results) => {
     const prices = {};
     for (const result of results.slice(0, 10)) {
@@ -357,25 +368,21 @@ const VinylPriceFinder = () => {
       if (priceData) {
         prices[result.id] = priceData;
       }
-      // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 400));
     }
     setResultPrices(prices);
   };
 
-  // Calculate display price based on selected shops and available data
+  // Calculate display price
   const calculateDisplayPrice = (priceData) => {
     if (!priceData) return null;
-    
-    // Currently only Discogs has API access
-    // HHV and eBay would require web scraping or paid APIs
     
     if (selectedShops.includes('discogs') && priceData.value) {
       return {
         value: priceData.value.toFixed(2),
         currency: priceData.currency,
         type: 'discogs',
-        label: 'from' // "from" indicates this is the lowest price
+        label: 'from'
       };
     }
     
@@ -436,7 +443,7 @@ const VinylPriceFinder = () => {
     }
   };
 
-  // Calculate total collection value
+  // Calculate collection value
   const calculateCollectionValue = () => {
     let total = 0;
     let count = 0;
@@ -498,179 +505,174 @@ const VinylPriceFinder = () => {
         style={{ 
           flex: 1,
           overflowY: 'auto',
-          paddingBottom: '90px'
+          paddingBottom: '100px',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
         {/* Search Tab */}
         {activeTab === 'search' && (
-          <div className="space-y-4">
-            {/* Simple Search Bar */}
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Quick search..."
-                className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
-              />
+          <div className="space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1 }}>
+              {/* Simple Search Bar */}
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Quick search..."
+                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              {/* Advanced Search Toggle */}
+              <button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className="w-full py-2 text-sm flex items-center justify-center gap-2 mt-3"
+                style={{ color: accentColor }}
+              >
+                {showAdvancedSearch ? '▲' : '▼'} Advanced Search
+              </button>
+
+              {/* Advanced Search Fields */}
+              {showAdvancedSearch && (
+                <div className="space-y-3 bg-white/5 rounded-lg p-4 border border-white/10 mt-3">
+                  <div>
+                    <label className="block text-white/60 text-xs mb-1">Artist</label>
+                    <input
+                      type="text"
+                      value={advancedSearch.artist}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, artist: e.target.value})}
+                      placeholder="e.g. Pink Floyd"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-xs mb-1">Album</label>
+                    <input
+                      type="text"
+                      value={advancedSearch.album}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, album: e.target.value})}
+                      placeholder="e.g. Dark Side of the Moon"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-xs mb-1">Year of Release</label>
+                    <input
+                      type="text"
+                      value={advancedSearch.year}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, year: e.target.value})}
+                      placeholder="e.g. 1973"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-xs mb-1">Publisher/Label</label>
+                    <input
+                      type="text"
+                      value={advancedSearch.label}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, label: e.target.value})}
+                      placeholder="e.g. Columbia Records"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-xs mb-1">Genre</label>
+                    <input
+                      type="text"
+                      value={advancedSearch.genre}
+                      onChange={(e) => setAdvancedSearch({...advancedSearch, genre: e.target.value})}
+                      placeholder="e.g. Rock, Jazz, Electronic"
+                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
+                  {searchResults.map((result) => {
+                    const price = calculateDisplayPrice(resultPrices[result.id]);
+                    return (
+                      <div
+                        key={result.id}
+                        onClick={() => setSelectedResult(result)}
+                        className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                      >
+                        <div className="flex gap-3">
+                          {result.cover_image && result.cover_image !== '' ? (
+                            <img
+                              src={result.cover_image}
+                              alt={result.title}
+                              className="w-24 h-24 rounded object-cover flex-shrink-0"
+                              style={{ objectFit: 'cover', width: '96px', height: '96px' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-24 h-24 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                              <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <h3 className="text-white font-bold text-base mb-1" style={{ lineHeight: '1.2' }}>
+                                {result.title ? result.title.split(' - ')[0] : 'Unknown Artist'}
+                              </h3>
+                              <p className="text-white/80 text-sm mb-2" style={{ lineHeight: '1.2' }}>
+                                {result.title ? (result.title.split(' - ')[1] || result.title) : 'Unknown Album'}
+                              </p>
+                            </div>
+                            <div>
+                              {price ? (
+                                <div>
+                                  <p className="text-xs text-white/60 mb-1">{price.label} Discogs</p>
+                                  <p className="text-lg font-bold" style={{ color: accentColor }}>
+                                    {price.currency} {price.value}
+                                  </p>
+                                </div>
+                              ) : resultPrices[result.id] === undefined ? (
+                                <p className="text-sm" style={{ color: accentColor }}>Loading price...</p>
+                              ) : (
+                                <p className="text-sm text-white/60">Price unavailable</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!isLoading && searchResults.length === 0 && searchQuery && (
+                <div className="text-center py-8">
+                  <p className="text-white/60">No results found</p>
+                  <p className="text-white/40 text-sm mt-2">Try different search terms</p>
+                </div>
+              )}
             </div>
 
-            {/* Advanced Search Toggle */}
-            <button
-              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              className="w-full py-2 text-sm flex items-center justify-center gap-2"
-              style={{ color: accentColor }}
-            >
-              {showAdvancedSearch ? '▲' : '▼'} Advanced Search
-            </button>
-
-            {/* Advanced Search Fields */}
-            {showAdvancedSearch && (
-              <div className="space-y-3 bg-white/5 rounded-lg p-4 border border-white/10">
-                <div>
-                  <label className="block text-white/60 text-xs mb-1">Artist</label>
-                  <input
-                    type="text"
-                    value={advancedSearch.artist}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, artist: e.target.value})}
-                    placeholder="e.g. Pink Floyd"
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-xs mb-1">Album</label>
-                  <input
-                    type="text"
-                    value={advancedSearch.album}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, album: e.target.value})}
-                    placeholder="e.g. Dark Side of the Moon"
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-xs mb-1">Year of Release</label>
-                  <input
-                    type="text"
-                    value={advancedSearch.year}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, year: e.target.value})}
-                    placeholder="e.g. 1973"
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-xs mb-1">Publisher/Label</label>
-                  <input
-                    type="text"
-                    value={advancedSearch.label}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, label: e.target.value})}
-                    placeholder="e.g. Columbia Records"
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-xs mb-1">Genre</label>
-                  <input
-                    type="text"
-                    value={advancedSearch.genre}
-                    onChange={(e) => setAdvancedSearch({...advancedSearch, genre: e.target.value})}
-                    placeholder="e.g. Rock, Jazz, Electronic"
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
-                  />
-                </div>
-
-                <button
-                  onClick={handleAdvancedSearch}
-                  disabled={isLoading}
-                  className="w-full py-3 rounded-lg font-semibold transition-all mt-2"
-                  style={{ backgroundColor: accentColor, color: primaryColor }}
-                >
-                  {isLoading ? 'Searching...' : 'Search'}
-                </button>
-              </div>
-            )}
-
-            {/* Quick Search Button (only show when advanced is closed) */}
-            {!showAdvancedSearch && (
+            {/* Search Button - Fixed at bottom of search content */}
+            <div style={{ paddingTop: '16px', paddingBottom: '8px' }}>
               <button
-                onClick={handleSearch}
+                onClick={showAdvancedSearch ? handleAdvancedSearch : handleSearch}
                 disabled={isLoading}
                 className="w-full py-3 rounded-lg font-semibold transition-all"
                 style={{ backgroundColor: accentColor, color: primaryColor }}
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
-            )}
-
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="space-y-3 mt-4">
-                <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
-                {searchResults.map((result) => {
-                  const price = calculateDisplayPrice(resultPrices[result.id]);
-                  return (
-                    <div
-                      key={result.id}
-                      onClick={() => setSelectedResult(result)}
-                      className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
-                    >
-                      <div className="flex gap-3">
-                        {result.cover_image && result.cover_image !== '' ? (
-                          <img
-                            src={result.cover_image}
-                            alt={result.title}
-                            className="w-24 h-24 rounded object-cover flex-shrink-0"
-                            style={{ objectFit: 'cover', width: '96px', height: '96px' }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-24 h-24 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
-                            <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-                          <div>
-                            <h3 className="text-white font-bold text-base mb-1" style={{ lineHeight: '1.2' }}>
-                              {result.title ? result.title.split(' - ')[0] : 'Unknown Artist'}
-                            </h3>
-                            <p className="text-white/80 text-sm mb-2" style={{ lineHeight: '1.2' }}>
-                              {result.title ? (result.title.split(' - ')[1] || result.title) : 'Unknown Album'}
-                            </p>
-                          </div>
-                          <div>
-                            {price ? (
-                              <div>
-                                <p className="text-xs text-white/60 mb-1">{price.label} Discogs</p>
-                                <p className="text-lg font-bold" style={{ color: accentColor }}>
-                                  {price.currency} {price.value}
-                                </p>
-                              </div>
-                            ) : resultPrices[result.id] === undefined ? (
-                              <p className="text-sm" style={{ color: accentColor }}>Loading price...</p>
-                            ) : (
-                              <p className="text-sm text-white/60">Price unavailable</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {!isLoading && searchResults.length === 0 && searchQuery && (
-              <div className="text-center py-8">
-                <p className="text-white/60">No results found</p>
-                <p className="text-white/40 text-sm mt-2">Try different search terms</p>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -755,37 +757,48 @@ const VinylPriceFinder = () => {
                   <div
                     key={idx}
                     onClick={() => setSelectedResult(item)}
-                    className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                    className="bg-white/10 rounded-lg p-2 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
                   >
                     {collectionView === 'grid' ? (
-                      // Grid View - Compact
+                      // Grid View - Fixed size tiles
                       <div className="flex flex-col">
-                        {item.cover_image ? (
-                          <img
-                            src={item.cover_image}
-                            alt={item.title}
-                            style={{
+                        <div style={{
+                          position: 'relative',
+                          width: '100%',
+                          paddingTop: '100%',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          marginBottom: '8px'
+                        }}>
+                          {item.cover_image ? (
+                            <img
+                              src={item.cover_image}
+                              alt={item.title}
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
                               width: '100%',
-                              aspectRatio: '1',
-                              objectFit: 'cover',
-                              borderRadius: '8px',
-                              marginBottom: '8px'
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '100%',
-                            aspectRatio: '1',
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(255,255,255,0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '8px'
-                          }}>
-                            <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
-                          </div>
-                        )}
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                            </div>
+                          )}
+                        </div>
                         <h3 className="text-white font-bold text-xs mb-1" style={{ 
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -810,7 +823,7 @@ const VinylPriceFinder = () => {
                       </div>
                     ) : (
                       // List View - Detailed
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 p-1">
                         {item.cover_image ? (
                           <img
                             src={item.cover_image}
@@ -1011,7 +1024,7 @@ const VinylPriceFinder = () => {
         )}
       </div>
 
-      {/* Fixed Bottom Navigation - EXACTLY 5 BUTTONS IN ONE ROW */}
+      {/* Fixed Bottom Navigation */}
       <div 
         style={{ 
           position: 'fixed',
@@ -1219,6 +1232,87 @@ const VinylPriceFinder = () => {
             </div>
 
             <div className="space-y-6">
+              {/* Theme Selection */}
+              <div>
+                <label className="block text-white/80 text-sm mb-3 font-semibold">
+                  Theme
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {themePresets.map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => applyTheme(theme.id)}
+                      className="px-3 py-2 rounded text-sm font-medium border-2 transition-all"
+                      style={{
+                        backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : 'transparent',
+                        borderColor: theme.id === selectedTheme ? accentColor : 'rgba(255,255,255,0.2)',
+                        color: theme.id === selectedTheme ? accentColor : 'white'
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            backgroundColor: theme.accent,
+                            border: '2px solid rgba(255,255,255,0.3)'
+                          }}
+                        />
+                        {theme.name}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Colors - Only show when Custom theme selected */}
+              {selectedTheme === 'custom' && (
+                <>
+                  {/* Primary Color */}
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">
+                      Background Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">
+                      Accent Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* Discogs Token */}
               <div>
                 <label className="block text-white/80 text-sm mb-2">
@@ -1299,48 +1393,6 @@ const VinylPriceFinder = () => {
                 </div>
               </div>
 
-              {/* Primary Color */}
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Background Color
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="w-12 h-10 rounded cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Accent Color */}
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Accent Color
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="w-12 h-10 rounded cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
-                  />
-                </div>
-              </div>
-
               {/* Save Button */}
               <button
                 onClick={saveSettings}
@@ -1415,7 +1467,7 @@ const VinylPriceFinder = () => {
             )}
 
             <div className="space-y-3 mb-6">
-              {/* Price Information - Prominent */}
+              {/* Price Information */}
               <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <h3 className="text-white font-semibold mb-3">Price Information</h3>
                 {resultPrices[selectedResult.id] ? (
