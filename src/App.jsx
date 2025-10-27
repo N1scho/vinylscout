@@ -14,6 +14,8 @@ const VinylPriceFinder = () => {
   const [collectionView, setCollectionView] = useState('gallery');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [resultsPage, setResultsPage] = useState(1);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
   
   const [advancedFilters, setAdvancedFilters] = useState({
     artist: '', album: '', year: '', label: '', catno: '', barcode: ''
@@ -57,7 +59,7 @@ const VinylPriceFinder = () => {
     alert('Saved!');
   };
 
-  const searchDiscogs = async () => {
+  const searchDiscogs = async (page = 1) => {
     if (!discogsToken || !searchQuery.trim()) {
       alert('Enter search and token');
       return;
@@ -75,7 +77,7 @@ const VinylPriceFinder = () => {
       }
 
       const res = await fetch(
-        `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=10`,
+        `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=10&page=${page}`,
         { headers: { 'Authorization': `Discogs token=${discogsToken}`, 'User-Agent': 'VinylScout/1.0' }}
       );
 
@@ -83,7 +85,7 @@ const VinylPriceFinder = () => {
       const data = await res.json();
       
       const results = await Promise.all(
-        data.results.slice(0, 10).map(async (r) => {
+        data.results.map(async (r) => {
           try {
             const pRes = await fetch(
               `https://api.discogs.com/marketplace/stats/${r.id}`,
@@ -98,7 +100,14 @@ const VinylPriceFinder = () => {
         })
       );
 
-      setSearchResults(results);
+      if (page === 1) {
+        setSearchResults(results);
+      } else {
+        setSearchResults(prev => [...prev, ...results]);
+      }
+      
+      setResultsPage(page);
+      setHasMoreResults(results.length === 10);
     } catch (e) {
       alert('Search failed');
     } finally {
@@ -146,11 +155,42 @@ const VinylPriceFinder = () => {
 
   const getStats = () => {
     if (collection.length === 0) return null;
+    
     const withPrices = collection.filter(i => i.price);
     const mostExp = withPrices.length > 0 ? withPrices.reduce((max, i) => i.price > max.price ? i : max) : null;
     const cheapest = withPrices.length > 0 ? withPrices.reduce((min, i) => i.price < min.price ? i : min) : null;
     const avgPrice = withPrices.length > 0 ? (withPrices.reduce((sum, i) => sum + i.price, 0) / withPrices.length).toFixed(2) : 0;
-    return { mostExp, cheapest, avgPrice };
+    
+    // Top Artist
+    const artists = {};
+    collection.forEach(item => {
+      const artist = item.title?.split(' - ')[0] || 'Unknown';
+      artists[artist] = (artists[artist] || 0) + 1;
+    });
+    const topArtist = Object.entries(artists).sort((a, b) => b[1] - a[1])[0];
+    
+    // Top Genres
+    const genres = {};
+    collection.forEach(item => {
+      if (item.genre && Array.isArray(item.genre)) {
+        item.genre.forEach(g => {
+          genres[g] = (genres[g] || 0) + 1;
+        });
+      }
+    });
+    const topGenres = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    
+    // Decades
+    const decades = {};
+    collection.forEach(item => {
+      if (item.year) {
+        const decade = Math.floor(item.year / 10) * 10;
+        decades[decade] = (decades[decade] || 0) + 1;
+      }
+    });
+    const decadesList = Object.entries(decades).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+    
+    return { mostExp, cheapest, avgPrice, topArtist, topGenres, decadesList };
   };
 
   const stats = getStats();
@@ -215,9 +255,15 @@ const VinylPriceFinder = () => {
               </div>
             )}
 
-            <button onClick={searchDiscogs} disabled={isLoading} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: accentColor, color: primaryColor, border: 'none', fontWeight: '600', cursor: 'pointer', marginBottom: '16px' }}>
+            <button onClick={() => searchDiscogs(1)} disabled={isLoading} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: accentColor, color: primaryColor, border: 'none', fontWeight: '600', cursor: 'pointer', marginBottom: '16px' }}>
               {isLoading ? 'Searching...' : 'Search'}
             </button>
+
+            {searchResults.length > 0 && (
+              <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: primaryColor, borderRadius: '6px', textAlign: 'center', fontSize: '12px', color: '#999' }}>
+                Showing {searchResults.length} results {resultsPage > 1 && `(Page ${resultsPage})`}
+              </div>
+            )}
 
             {searchResults.map((r) => (
               <div key={r.id} onClick={() => setSelectedResult(r)} style={{ display: 'flex', gap: '12px', padding: '12px', marginBottom: '8px', backgroundColor: primaryColor, borderRadius: '8px', cursor: 'pointer' }}>
@@ -241,6 +287,25 @@ const VinylPriceFinder = () => {
                 </div>
               </div>
             ))}
+            
+            {hasMoreResults && !isLoading && (
+              <button
+                onClick={() => searchDiscogs(resultsPage + 1)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  marginTop: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: primaryColor,
+                  color: accentColor,
+                  border: `2px solid ${accentColor}`,
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Load More Results
+              </button>
+            )}
           </div>
         )}
 
@@ -407,32 +472,78 @@ const VinylPriceFinder = () => {
             <div style={{ padding: '16px' }}>
               {stats.mostExp && (
                 <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
-                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>MOST EXPENSIVE</h4>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Most Expensive</h4>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <img src={stats.mostExp.thumb || '/api/placeholder/60/60'} style={{ width: '60px', height: '60px', borderRadius: '6px' }} />
+                    <img src={stats.mostExp.cover_image || stats.mostExp.thumb || '/api/placeholder/60/60'} style={{ width: '60px', height: '60px', borderRadius: '6px', objectFit: 'cover' }} />
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: '600', fontSize: '13px' }}>{stats.mostExp.title}</p>
+                      <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px' }}>{stats.mostExp.title?.split(' - ')[0]}</p>
+                      <p style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>{stats.mostExp.title?.split(' - ')[1]}</p>
                       <p style={{ fontSize: '18px', fontWeight: 'bold', color: accentColor }}>€{stats.mostExp.price.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
               )}
+              
               {stats.cheapest && (
                 <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
-                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>CHEAPEST</h4>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Cheapest</h4>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <img src={stats.cheapest.thumb || '/api/placeholder/60/60'} style={{ width: '60px', height: '60px', borderRadius: '6px' }} />
+                    <img src={stats.cheapest.cover_image || stats.cheapest.thumb || '/api/placeholder/60/60'} style={{ width: '60px', height: '60px', borderRadius: '6px', objectFit: 'cover' }} />
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: '600', fontSize: '13px' }}>{stats.cheapest.title}</p>
+                      <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px' }}>{stats.cheapest.title?.split(' - ')[0]}</p>
+                      <p style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>{stats.cheapest.title?.split(' - ')[1]}</p>
                       <p style={{ fontSize: '18px', fontWeight: 'bold', color: accentColor }}>€{stats.cheapest.price.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
               )}
-              <div style={{ padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
-                <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>AVERAGE PRICE</h4>
-                <p style={{ fontSize: '28px', fontWeight: 'bold', color: accentColor }}>€{stats.avgPrice}</p>
-              </div>
+              
+              {stats.avgPrice > 0 && (
+                <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Average Price</h4>
+                  <p style={{ fontSize: '28px', fontWeight: 'bold', color: accentColor }}>€{stats.avgPrice}</p>
+                </div>
+              )}
+              
+              {stats.topArtist && (
+                <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Top Artist</h4>
+                  <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>{stats.topArtist[0]}</p>
+                  <p style={{ fontSize: '14px', color: '#999' }}>{stats.topArtist[1]} {stats.topArtist[1] === 1 ? 'album' : 'albums'}</p>
+                </div>
+              )}
+              
+              {stats.topGenres && stats.topGenres.length > 0 && (
+                <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Top 5 Genres</h4>
+                  {stats.topGenres.map(([genre, count], idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>{idx + 1}. {genre}</span>
+                      <span style={{ fontSize: '14px', color: accentColor, fontWeight: '600' }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {stats.decadesList && stats.decadesList.length > 0 && (
+                <div style={{ padding: '16px', backgroundColor: '#1f2937', borderRadius: '8px' }}>
+                  <h4 style={{ fontSize: '12px', color: '#999', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Records by Decade</h4>
+                  {stats.decadesList.map(([decade, count]) => {
+                    const percentage = (count / collection.length) * 100;
+                    return (
+                      <div key={decade} style={{ marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: '500' }}>{decade}s</span>
+                          <span style={{ fontSize: '14px', color: accentColor, fontWeight: '600' }}>{count} ({percentage.toFixed(0)}%)</span>
+                        </div>
+                        <div style={{ height: '8px', backgroundColor: '#333', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', backgroundColor: accentColor, width: `${percentage}%`, transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
