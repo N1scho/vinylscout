@@ -515,9 +515,17 @@ const VinylPriceFinder = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Quick search..."
-                  className="w-full px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
-                  style={{ backgroundColor: secondaryColor }}
+                  placeholder="Search for albums or artists..."
+                  className="w-full rounded-xl text-white placeholder-white/50 focus:outline-none"
+                  style={{ 
+                    backgroundColor: secondaryColor,
+                    padding: '18px 20px',
+                    fontSize: '16px',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    borderColor: accentColor + '40'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = accentColor}
+                  onBlur={(e) => e.target.style.borderColor = accentColor + '40'}
                 />
               </div>
 
