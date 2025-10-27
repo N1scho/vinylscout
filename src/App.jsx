@@ -313,9 +313,21 @@ const VinylPriceFinder = () => {
   );
 
   const renderCollectionTab = () => {
+    // Safety check - ensure collection is an array
+    if (!Array.isArray(collection)) {
+      return (
+        <div className="pb-4">
+          <div className="text-center py-12 text-gray-400">
+            <Music size={48} className="mx-auto mb-4 opacity-50" />
+            <p>No records in collection yet</p>
+          </div>
+        </div>
+      );
+    }
+
     let displayCollection = showFavoritesOnly 
-      ? collection.filter(item => item.isFavorite)
-      : collection;
+      ? collection.filter(item => item && item.isFavorite)
+      : collection.filter(item => item);
 
     displayCollection = [...displayCollection].sort((a, b) => {
       if (sortBy === 'artist') {
@@ -883,61 +895,57 @@ const VinylPriceFinder = () => {
         {activeTab === 'profile' && renderProfileTab()}
       </div>
 
-      {/* Bottom Navigation - FIXED IN ONE ROW */}
+      {/* Bottom Navigation - ABSOLUTELY FIXED */}
       <div style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
+        width: '100%',
         backgroundColor: primaryColor,
         borderTop: `1px solid ${accentColor}`,
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'nowrap',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        padding: '8px 4px',
-        zIndex: 1000,
-        flexShrink: 0
+        zIndex: 1000
       }}>
-        {[
-          { id: 'search', icon: Search, label: 'Search' },
-          { id: 'camera', icon: Camera, label: 'Camera' },
-          { id: 'collection', icon: Music, label: 'Collection' },
-          { id: 'profile', icon: User, label: 'Profile' }
-        ].map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
-              flex: '1 1 0',
-              minWidth: 0,
-              maxWidth: '25%',
-              background: 'none',
-              border: 'none',
-              padding: '4px 2px',
-              cursor: 'pointer',
-              color: activeTab === id ? accentColor : '#666',
-              overflow: 'hidden'
-            }}
-          >
-            <Icon size={22} style={{ flexShrink: 0 }} />
-            <span style={{ 
-              fontSize: '10px', 
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '100%'
-            }}>
-              {label}
-            </span>
-          </button>
-        ))}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 0,
+          width: '100%',
+          padding: '8px 0'
+        }}>
+          {[
+            { id: 'search', icon: Search, label: 'Search' },
+            { id: 'camera', icon: Camera, label: 'Camera' },
+            { id: 'collection', icon: Music, label: 'Collection' },
+            { id: 'profile', icon: User, label: 'Profile' }
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                color: activeTab === id ? accentColor : '#666'
+              }}
+            >
+              <Icon size={20} style={{ flexShrink: 0 }} />
+              <span style={{ 
+                fontSize: '9px', 
+                textAlign: 'center',
+                lineHeight: '1.2'
+              }}>
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {renderSettings()}
