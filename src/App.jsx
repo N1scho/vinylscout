@@ -38,30 +38,30 @@ const VinylPriceFinder = () => {
       if (savedCollection) {
         const parsed = JSON.parse(savedCollection);
         if (Array.isArray(parsed)) {
-          const validCollection = parsed.map(item => ({
+          setCollection(parsed.map(item => ({
             ...item,
             isFavorite: item.isFavorite || false
-          }));
-          setCollection(validCollection);
-          console.log('✅ Loaded collection:', validCollection.length, 'items');
+          })));
+          console.log('✅ Collection loaded:', parsed.length, 'items');
         }
       }
       
       const savedView = localStorage.getItem('vinylScoutCollectionView');
       if (savedView) setCollectionView(savedView);
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      console.error('❌ Error loading:', error);
     }
   }, []);
 
   const saveSettings = () => {
     try {
-      const settings = { discogsToken, selectedShops, primaryColor, accentColor };
-      localStorage.setItem('vinylScoutSettings', JSON.stringify(settings));
+      localStorage.setItem('vinylScoutSettings', JSON.stringify({ 
+        discogsToken, selectedShops, primaryColor, accentColor 
+      }));
       setShowSettings(false);
       alert('Settings saved!');
     } catch (error) {
-      alert('Failed to save settings');
+      alert('Failed to save');
     }
   };
 
@@ -72,13 +72,8 @@ const VinylPriceFinder = () => {
   };
 
   const searchDiscogs = async () => {
-    if (!searchQuery.trim()) {
-      alert('Please enter a search query');
-      return;
-    }
-    
-    if (!discogsToken) {
-      alert('Please add your Discogs token in settings');
+    if (!searchQuery.trim() || !discogsToken) {
+      alert('Please enter search query and Discogs token');
       return;
     }
 
@@ -120,7 +115,7 @@ const VinylPriceFinder = () => {
               };
             }
           } catch (error) {
-            console.error('Price fetch error:', error);
+            console.error('Price error:', error);
           }
           return result;
         })
@@ -129,7 +124,7 @@ const VinylPriceFinder = () => {
       setSearchResults(resultsWithPrices);
     } catch (error) {
       console.error('Search error:', error);
-      alert('Search failed. Please check your Discogs token.');
+      alert('Search failed');
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +173,7 @@ const VinylPriceFinder = () => {
         alert('Added to collection!');
       }
     } catch (error) {
-      alert('Failed to add to collection');
+      alert('Failed to add');
     }
   };
 
@@ -188,7 +183,7 @@ const VinylPriceFinder = () => {
       setCollection(newCollection);
       localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
     } catch (error) {
-      alert('Failed to remove from collection');
+      alert('Failed to remove');
     }
   };
 
@@ -200,7 +195,7 @@ const VinylPriceFinder = () => {
       setCollection(newCollection);
       localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
     } catch (error) {
-      alert('Failed to update favorite');
+      alert('Failed to update');
     }
   };
 
@@ -210,412 +205,6 @@ const VinylPriceFinder = () => {
     localStorage.setItem('vinylScoutCollectionView', newView);
   };
 
-  const SafeWrapper = ({ children }) => {
-    try {
-      return <>{children}</>;
-    } catch (error) {
-      console.error('Render error:', error);
-      return (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-          <p>Something went wrong</p>
-          <button onClick={() => window.location.reload()} style={{ marginTop: '10px' }}>
-            Reload
-          </button>
-        </div>
-      );
-    }
-  };
-
-  const renderSearchTab = () => (
-    <SafeWrapper>
-      <div style={{ paddingBottom: '16px' }}>
-        <div style={{ marginBottom: '16px' }}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
-            placeholder="Search artist or album..."
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              backgroundColor: primaryColor,
-              color: 'white',
-              border: `2px solid ${accentColor}`,
-              fontSize: '16px',
-              outline: 'none'
-            }}
-          />
-          <button
-            onClick={searchDiscogs}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              marginTop: '12px',
-              padding: '12px',
-              borderRadius: '8px',
-              backgroundColor: accentColor,
-              color: primaryColor,
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            {isLoading ? 'Searching...' : 'Search'}
-          </button>
-        </div>
-
-        {searchResults.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {searchResults.map((result) => (
-              <div
-                key={result.id}
-                onClick={() => setSelectedResult(result)}
-                style={{
-                  backgroundColor: primaryColor,
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  display: 'flex'
-                }}
-              >
-                <div style={{ width: '96px', height: '96px', flexShrink: 0, backgroundColor: '#1f2937' }}>
-                  <img
-                    src={result.cover_image || result.thumb || '/api/placeholder/96/96'}
-                    alt={result.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-                <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
-                  <p style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {result.title?.split(' - ')[0] || 'Unknown'}
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {result.title?.split(' - ')[1] || result.title}
-                  </p>
-                  {result.year && (
-                    <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{result.year}</p>
-                  )}
-                  {result.price && (
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', color: accentColor }}>
-                      EUR {result.price.toFixed(2)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
-            <Search size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <p>Search for vinyl records</p>
-          </div>
-        )}
-      </div>
-    </SafeWrapper>
-  );
-
-  const renderCameraTab = () => (
-    <SafeWrapper>
-      <div style={{ paddingBottom: '16px' }}>
-        {!showCamera ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <Camera size={48} style={{ margin: '0 auto 16px', color: accentColor }} />
-            <p style={{ color: '#9ca3af', marginBottom: '24px' }}>Take a photo of the album cover</p>
-            <button
-              onClick={startCamera}
-              style={{
-                padding: '12px 24px',
-                borderRadius: '8px',
-                backgroundColor: accentColor,
-                color: primaryColor,
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              Start Camera
-            </button>
-          </div>
-        ) : (
-          <div>
-            <div style={{ borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
-              <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block' }} />
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={capturePhoto}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  backgroundColor: accentColor,
-                  color: primaryColor,
-                  border: 'none',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                Capture
-              </button>
-              <button
-                onClick={stopCamera}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  backgroundColor: primaryColor,
-                  color: accentColor,
-                  border: `2px solid ${accentColor}`,
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-          </div>
-        )}
-      </div>
-    </SafeWrapper>
-  );
-
-  const renderCollectionTab = () => (
-    <SafeWrapper>
-      <div style={{ paddingBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: primaryColor,
-              color: 'white',
-              border: `1px solid ${accentColor}`,
-              fontSize: '13px'
-            }}
-          >
-            <option value="artist">Artist A-Z</option>
-            <option value="title">Title A-Z</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-          </select>
-          
-          <button
-            onClick={toggleCollectionView}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: primaryColor,
-              color: accentColor,
-              border: `1px solid ${accentColor}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            {collectionView === 'gallery' ? <List size={18} /> : <Grid size={18} />}
-          </button>
-
-          <button
-            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: showFavoritesOnly ? accentColor : primaryColor,
-              color: showFavoritesOnly ? primaryColor : accentColor,
-              border: `1px solid ${accentColor}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            <Heart size={18} fill={showFavoritesOnly ? primaryColor : 'none'} />
-          </button>
-        </div>
-
-        {collection.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
-            <Music size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <p>No records in collection yet</p>
-          </div>
-        ) : (
-          <div>
-            {collectionView === 'gallery' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                {collection
-                  .filter(item => !showFavoritesOnly || item.isFavorite)
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => setSelectedResult(item)}
-                      style={{
-                        backgroundColor: primaryColor,
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <div style={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#1f2937' }}>
-                        <img
-                          src={item.cover_image || item.thumb || '/api/placeholder/300/300'}
-                          alt={item.title}
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(item.id);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            padding: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <Heart
-                            size={16}
-                            fill={item.isFavorite ? accentColor : 'none'}
-                            stroke={item.isFavorite ? accentColor : 'white'}
-                          />
-                        </button>
-                      </div>
-                      <div style={{ padding: '12px' }}>
-                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[0] || 'Unknown'}
-                        </p>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[1] || item.title}
-                        </p>
-                        {item.price && (
-                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor }}>
-                            EUR {item.price.toFixed(2)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {collection
-                  .filter(item => !showFavoritesOnly || item.isFavorite)
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => setSelectedResult(item)}
-                      style={{
-                        backgroundColor: primaryColor,
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <div style={{ width: '80px', height: '80px', flexShrink: 0, backgroundColor: '#1f2937' }}>
-                        <img
-                          src={item.cover_image || item.thumb || '/api/placeholder/80/80'}
-                          alt={item.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
-                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[0] || 'Unknown'}
-                        </p>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.title?.split(' - ')[1] || item.title}
-                        </p>
-                        {item.price && (
-                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor }}>
-                            EUR {item.price.toFixed(2)}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(item.id);
-                        }}
-                        style={{
-                          padding: '16px',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Heart
-                          size={20}
-                          fill={item.isFavorite ? accentColor : 'none'}
-                          stroke={item.isFavorite ? accentColor : 'white'}
-                        />
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </SafeWrapper>
-  );
-
-  const renderProfileTab = () => (
-    <SafeWrapper>
-      <div style={{ paddingBottom: '16px', textAlign: 'center', paddingTop: '32px' }}>
-        <div
-          style={{
-            width: '96px',
-            height: '96px',
-            borderRadius: '50%',
-            backgroundColor: accentColor,
-            margin: '0 auto 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <User size={48} style={{ color: primaryColor }} />
-        </div>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>VinylScout User</h2>
-        <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '24px' }}>Vinyl collector</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', maxWidth: '300px', margin: '0 auto' }}>
-          <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
-            <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, marginBottom: '4px' }}>
-              {collection.length}
-            </p>
-            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Collection</p>
-          </div>
-          <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
-            <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, marginBottom: '4px' }}>
-              {collection.filter(item => item.isFavorite).length}
-            </p>
-            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Favorites</p>
-          </div>
-        </div>
-      </div>
-    </SafeWrapper>
-  );
-
   return (
     <div style={{
       display: 'flex',
@@ -623,7 +212,8 @@ const VinylPriceFinder = () => {
       height: '100vh',
       backgroundColor: '#1a1a1a',
       color: 'white',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      overflow: 'hidden'
     }}>
       {/* Header */}
       <div style={{
@@ -647,56 +237,390 @@ const VinylPriceFinder = () => {
         padding: '16px',
         paddingBottom: '80px'
       }}>
-        {activeTab === 'search' && renderSearchTab()}
-        {activeTab === 'camera' && renderCameraTab()}
-        {activeTab === 'collection' && renderCollectionTab()}
-        {activeTab === 'profile' && renderProfileTab()}
+        {/* Search Tab */}
+        {activeTab === 'search' && (
+          <div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
+              placeholder="Search artist or album..."
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                backgroundColor: primaryColor,
+                color: 'white',
+                border: `2px solid ${accentColor}`,
+                marginBottom: '12px'
+              }}
+            />
+            <button
+              onClick={searchDiscogs}
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                backgroundColor: accentColor,
+                color: primaryColor,
+                border: 'none',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              {isLoading ? 'Searching...' : 'Search'}
+            </button>
+
+            {searchResults.length > 0 && (
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {searchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    onClick={() => setSelectedResult(result)}
+                    style={{
+                      backgroundColor: primaryColor,
+                      borderRadius: '8px',
+                      display: 'flex',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ width: '80px', height: '80px', flexShrink: 0, backgroundColor: '#1f2937' }}>
+                      <img
+                        src={result.cover_image || result.thumb || '/api/placeholder/80/80'}
+                        alt={result.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
+                      <p style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>
+                        {result.title?.split(' - ')[0] || 'Unknown'}
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#9ca3af' }}>
+                        {result.title?.split(' - ')[1] || result.title}
+                      </p>
+                      {result.price && (
+                        <p style={{ fontSize: '14px', fontWeight: 'bold', color: accentColor, marginTop: '4px' }}>
+                          EUR {result.price.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Camera Tab */}
+        {activeTab === 'camera' && (
+          <div>
+            {!showCamera ? (
+              <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                <Camera size={48} style={{ margin: '0 auto 16px', color: accentColor }} />
+                <p style={{ color: '#9ca3af', marginBottom: '24px' }}>Take a photo of the album cover</p>
+                <button
+                  onClick={startCamera}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    backgroundColor: accentColor,
+                    color: primaryColor,
+                    border: 'none',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Start Camera
+                </button>
+              </div>
+            ) : (
+              <div>
+                <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={capturePhoto}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: accentColor,
+                      color: primaryColor,
+                      border: 'none',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Capture
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: primaryColor,
+                      color: accentColor,
+                      border: `2px solid ${accentColor}`,
+                      fontWeight: '600'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Collection Tab */}
+        {activeTab === 'collection' && (
+          <div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '8px',
+                  backgroundColor: primaryColor,
+                  color: 'white',
+                  border: `1px solid ${accentColor}`
+                }}
+              >
+                <option value="artist">Artist A-Z</option>
+                <option value="title">Title A-Z</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+              </select>
+              
+              <button
+                onClick={toggleCollectionView}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: primaryColor,
+                  color: accentColor,
+                  border: `1px solid ${accentColor}`
+                }}
+              >
+                {collectionView === 'gallery' ? <List size={18} /> : <Grid size={18} />}
+              </button>
+
+              <button
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: showFavoritesOnly ? accentColor : primaryColor,
+                  color: showFavoritesOnly ? primaryColor : accentColor,
+                  border: `1px solid ${accentColor}`
+                }}
+              >
+                <Heart size={18} fill={showFavoritesOnly ? primaryColor : 'none'} />
+              </button>
+            </div>
+
+            {collection.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
+                <Music size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                <p>No records in collection yet</p>
+              </div>
+            ) : collectionView === 'gallery' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                {collection
+                  .filter(item => !showFavoritesOnly || item.isFavorite)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedResult(item)}
+                      style={{
+                        backgroundColor: primaryColor,
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#1f2937' }}>
+                        <img
+                          src={item.cover_image || item.thumb || '/api/placeholder/300/300'}
+                          alt={item.title}
+                          style={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            padding: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            border: 'none'
+                          }}
+                        >
+                          <Heart
+                            size={16}
+                            fill={item.isFavorite ? accentColor : 'none'}
+                            stroke={item.isFavorite ? accentColor : 'white'}
+                          />
+                        </button>
+                      </div>
+                      <div style={{ padding: '12px' }}>
+                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px' }}>
+                          {item.title?.split(' - ')[0] || 'Unknown'}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af' }}>
+                          {item.title?.split(' - ')[1] || item.title}
+                        </p>
+                        {item.price && (
+                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor, marginTop: '4px' }}>
+                            EUR {item.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {collection
+                  .filter(item => !showFavoritesOnly || item.isFavorite)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedResult(item)}
+                      style={{
+                        backgroundColor: primaryColor,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ width: '80px', height: '80px', flexShrink: 0, backgroundColor: '#1f2937' }}>
+                        <img
+                          src={item.cover_image || item.thumb || '/api/placeholder/80/80'}
+                          alt={item.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
+                        <p style={{ fontWeight: '600', fontSize: '13px' }}>
+                          {item.title?.split(' - ')[0] || 'Unknown'}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af' }}>
+                          {item.title?.split(' - ')[1] || item.title}
+                        </p>
+                        {item.price && (
+                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor, marginTop: '4px' }}>
+                            EUR {item.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(item.id);
+                        }}
+                        style={{ padding: '16px', background: 'none', border: 'none' }}
+                      >
+                        <Heart
+                          size={20}
+                          fill={item.isFavorite ? accentColor : 'none'}
+                          stroke={item.isFavorite ? accentColor : 'white'}
+                        />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div style={{ textAlign: 'center', paddingTop: '32px' }}>
+            <div
+              style={{
+                width: '96px',
+                height: '96px',
+                borderRadius: '50%',
+                backgroundColor: accentColor,
+                margin: '0 auto 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <User size={48} style={{ color: primaryColor }} />
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>VinylScout User</h2>
+            <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '24px' }}>Vinyl collector</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', maxWidth: '300px', margin: '0 auto' }}>
+              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
+                  {collection.length}
+                </p>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Collection</p>
+              </div>
+              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
+                  {collection.filter(item => item.isFavorite).length}
+                </p>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Favorites</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - WORKING VERSION FROM PREVIOUS CHAT */}
       <div style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         backgroundColor: primaryColor,
-        borderTop: `1px solid ${accentColor}`,
-        padding: '8px 0',
+        borderTop: `1px solid rgba(255, 255, 255, 0.1)`,
+        display: 'flex',
+        justifyContent: 'space-around',
+        padding: '12px 0',
         zIndex: 1000
       }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr',
-          gap: 0,
-          maxWidth: '100%'
-        }}>
-          {[
-            { id: 'search', icon: Search, label: 'Search' },
-            { id: 'camera', icon: Camera, label: 'Camera' },
-            { id: 'collection', icon: Music, label: 'Collection' },
-            { id: 'profile', icon: User, label: 'Profile' }
-          ].map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '8px 4px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: activeTab === id ? accentColor : '#666'
-              }}
-            >
-              <Icon size={20} />
-              <span style={{ fontSize: '10px', textAlign: 'center' }}>{label}</span>
-            </button>
-          ))}
-        </div>
+        {[
+          { id: 'search', icon: Search, label: 'Search' },
+          { id: 'camera', icon: Camera, label: 'Camera' },
+          { id: 'collection', icon: Music, label: 'Collection' },
+          { id: 'profile', icon: User, label: 'Profile' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              minWidth: 0,
+              flex: '1 1 0',
+              border: 'none',
+              background: 'none',
+              padding: 0,
+              cursor: 'pointer'
+            }}
+          >
+            <tab.icon size={22} style={{ color: activeTab === tab.id ? accentColor : '#666' }} />
+            <span style={{ fontSize: '10px', color: activeTab === tab.id ? accentColor : '#666', whiteSpace: 'nowrap' }}>
+              {tab.label}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Settings Modal */}
@@ -739,13 +663,13 @@ const VinylPriceFinder = () => {
               backgroundColor: primaryColor
             }}>
               <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0 }}>Settings</h3>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', padding: 0 }}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
 
             <div style={{ padding: '16px' }}>
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                   Discogs API Token
                 </label>
@@ -753,46 +677,19 @@ const VinylPriceFinder = () => {
                   type="password"
                   value={discogsToken}
                   onChange={(e) => setDiscogsToken(e.target.value)}
-                  placeholder="Enter your token"
+                  placeholder="Enter token"
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
+                    padding: '10px',
                     borderRadius: '8px',
                     backgroundColor: '#1f2937',
                     color: 'white',
-                    border: 'none',
-                    fontSize: '14px'
+                    border: 'none'
                   }}
                 />
-                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                  Get your token at discogs.com/settings/developers
-                </p>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                  Price Sources
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[
-                    { id: 'discogs', name: 'Discogs' },
-                    { id: 'hhv', name: 'HHV' },
-                    { id: 'ebay', name: 'eBay' }
-                  ].map(shop => (
-                    <label key={shop.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShops.includes(shop.id)}
-                        onChange={() => toggleShop(shop.id)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                      />
-                      <span>{shop.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                   Primary Color
                 </label>
@@ -801,7 +698,7 @@ const VinylPriceFinder = () => {
                     type="color"
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
-                    style={{ width: '60px', height: '40px', borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+                    style={{ width: '60px', height: '40px', borderRadius: '8px' }}
                   />
                   <input
                     type="text"
@@ -809,18 +706,17 @@ const VinylPriceFinder = () => {
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     style={{
                       flex: 1,
-                      padding: '8px 12px',
+                      padding: '8px',
                       borderRadius: '8px',
                       backgroundColor: '#1f2937',
                       color: 'white',
-                      border: 'none',
-                      fontSize: '14px'
+                      border: 'none'
                     }}
                   />
                 </div>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                   Accent Color
                 </label>
@@ -829,7 +725,7 @@ const VinylPriceFinder = () => {
                     type="color"
                     value={accentColor}
                     onChange={(e) => setAccentColor(e.target.value)}
-                    style={{ width: '60px', height: '40px', borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+                    style={{ width: '60px', height: '40px', borderRadius: '8px' }}
                   />
                   <input
                     type="text"
@@ -837,12 +733,11 @@ const VinylPriceFinder = () => {
                     onChange={(e) => setAccentColor(e.target.value)}
                     style={{
                       flex: 1,
-                      padding: '8px 12px',
+                      padding: '8px',
                       borderRadius: '8px',
                       backgroundColor: '#1f2937',
                       color: 'white',
-                      border: 'none',
-                      fontSize: '14px'
+                      border: 'none'
                     }}
                   />
                 </div>
@@ -857,7 +752,6 @@ const VinylPriceFinder = () => {
                   backgroundColor: accentColor,
                   color: primaryColor,
                   border: 'none',
-                  fontSize: '16px',
                   fontWeight: '600',
                   cursor: 'pointer'
                 }}
@@ -910,7 +804,7 @@ const VinylPriceFinder = () => {
               backgroundColor: primaryColor
             }}>
               <h3 style={{ fontWeight: 'bold', margin: 0 }}>Album Details</h3>
-              <button onClick={() => setSelectedResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <button onClick={() => setSelectedResult(null)} style={{ background: 'none', border: 'none', padding: 0 }}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
@@ -959,9 +853,7 @@ const VinylPriceFinder = () => {
                     backgroundColor: collection.find(c => c.id === selectedResult.id)?.isFavorite ? accentColor : primaryColor,
                     color: collection.find(c => c.id === selectedResult.id)?.isFavorite ? primaryColor : accentColor,
                     border: `2px solid ${accentColor}`,
-                    fontSize: '16px',
                     fontWeight: '600',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -984,9 +876,7 @@ const VinylPriceFinder = () => {
                       backgroundColor: accentColor,
                       color: primaryColor,
                       border: 'none',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
+                      fontWeight: '600'
                     }}
                   >
                     Add to Collection
@@ -1001,9 +891,7 @@ const VinylPriceFinder = () => {
                       backgroundColor: primaryColor,
                       color: accentColor,
                       border: `2px solid ${accentColor}`,
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
+                      fontWeight: '600'
                     }}
                   >
                     Remove
@@ -1022,7 +910,6 @@ const VinylPriceFinder = () => {
                       color: accentColor,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
                       textDecoration: 'none'
                     }}
                   >
