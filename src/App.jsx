@@ -23,6 +23,7 @@ const VinylPriceFinder = () => {
   const [favorites, setFavorites] = useState([]);
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
+  const [collectionFilter, setCollectionFilter] = useState('all'); // 'all' or 'favorites'
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
@@ -30,23 +31,24 @@ const VinylPriceFinder = () => {
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
   const [selectedTheme, setSelectedTheme] = useState('custom');
   const [primaryColor, setPrimaryColor] = useState('#000000');
+  const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
   const [accentColor, setAccentColor] = useState('#ffb700');
   
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // Theme presets
+  // Theme presets with 3 colors
   const themePresets = [
-    { id: 'custom', name: 'Custom', primary: primaryColor, accent: accentColor },
-    { id: 'dark', name: 'Dark Mode', primary: '#000000', accent: '#ffb700' },
-    { id: 'midnight', name: 'Midnight Blue', primary: '#0a1929', accent: '#00d4ff' },
-    { id: 'forest', name: 'Forest Green', primary: '#0d1f15', accent: '#4ade80' },
-    { id: 'sunset', name: 'Sunset Orange', primary: '#1a0f0a', accent: '#ff6b35' },
-    { id: 'purple', name: 'Purple Haze', primary: '#1a0a2e', accent: '#c77dff' },
-    { id: 'retro', name: 'Retro Cream', primary: '#2d1b00', accent: '#ffd700' },
-    { id: 'ocean', name: 'Deep Ocean', primary: '#001a33', accent: '#00d9ff' },
-    { id: 'berry', name: 'Berry Pink', primary: '#1a0614', accent: '#ff006e' }
+    { id: 'custom', name: 'Custom', primary: primaryColor, secondary: secondaryColor, accent: accentColor },
+    { id: 'dark', name: 'Dark Mode', primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' },
+    { id: 'midnight', name: 'Midnight Blue', primary: '#0a1929', secondary: '#1e3a5f', accent: '#00d4ff' },
+    { id: 'forest', name: 'Forest Green', primary: '#0d1f15', secondary: '#1a3a25', accent: '#4ade80' },
+    { id: 'sunset', name: 'Sunset Orange', primary: '#1a0f0a', secondary: '#2d1a10', accent: '#ff6b35' },
+    { id: 'purple', name: 'Purple Haze', primary: '#1a0a2e', secondary: '#2d1a4d', accent: '#c77dff' },
+    { id: 'retro', name: 'Retro Cream', primary: '#2d1b00', secondary: '#4a3000', accent: '#ffd700' },
+    { id: 'ocean', name: 'Deep Ocean', primary: '#001a33', secondary: '#003366', accent: '#00d9ff' },
+    { id: 'berry', name: 'Berry Pink', primary: '#1a0614', secondary: '#2d0f23', accent: '#ff006e' }
   ];
 
   // Load settings from localStorage
@@ -56,6 +58,7 @@ const VinylPriceFinder = () => {
     const savedShops = localStorage.getItem('selectedShops');
     const savedTheme = localStorage.getItem('selectedTheme');
     const savedPrimaryColor = localStorage.getItem('primaryColor');
+    const savedSecondaryColor = localStorage.getItem('secondaryColor');
     const savedAccentColor = localStorage.getItem('accentColor');
     const savedCollection = localStorage.getItem('collection');
     const savedFavorites = localStorage.getItem('favorites');
@@ -65,6 +68,7 @@ const VinylPriceFinder = () => {
     if (savedShops) setSelectedShops(JSON.parse(savedShops));
     if (savedTheme) setSelectedTheme(savedTheme);
     if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
+    if (savedSecondaryColor) setSecondaryColor(savedSecondaryColor);
     if (savedAccentColor) setAccentColor(savedAccentColor);
     if (savedCollection) setCollection(JSON.parse(savedCollection));
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
@@ -77,6 +81,7 @@ const VinylPriceFinder = () => {
       const theme = themePresets.find(t => t.id === themeId);
       if (theme) {
         setPrimaryColor(theme.primary);
+        setSecondaryColor(theme.secondary);
         setAccentColor(theme.accent);
       }
     }
@@ -89,6 +94,7 @@ const VinylPriceFinder = () => {
     localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
     localStorage.setItem('selectedTheme', selectedTheme);
     localStorage.setItem('primaryColor', primaryColor);
+    localStorage.setItem('secondaryColor', secondaryColor);
     localStorage.setItem('accentColor', accentColor);
     setShowSettings(false);
   };
@@ -286,40 +292,26 @@ const VinylPriceFinder = () => {
         value: priceData.value,
         currency: priceData.currency
       } : null,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      isFavorite: false
     };
     const newCollection = [...collection, itemWithPrice];
     setCollection(newCollection);
     localStorage.setItem('collection', JSON.stringify(newCollection));
   };
 
-  const addToFavorites = (item) => {
-    const priceData = resultPrices[item.id];
-    const itemWithPrice = {
-      ...item,
-      price: priceData ? {
-        value: priceData.value,
-        currency: priceData.currency
-      } : null,
-      addedAt: new Date().toISOString()
-    };
-    const newFavorites = [...favorites, itemWithPrice];
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+  const toggleFavoriteInCollection = (itemId) => {
+    const newCollection = collection.map(item => 
+      item.id === itemId ? { ...item, isFavorite: !item.isFavorite } : item
+    );
+    setCollection(newCollection);
+    localStorage.setItem('collection', JSON.stringify(newCollection));
   };
 
-  const toggleFavorite = (item) => {
-    const isFav = favorites.some(f => f.id === item.id);
-    if (isFav) {
-      const newFavorites = favorites.filter(f => f.id !== item.id);
-      setFavorites(newFavorites);
-      localStorage.setItem('favorites', JSON.stringify(newFavorites));
-    } else {
-      addToFavorites(item);
-    }
+  const isFavorited = (item) => {
+    const collectionItem = collection.find(c => c.id === item.id);
+    return collectionItem?.isFavorite || false;
   };
-
-  const isFavorited = (item) => favorites.some(f => f.id === item.id);
 
   // Fetch price information
   const fetchPriceInfo = async (releaseId) => {
@@ -443,6 +435,14 @@ const VinylPriceFinder = () => {
     }
   };
 
+  // Filter collection
+  const filterCollection = (items, filter) => {
+    if (filter === 'favorites') {
+      return items.filter(item => item.isFavorite);
+    }
+    return items;
+  };
+
   // Calculate collection value
   const calculateCollectionValue = () => {
     let total = 0;
@@ -522,7 +522,8 @@ const VinylPriceFinder = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Quick search..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
+                  style={{ backgroundColor: secondaryColor }}
                 />
               </div>
 
@@ -537,7 +538,7 @@ const VinylPriceFinder = () => {
 
               {/* Advanced Search Fields */}
               {showAdvancedSearch && (
-                <div className="space-y-3 bg-white/5 rounded-lg p-4 border border-white/10 mt-3">
+                <div className="space-y-3 rounded-lg p-4 border border-white/10 mt-3" style={{ backgroundColor: secondaryColor }}>
                   <div>
                     <label className="block text-white/60 text-xs mb-1">Artist</label>
                     <input
@@ -545,7 +546,8 @@ const VinylPriceFinder = () => {
                       value={advancedSearch.artist}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, artist: e.target.value})}
                       placeholder="e.g. Pink Floyd"
-                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      className="w-full px-4 py-2 rounded-lg text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      style={{ backgroundColor: primaryColor }}
                     />
                   </div>
 
@@ -556,7 +558,8 @@ const VinylPriceFinder = () => {
                       value={advancedSearch.album}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, album: e.target.value})}
                       placeholder="e.g. Dark Side of the Moon"
-                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      className="w-full px-4 py-2 rounded-lg text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      style={{ backgroundColor: primaryColor }}
                     />
                   </div>
 
@@ -567,7 +570,8 @@ const VinylPriceFinder = () => {
                       value={advancedSearch.year}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, year: e.target.value})}
                       placeholder="e.g. 1973"
-                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      className="w-full px-4 py-2 rounded-lg text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      style={{ backgroundColor: primaryColor }}
                     />
                   </div>
 
@@ -578,7 +582,8 @@ const VinylPriceFinder = () => {
                       value={advancedSearch.label}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, label: e.target.value})}
                       placeholder="e.g. Columbia Records"
-                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      className="w-full px-4 py-2 rounded-lg text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      style={{ backgroundColor: primaryColor }}
                     />
                   </div>
 
@@ -589,7 +594,8 @@ const VinylPriceFinder = () => {
                       value={advancedSearch.genre}
                       onChange={(e) => setAdvancedSearch({...advancedSearch, genre: e.target.value})}
                       placeholder="e.g. Rock, Jazz, Electronic"
-                      className="w-full px-4 py-2 rounded-lg bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      className="w-full px-4 py-2 rounded-lg text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-white/40 text-sm"
+                      style={{ backgroundColor: primaryColor }}
                     />
                   </div>
                 </div>
@@ -605,7 +611,10 @@ const VinylPriceFinder = () => {
                       <div
                         key={result.id}
                         onClick={() => setSelectedResult(result)}
-                        className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                        className="rounded-lg p-3 cursor-pointer transition-all border border-white/10"
+                        style={{ backgroundColor: secondaryColor }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${secondaryColor}dd`}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = secondaryColor}
                       >
                         <div className="flex gap-3">
                           {result.cover_image && result.cover_image !== '' ? (
@@ -619,7 +628,7 @@ const VinylPriceFinder = () => {
                               }}
                             />
                           ) : (
-                            <div className="w-24 h-24 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <div className="w-24 h-24 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
                               <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
                             </div>
                           )}
@@ -696,7 +705,7 @@ const VinylPriceFinder = () => {
                 </button>
               )}
             </div>
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
                 <span>📸</span> AI Camera Search
               </h3>
@@ -723,10 +732,35 @@ const VinylPriceFinder = () => {
               <h2 className="text-xl font-bold text-white">My Collection</h2>
               <div className="flex gap-2">
                 <select
+                  value={collectionFilter}
+                  onChange={(e) => setCollectionFilter(e.target.value)}
+                  className="px-3 py-2 rounded text-white border border-white/20 text-xs"
+                  style={{ 
+                    backgroundColor: secondaryColor,
+                    appearance: 'none', 
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, 
+                    backgroundRepeat: 'no-repeat', 
+                    backgroundPosition: 'right 0.5rem center', 
+                    backgroundSize: '1em 1em', 
+                    paddingRight: '1.75rem' 
+                  }}
+                >
+                  <option value="all" style={{ backgroundColor: primaryColor }}>All ({collection.length})</option>
+                  <option value="favorites" style={{ backgroundColor: primaryColor }}>Favorites ({collection.filter(i => i.isFavorite).length})</option>
+                </select>
+                <select
                   value={collectionSort}
                   onChange={(e) => setCollectionSort(e.target.value)}
-                  className="px-3 py-2 rounded bg-white/10 text-white border border-white/20 text-xs"
-                  style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em', paddingRight: '1.75rem' }}
+                  className="px-3 py-2 rounded text-white border border-white/20 text-xs"
+                  style={{ 
+                    backgroundColor: secondaryColor,
+                    appearance: 'none', 
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, 
+                    backgroundRepeat: 'no-repeat', 
+                    backgroundPosition: 'right 0.5rem center', 
+                    backgroundSize: '1em 1em', 
+                    paddingRight: '1.75rem' 
+                  }}
                 >
                   <option value="artist-asc" style={{ backgroundColor: primaryColor }}>Artist A-Z</option>
                   <option value="artist-desc" style={{ backgroundColor: primaryColor }}>Artist Z-A</option>
@@ -738,8 +772,16 @@ const VinylPriceFinder = () => {
                 <select
                   value={collectionView}
                   onChange={(e) => setCollectionView(e.target.value)}
-                  className="px-3 py-2 rounded bg-white/10 text-white border border-white/20 text-xs"
-                  style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em 1em', paddingRight: '1.75rem' }}
+                  className="px-3 py-2 rounded text-white border border-white/20 text-xs"
+                  style={{ 
+                    backgroundColor: secondaryColor,
+                    appearance: 'none', 
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, 
+                    backgroundRepeat: 'no-repeat', 
+                    backgroundPosition: 'right 0.5rem center', 
+                    backgroundSize: '1em 1em', 
+                    paddingRight: '1.75rem' 
+                  }}
                 >
                   <option value="grid" style={{ backgroundColor: primaryColor }}>Grid</option>
                   <option value="list" style={{ backgroundColor: primaryColor }}>List</option>
@@ -753,11 +795,11 @@ const VinylPriceFinder = () => {
               </p>
             ) : (
               <div className={collectionView === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>
-                {sortCollection(collection, collectionSort).map((item, idx) => (
+                {sortCollection(filterCollection(collection, collectionFilter), collectionSort).map((item, idx) => (
                   <div
                     key={idx}
-                    onClick={() => setSelectedResult(item)}
-                    className="bg-white/10 rounded-lg p-2 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
+                    className="rounded-lg p-2 cursor-pointer transition-all border border-white/10"
+                    style={{ backgroundColor: secondaryColor }}
                   >
                     {collectionView === 'grid' ? (
                       // Grid View - Fixed size tiles
@@ -768,13 +810,14 @@ const VinylPriceFinder = () => {
                           paddingTop: '100%',
                           borderRadius: '8px',
                           overflow: 'hidden',
-                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          backgroundColor: primaryColor,
                           marginBottom: '8px'
                         }}>
                           {item.cover_image ? (
                             <img
                               src={item.cover_image}
                               alt={item.title}
+                              onClick={() => setSelectedResult(item)}
                               style={{
                                 position: 'absolute',
                                 top: 0,
@@ -785,19 +828,44 @@ const VinylPriceFinder = () => {
                               }}
                             />
                           ) : (
-                            <div style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              width: '100%',
-                              height: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
+                            <div 
+                              onClick={() => setSelectedResult(item)}
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
                               <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
                             </div>
                           )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavoriteInCollection(item.id);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '8px',
+                              background: 'rgba(0,0,0,0.6)',
+                              borderRadius: '50%',
+                              padding: '6px',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Heart
+                              size={16}
+                              style={{ color: accentColor }}
+                              fill={item.isFavorite ? accentColor : 'none'}
+                            />
+                          </button>
                         </div>
                         <h3 className="text-white font-bold text-xs mb-1" style={{ 
                           overflow: 'hidden',
@@ -828,30 +896,36 @@ const VinylPriceFinder = () => {
                           <img
                             src={item.cover_image}
                             alt={item.title}
+                            onClick={() => setSelectedResult(item)}
                             style={{
                               width: '80px',
                               height: '80px',
                               objectFit: 'cover',
                               borderRadius: '8px',
-                              flexShrink: 0
+                              flexShrink: 0,
+                              cursor: 'pointer'
                             }}
                           />
                         ) : (
-                          <div style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(255,255,255,0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
+                          <div 
+                            onClick={() => setSelectedResult(item)}
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '8px',
+                              backgroundColor: primaryColor,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              cursor: 'pointer'
+                            }}
+                          >
                             <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
-                          <div>
+                          <div onClick={() => setSelectedResult(item)} style={{ cursor: 'pointer' }}>
                             <h3 className="text-white font-bold text-sm mb-1" style={{
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -875,6 +949,24 @@ const VinylPriceFinder = () => {
                             <p className="text-sm text-white/40">No price</p>
                           )}
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavoriteInCollection(item.id);
+                          }}
+                          className="p-2 flex-shrink-0 self-center"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Heart
+                            size={20}
+                            style={{ color: accentColor }}
+                            fill={item.isFavorite ? accentColor : 'none'}
+                          />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -884,76 +976,12 @@ const VinylPriceFinder = () => {
           </div>
         )}
 
-        {/* Favorites Tab */}
-        {activeTab === 'favorites' && (
-          <div className="space-y-3">
-            <h2 className="text-xl font-bold text-white mb-4">Favorites</h2>
-            {favorites.length === 0 ? (
-              <p className="text-white/60 text-center py-8">
-                No favorites yet
-              </p>
-            ) : (
-              favorites.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedResult(item)}
-                  className="bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-all border border-white/10"
-                >
-                  <div className="flex gap-3">
-                    {item.cover_image ? (
-                      <img
-                        src={item.cover_image}
-                        alt={item.title}
-                        className="w-20 h-20 rounded object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
-                        <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-white font-bold text-sm mb-1">
-                          {item.title?.split(' - ')[0] || 'Unknown Artist'}
-                        </h3>
-                        <p className="text-white/70 text-sm">
-                          {item.title?.split(' - ')[1] || item.title || 'Unknown Album'}
-                        </p>
-                      </div>
-                      {item.price ? (
-                        <p className="text-base font-bold mt-1" style={{ color: accentColor }}>
-                          {item.price.currency} {item.price.value.toFixed(2)}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-white/40 mt-1">No price</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(item);
-                      }}
-                      className="p-2 flex-shrink-0"
-                    >
-                      <Heart
-                        size={20}
-                        style={{ color: accentColor }}
-                        fill={accentColor}
-                      />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
             
-            <div className="bg-white/10 rounded-lg p-4 space-y-3 border border-white/10">
+            <div className="rounded-lg p-4 space-y-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <div className="flex items-center gap-3">
                 <div 
                   className="w-16 h-16 rounded-full flex items-center justify-center"
@@ -971,7 +999,7 @@ const VinylPriceFinder = () => {
             </div>
             
             {/* Collection Value */}
-            <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-3">Collection Value</h3>
               <div className="flex justify-between items-center">
                 <span className="text-white/60">Total Value:</span>
@@ -985,7 +1013,7 @@ const VinylPriceFinder = () => {
             </div>
 
             {/* Statistics */}
-            <div className="bg-white/10 rounded-lg p-4 space-y-2 border border-white/10">
+            <div className="rounded-lg p-4 space-y-2 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">Statistics</h3>
               <div className="flex justify-between">
                 <span className="text-white/60">Total Records</span>
@@ -993,7 +1021,7 @@ const VinylPriceFinder = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">Favorites</span>
-                <span className="text-white font-semibold">{favorites.length}</span>
+                <span className="text-white font-semibold">{collection.filter(item => item.isFavorite).length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">With Prices</span>
@@ -1002,29 +1030,11 @@ const VinylPriceFinder = () => {
                 </span>
               </div>
             </div>
-
-            {/* Sort Collection */}
-            <div className="bg-white/10 rounded-lg p-4 border border-white/10">
-              <h3 className="text-white font-semibold mb-3">Sort Collection By</h3>
-              <select
-                value={collectionSort}
-                onChange={(e) => setCollectionSort(e.target.value)}
-                className="w-full px-4 py-2 rounded bg-white/10 text-white border border-white/20"
-                style={{ appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1.2em 1.2em', paddingRight: '2.5rem' }}
-              >
-                <option value="artist-asc" style={{ backgroundColor: primaryColor }}>Artist Name (A-Z)</option>
-                <option value="artist-desc" style={{ backgroundColor: primaryColor }}>Artist Name (Z-A)</option>
-                <option value="album-asc" style={{ backgroundColor: primaryColor }}>Album Name (A-Z)</option>
-                <option value="album-desc" style={{ backgroundColor: primaryColor }}>Album Name (Z-A)</option>
-                <option value="price-asc" style={{ backgroundColor: primaryColor }}>Price (Low to High)</option>
-                <option value="price-desc" style={{ backgroundColor: primaryColor }}>Price (High to Low)</option>
-              </select>
-            </div>
           </div>
         )}
       </div>
 
-      {/* Fixed Bottom Navigation */}
+      {/* Fixed Bottom Navigation - 4 BUTTONS */}
       <div 
         style={{ 
           position: 'fixed',
@@ -1133,36 +1143,6 @@ const VinylPriceFinder = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('favorites')}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            minWidth: 0,
-            flex: '1 1 0',
-            border: 'none',
-            background: 'none',
-            padding: 0,
-            cursor: 'pointer'
-          }}
-        >
-          <Heart 
-            size={22} 
-            style={{ color: activeTab === 'favorites' ? accentColor : 'rgba(255,255,255,0.5)' }}
-          />
-          <span 
-            style={{ 
-              fontSize: '10px',
-              color: activeTab === 'favorites' ? accentColor : 'rgba(255,255,255,0.5)',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Favorites
-          </span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('profile')}
           style={{
             display: 'flex',
@@ -1244,7 +1224,7 @@ const VinylPriceFinder = () => {
                       onClick={() => applyTheme(theme.id)}
                       className="px-3 py-2 rounded text-sm font-medium border-2 transition-all"
                       style={{
-                        backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : 'transparent',
+                        backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : secondaryColor,
                         borderColor: theme.id === selectedTheme ? accentColor : 'rgba(255,255,255,0.2)',
                         color: theme.id === selectedTheme ? accentColor : 'white'
                       }}
@@ -1272,7 +1252,7 @@ const VinylPriceFinder = () => {
                   {/* Primary Color */}
                   <div>
                     <label className="block text-white/80 text-sm mb-2">
-                      Background Color
+                      Primary Color (Background)
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1285,7 +1265,30 @@ const VinylPriceFinder = () => {
                         type="text"
                         value={primaryColor}
                         onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
+                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                        style={{ backgroundColor: secondaryColor }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Secondary Color */}
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">
+                      Secondary Color (Cards/Inputs)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                        style={{ backgroundColor: secondaryColor }}
                       />
                     </div>
                   </div>
@@ -1293,7 +1296,7 @@ const VinylPriceFinder = () => {
                   {/* Accent Color */}
                   <div>
                     <label className="block text-white/80 text-sm mb-2">
-                      Accent Color
+                      Accent Color (Highlights)
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1306,7 +1309,8 @@ const VinylPriceFinder = () => {
                         type="text"
                         value={accentColor}
                         onChange={(e) => setAccentColor(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none"
+                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                        style={{ backgroundColor: secondaryColor }}
                       />
                     </div>
                   </div>
@@ -1323,7 +1327,8 @@ const VinylPriceFinder = () => {
                   value={discogsToken}
                   onChange={(e) => setDiscogsToken(e.target.value)}
                   placeholder="Enter your Discogs token"
-                  className="w-full px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
+                  style={{ backgroundColor: secondaryColor }}
                 />
                 <a 
                   href="https://www.discogs.com/settings/developers"
@@ -1346,7 +1351,8 @@ const VinylPriceFinder = () => {
                   value={anthropicToken}
                   onChange={(e) => setAnthropicToken(e.target.value)}
                   placeholder="Enter your Anthropic API key"
-                  className="w-full px-4 py-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
+                  style={{ backgroundColor: secondaryColor }}
                 />
                 <div className="mt-2 space-y-1">
                   <a 
@@ -1461,14 +1467,14 @@ const VinylPriceFinder = () => {
                   objectFit: 'contain',
                   borderRadius: '8px',
                   marginBottom: '16px',
-                  backgroundColor: 'rgba(255,255,255,0.05)'
+                  backgroundColor: secondaryColor
                 }}
               />
             )}
 
             <div className="space-y-3 mb-6">
               {/* Price Information */}
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
                 <h3 className="text-white font-semibold mb-3">Price Information</h3>
                 {resultPrices[selectedResult.id] ? (
                   <div className="space-y-3">
@@ -1501,7 +1507,7 @@ const VinylPriceFinder = () => {
                     
                     {/* Note about other sources */}
                     {(selectedShops.includes('hhv') || selectedShops.includes('ebay')) && (
-                      <div className="bg-white/5 rounded p-3 mt-3">
+                      <div className="rounded p-3 mt-3" style={{ backgroundColor: primaryColor }}>
                         <p className="text-white/80 text-sm mb-2">
                           <strong>Note:</strong> HHV and eBay prices require manual checking
                         </p>
@@ -1524,7 +1530,7 @@ const VinylPriceFinder = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block px-4 py-3 rounded text-sm font-semibold text-center border"
-                      style={{ borderColor: accentColor, color: accentColor, backgroundColor: 'rgba(255, 183, 0, 0.1)' }}
+                      style={{ borderColor: accentColor, color: accentColor, backgroundColor: `${accentColor}20` }}
                     >
                       View All Listings on Discogs <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
@@ -1534,8 +1540,8 @@ const VinylPriceFinder = () => {
                       href={`https://www.hhv.de/search?term=${encodeURIComponent(selectedResult.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-4 py-3 rounded text-sm font-semibold text-center border hover:bg-white/5"
-                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor }}
+                      className="block px-4 py-3 rounded text-sm font-semibold text-center border"
+                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor, backgroundColor: 'transparent' }}
                     >
                       Search on HHV Store <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
@@ -1545,8 +1551,8 @@ const VinylPriceFinder = () => {
                       href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(selectedResult.title + ' vinyl')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-4 py-3 rounded text-sm font-semibold text-center border hover:bg-white/5"
-                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor }}
+                      className="block px-4 py-3 rounded text-sm font-semibold text-center border"
+                      style={{ borderColor: 'rgba(255, 183, 0, 0.5)', color: accentColor, backgroundColor: 'transparent' }}
                     >
                       Search on eBay <ExternalLink size={14} style={{ display: 'inline', marginLeft: '4px' }} />
                     </a>
@@ -1601,17 +1607,6 @@ const VinylPriceFinder = () => {
                 style={{ backgroundColor: accentColor, color: primaryColor }}
               >
                 Add to Collection
-              </button>
-              
-              <button
-                onClick={() => {
-                  addToFavorites(selectedResult);
-                  setSelectedResult(null);
-                }}
-                className="w-full py-3 rounded-lg font-semibold border-2 transition-all text-white"
-                style={{ borderColor: accentColor }}
-              >
-                Add to Favorites
               </button>
             </div>
           </div>
