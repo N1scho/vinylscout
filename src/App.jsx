@@ -1009,15 +1009,15 @@ const VinylPriceFinder = () => {
             {/* Statistics */}
             <div className="rounded-lg p-4 space-y-2 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">Statistics</h3>
-              <div className="flex justify-between">
+              <div className="flex justify-between" style={{ gap: '16px' }}>
                 <span className="text-white/60">Total Records</span>
                 <span className="text-white font-semibold">{collection.length}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between" style={{ gap: '16px' }}>
                 <span className="text-white/60">Favorites</span>
                 <span className="text-white font-semibold">{collection.filter(item => item.isFavorite).length}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between" style={{ gap: '16px' }}>
                 <span className="text-white/60">With Prices</span>
                 <span className="text-white font-semibold">
                   {collection.filter(item => item.price).length}
