@@ -482,7 +482,7 @@ const VinylPriceFinder = () => {
     >
       {/* Fixed Header */}
       <div 
-        className="px-4 py-4 text-white flex justify-between items-center"
+        className="px-4 py-4 text-white"
         style={{ 
           backgroundColor: primaryColor,
           flexShrink: 0
@@ -491,12 +491,6 @@ const VinylPriceFinder = () => {
         <h1 className="text-2xl font-bold" style={{ color: accentColor }}>
           VinylScout
         </h1>
-        <button 
-          onClick={() => setShowSettings(true)}
-          className="p-2 rounded-lg hover:bg-white/10"
-        >
-          <Settings size={24} style={{ color: accentColor }} />
-        </button>
       </div>
 
       {/* Scrollable Content */}
@@ -522,7 +516,7 @@ const VinylPriceFinder = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Quick search..."
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
                   style={{ backgroundColor: secondaryColor }}
                 />
               </div>
@@ -1015,15 +1009,15 @@ const VinylPriceFinder = () => {
             {/* Statistics */}
             <div className="rounded-lg p-4 space-y-2 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">Statistics</h3>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div className="flex justify-between">
                 <span className="text-white/60">Total Records</span>
                 <span className="text-white font-semibold">{collection.length}</span>
               </div>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div className="flex justify-between">
                 <span className="text-white/60">Favorites</span>
                 <span className="text-white font-semibold">{collection.filter(item => item.isFavorite).length}</span>
               </div>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div className="flex justify-between">
                 <span className="text-white/60">With Prices</span>
                 <span className="text-white font-semibold">
                   {collection.filter(item => item.price).length}
@@ -1034,7 +1028,7 @@ const VinylPriceFinder = () => {
         )}
       </div>
 
-      {/* Fixed Bottom Navigation - 4 BUTTONS */}
+      {/* Fixed Bottom Navigation - 5 BUTTONS */}
       <div 
         style={{ 
           position: 'fixed',
@@ -1169,6 +1163,36 @@ const VinylPriceFinder = () => {
             }}
           >
             Profile
+          </span>
+        </button>
+
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            minWidth: 0,
+            flex: '1 1 0',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            cursor: 'pointer'
+          }}
+        >
+          <Settings 
+            size={22} 
+            style={{ color: 'rgba(255,255,255,0.5)' }}
+          />
+          <span 
+            style={{ 
+              fontSize: '10px',
+              color: 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Settings
           </span>
         </button>
       </div>
