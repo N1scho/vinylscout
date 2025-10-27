@@ -24,53 +24,45 @@ const VinylPriceFinder = () => {
   const [accentColor, setAccentColor] = useState('#ffb700');
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('vinylScoutSettings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setDiscogsToken(settings.discogsToken || '');
-      setSelectedShops(settings.selectedShops || ['discogs', 'hhv', 'ebay']);
-      setPrimaryColor(settings.primaryColor || '#000000');
-      setAccentColor(settings.accentColor || '#ffb700');
-    }
-    
-    // Try to load collection from multiple possible storage keys
-    let loadedCollection = null;
-    const possibleKeys = ['vinylScoutCollection', 'vinylCollection', 'collection'];
-    
-    for (const key of possibleKeys) {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            loadedCollection = parsed.map(item => ({
-              ...item,
-              isFavorite: item.isFavorite || false
-            }));
-            // Migrate to standard key
-            localStorage.setItem('vinylScoutCollection', JSON.stringify(loadedCollection));
-            break;
-          }
-        } catch (e) {
-          console.error('Failed to load from', key);
+    try {
+      const savedSettings = localStorage.getItem('vinylScoutSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setDiscogsToken(settings.discogsToken || '');
+        setSelectedShops(settings.selectedShops || ['discogs', 'hhv', 'ebay']);
+        setPrimaryColor(settings.primaryColor || '#000000');
+        setAccentColor(settings.accentColor || '#ffb700');
+      }
+      
+      const savedCollection = localStorage.getItem('vinylScoutCollection');
+      if (savedCollection) {
+        const parsed = JSON.parse(savedCollection);
+        if (Array.isArray(parsed)) {
+          const validCollection = parsed.map(item => ({
+            ...item,
+            isFavorite: item.isFavorite || false
+          }));
+          setCollection(validCollection);
+          console.log('✅ Loaded collection:', validCollection.length, 'items');
         }
       }
+      
+      const savedView = localStorage.getItem('vinylScoutCollectionView');
+      if (savedView) setCollectionView(savedView);
+    } catch (error) {
+      console.error('❌ Error loading data:', error);
     }
-    
-    if (loadedCollection) {
-      setCollection(loadedCollection);
-      console.log('Loaded', loadedCollection.length, 'items from collection');
-    }
-    
-    const savedView = localStorage.getItem('vinylScoutCollectionView');
-    if (savedView) setCollectionView(savedView);
   }, []);
 
   const saveSettings = () => {
-    const settings = { discogsToken, selectedShops, primaryColor, accentColor };
-    localStorage.setItem('vinylScoutSettings', JSON.stringify(settings));
-    setShowSettings(false);
-    alert('Settings saved!');
+    try {
+      const settings = { discogsToken, selectedShops, primaryColor, accentColor };
+      localStorage.setItem('vinylScoutSettings', JSON.stringify(settings));
+      setShowSettings(false);
+      alert('Settings saved!');
+    } catch (error) {
+      alert('Failed to save settings');
+    }
   };
 
   const toggleShop = (shopId) => {
@@ -80,8 +72,13 @@ const VinylPriceFinder = () => {
   };
 
   const searchDiscogs = async () => {
-    if (!searchQuery.trim() || !discogsToken) {
-      alert('Please enter a search query and add your Discogs token in settings');
+    if (!searchQuery.trim()) {
+      alert('Please enter a search query');
+      return;
+    }
+    
+    if (!discogsToken) {
+      alert('Please add your Discogs token in settings');
       return;
     }
 
@@ -167,32 +164,44 @@ const VinylPriceFinder = () => {
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       context.drawImage(videoRef.current, 0, 0);
-      alert('Photo captured! Manual search recommended for best results.');
+      alert('Photo captured! Use search for best results.');
       stopCamera();
     }
   };
 
   const addToCollection = (item) => {
-    if (!collection.find(c => c.id === item.id)) {
-      const newCollection = [...collection, { ...item, isFavorite: false }];
-      setCollection(newCollection);
-      localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
-      alert('Added to collection!');
+    try {
+      if (!collection.find(c => c.id === item.id)) {
+        const newCollection = [...collection, { ...item, isFavorite: false }];
+        setCollection(newCollection);
+        localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
+        alert('Added to collection!');
+      }
+    } catch (error) {
+      alert('Failed to add to collection');
     }
   };
 
   const removeFromCollection = (id) => {
-    const newCollection = collection.filter(item => item.id !== id);
-    setCollection(newCollection);
-    localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
+    try {
+      const newCollection = collection.filter(item => item.id !== id);
+      setCollection(newCollection);
+      localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
+    } catch (error) {
+      alert('Failed to remove from collection');
+    }
   };
 
   const toggleFavorite = (id) => {
-    const newCollection = collection.map(item =>
-      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
-    );
-    setCollection(newCollection);
-    localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
+    try {
+      const newCollection = collection.map(item =>
+        item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+      );
+      setCollection(newCollection);
+      localStorage.setItem('vinylScoutCollection', JSON.stringify(newCollection));
+    } catch (error) {
+      alert('Failed to update favorite');
+    }
   };
 
   const toggleCollectionView = () => {
@@ -201,158 +210,198 @@ const VinylPriceFinder = () => {
     localStorage.setItem('vinylScoutCollectionView', newView);
   };
 
-  const renderSearchTab = () => (
-    <div className="pb-4">
-      <div className="mb-4">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
-          placeholder="Search artist or album..."
-          className="w-full px-4 py-3 rounded-lg text-white border-2"
-          style={{ backgroundColor: primaryColor, borderColor: accentColor }}
-        />
-        <button
-          onClick={searchDiscogs}
-          disabled={isLoading}
-          className="w-full mt-3 py-3 rounded-lg font-semibold transition-colors"
-          style={{ backgroundColor: accentColor, color: primaryColor }}
-        >
-          {isLoading ? 'Searching...' : 'Search'}
-        </button>
-      </div>
+  const SafeWrapper = ({ children }) => {
+    try {
+      return <>{children}</>;
+    } catch (error) {
+      console.error('Render error:', error);
+      return (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          <p>Something went wrong</p>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '10px' }}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+  };
 
-      {searchResults.length > 0 && (
-        <div className="space-y-3">
-          {searchResults.map((result) => (
-            <div
-              key={result.id}
-              className="rounded-lg overflow-hidden cursor-pointer"
-              style={{ backgroundColor: primaryColor }}
-              onClick={() => setSelectedResult(result)}
-            >
-              <div className="flex">
-                <div className="w-24 h-24 flex-shrink-0 bg-gray-800">
+  const renderSearchTab = () => (
+    <SafeWrapper>
+      <div style={{ paddingBottom: '16px' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
+            placeholder="Search artist or album..."
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              backgroundColor: primaryColor,
+              color: 'white',
+              border: `2px solid ${accentColor}`,
+              fontSize: '16px',
+              outline: 'none'
+            }}
+          />
+          <button
+            onClick={searchDiscogs}
+            disabled={isLoading}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: accentColor,
+              color: primaryColor,
+              border: 'none',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            {isLoading ? 'Searching...' : 'Search'}
+          </button>
+        </div>
+
+        {searchResults.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {searchResults.map((result) => (
+              <div
+                key={result.id}
+                onClick={() => setSelectedResult(result)}
+                style={{
+                  backgroundColor: primaryColor,
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex'
+                }}
+              >
+                <div style={{ width: '96px', height: '96px', flexShrink: 0, backgroundColor: '#1f2937' }}>
                   <img
                     src={result.cover_image || result.thumb || '/api/placeholder/96/96'}
                     alt={result.title}
-                    className="w-full h-full object-cover"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
-                <div className="flex-1 p-3 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {result.title?.split(' - ')[0] || 'Unknown Artist'}
+                <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
+                  <p style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {result.title?.split(' - ')[0] || 'Unknown'}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {result.title?.split(' - ')[1] || result.title}
                   </p>
                   {result.year && (
-                    <p className="text-xs text-gray-500 mt-1">{result.year}</p>
+                    <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{result.year}</p>
                   )}
                   {result.price && (
-                    <p className="text-sm font-bold mt-1" style={{ color: accentColor }}>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', color: accentColor }}>
                       EUR {result.price.toFixed(2)}
                     </p>
                   )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {searchResults.length === 0 && !isLoading && (
-        <div className="text-center py-12 text-gray-400">
-          <Search size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Search for vinyl records</p>
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
+            <Search size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+            <p>Search for vinyl records</p>
+          </div>
+        )}
+      </div>
+    </SafeWrapper>
   );
 
   const renderCameraTab = () => (
-    <div className="pb-4">
-      {!showCamera ? (
-        <div className="text-center py-12">
-          <Camera size={48} className="mx-auto mb-4" style={{ color: accentColor }} />
-          <p className="text-gray-400 mb-6">Take a photo of the album cover</p>
-          <button
-            onClick={startCamera}
-            className="px-6 py-3 rounded-lg font-semibold"
-            style={{ backgroundColor: accentColor, color: primaryColor }}
-          >
-            Start Camera
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div className="relative rounded-lg overflow-hidden mb-4">
-            <video ref={videoRef} autoPlay playsInline className="w-full" />
-          </div>
-          <div className="flex gap-3">
+    <SafeWrapper>
+      <div style={{ paddingBottom: '16px' }}>
+        {!showCamera ? (
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <Camera size={48} style={{ margin: '0 auto 16px', color: accentColor }} />
+            <p style={{ color: '#9ca3af', marginBottom: '24px' }}>Take a photo of the album cover</p>
             <button
-              onClick={capturePhoto}
-              className="flex-1 py-3 rounded-lg font-semibold"
-              style={{ backgroundColor: accentColor, color: primaryColor }}
+              onClick={startCamera}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '8px',
+                backgroundColor: accentColor,
+                color: primaryColor,
+                border: 'none',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
             >
-              Capture
-            </button>
-            <button
-              onClick={stopCamera}
-              className="flex-1 py-3 rounded-lg font-semibold border-2"
-              style={{ backgroundColor: primaryColor, borderColor: accentColor, color: accentColor }}
-            >
-              Cancel
+              Start Camera
             </button>
           </div>
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
-      )}
-    </div>
+        ) : (
+          <div>
+            <div style={{ borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+              <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={capturePhoto}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Capture
+              </button>
+              <button
+                onClick={stopCamera}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: primaryColor,
+                  color: accentColor,
+                  border: `2px solid ${accentColor}`,
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+          </div>
+        )}
+      </div>
+    </SafeWrapper>
   );
 
-  const renderCollectionTab = () => {
-    // Safety check - ensure collection is an array
-    if (!Array.isArray(collection)) {
-      return (
-        <div className="pb-4">
-          <div className="text-center py-12 text-gray-400">
-            <Music size={48} className="mx-auto mb-4 opacity-50" />
-            <p>No records in collection yet</p>
-          </div>
-        </div>
-      );
-    }
-
-    let displayCollection = showFavoritesOnly 
-      ? collection.filter(item => item && item.isFavorite)
-      : collection.filter(item => item);
-
-    displayCollection = [...displayCollection].sort((a, b) => {
-      if (sortBy === 'artist') {
-        const artistA = a.title?.split(' - ')[0] || '';
-        const artistB = b.title?.split(' - ')[0] || '';
-        return artistA.localeCompare(artistB);
-      }
-      if (sortBy === 'title') {
-        const titleA = a.title?.split(' - ')[1] || a.title || '';
-        const titleB = b.title?.split(' - ')[1] || b.title || '';
-        return titleA.localeCompare(titleB);
-      }
-      if (sortBy === 'price-asc') return (a.price || 0) - (b.price || 0);
-      if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0);
-      return 0;
-    });
-
-    return (
-      <div className="pb-4">
-        <div className="flex items-center justify-between mb-3 gap-2">
+  const renderCollectionTab = () => (
+    <SafeWrapper>
+      <div style={{ paddingBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="text-white px-3 py-2 rounded-lg flex-1 text-sm"
-            style={{ backgroundColor: primaryColor, borderColor: accentColor, border: '1px solid' }}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: '8px',
+              backgroundColor: primaryColor,
+              color: 'white',
+              border: `1px solid ${accentColor}`,
+              fontSize: '13px'
+            }}
           >
             <option value="artist">Artist A-Z</option>
             <option value="title">Title A-Z</option>
@@ -362,501 +411,210 @@ const VinylPriceFinder = () => {
           
           <button
             onClick={toggleCollectionView}
-            className="px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-            style={{ backgroundColor: primaryColor, color: accentColor, border: `1px solid ${accentColor}` }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              backgroundColor: primaryColor,
+              color: accentColor,
+              border: `1px solid ${accentColor}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center'
+            }}
           >
             {collectionView === 'gallery' ? <List size={18} /> : <Grid size={18} />}
           </button>
 
           <button
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            className="px-3 py-2 rounded-lg font-medium transition-colors"
-            style={{ 
-              backgroundColor: showFavoritesOnly ? accentColor : primaryColor, 
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              backgroundColor: showFavoritesOnly ? accentColor : primaryColor,
               color: showFavoritesOnly ? primaryColor : accentColor,
-              border: `1px solid ${accentColor}`
+              border: `1px solid ${accentColor}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center'
             }}
           >
             <Heart size={18} fill={showFavoritesOnly ? primaryColor : 'none'} />
           </button>
         </div>
 
-        {displayCollection.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <Music size={48} className="mx-auto mb-4 opacity-50" />
-            <p>{showFavoritesOnly ? 'No favorites yet' : 'No records in collection yet'}</p>
-          </div>
-        ) : collectionView === 'gallery' ? (
-          <div className="grid grid-cols-2 gap-3">
-            {displayCollection.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg overflow-hidden"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <div 
-                  className="aspect-square w-full bg-gray-800 relative cursor-pointer"
-                  onClick={() => setSelectedResult(item)}
-                >
-                  <img
-                    src={item.cover_image || item.thumb || '/api/placeholder/300/300'}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(item.id);
-                    }}
-                    className="absolute top-2 right-2 p-2 rounded-full"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
-                  >
-                    <Heart 
-                      size={20} 
-                      fill={item.isFavorite ? accentColor : 'none'}
-                      stroke={item.isFavorite ? accentColor : 'white'}
-                    />
-                  </button>
-                </div>
-                <div className="p-3">
-                  <p className="font-semibold text-sm truncate">
-                    {item.title?.split(' - ')[0] || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {item.title?.split(' - ')[1] || item.title}
-                  </p>
-                  {item.price && (
-                    <p className="text-sm font-bold mt-1" style={{ color: accentColor }}>
-                      EUR {item.price.toFixed(2)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+        {collection.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>
+            <Music size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+            <p>No records in collection yet</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {displayCollection.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg overflow-hidden flex"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <div 
-                  className="w-20 h-20 flex-shrink-0 bg-gray-800 cursor-pointer"
-                  onClick={() => setSelectedResult(item)}
-                >
-                  <img
-                    src={item.cover_image || item.thumb || '/api/placeholder/80/80'}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div 
-                  className="flex-1 p-3 min-w-0 cursor-pointer"
-                  onClick={() => setSelectedResult(item)}
-                >
-                  <p className="font-semibold text-sm truncate">
-                    {item.title?.split(' - ')[0] || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {item.title?.split(' - ')[1] || item.title}
-                  </p>
-                  {item.price && (
-                    <p className="text-sm font-bold mt-1" style={{ color: accentColor }}>
-                      EUR {item.price.toFixed(2)}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(item.id);
-                  }}
-                  className="px-4 flex items-center"
-                >
-                  <Heart 
-                    size={24} 
-                    fill={item.isFavorite ? accentColor : 'none'}
-                    stroke={item.isFavorite ? accentColor : 'white'}
-                  />
-                </button>
+          <div>
+            {collectionView === 'gallery' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                {collection
+                  .filter(item => !showFavoritesOnly || item.isFavorite)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedResult(item)}
+                      style={{
+                        backgroundColor: primaryColor,
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#1f2937' }}>
+                        <img
+                          src={item.cover_image || item.thumb || '/api/placeholder/300/300'}
+                          alt={item.title}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            padding: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Heart
+                            size={16}
+                            fill={item.isFavorite ? accentColor : 'none'}
+                            stroke={item.isFavorite ? accentColor : 'white'}
+                          />
+                        </button>
+                      </div>
+                      <div style={{ padding: '12px' }}>
+                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title?.split(' - ')[0] || 'Unknown'}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title?.split(' - ')[1] || item.title}
+                        </p>
+                        {item.price && (
+                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor }}>
+                            EUR {item.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
               </div>
-            ))}
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {collection
+                  .filter(item => !showFavoritesOnly || item.isFavorite)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedResult(item)}
+                      style={{
+                        backgroundColor: primaryColor,
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ width: '80px', height: '80px', flexShrink: 0, backgroundColor: '#1f2937' }}>
+                        <img
+                          src={item.cover_image || item.thumb || '/api/placeholder/80/80'}
+                          alt={item.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, padding: '12px', minWidth: 0 }}>
+                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title?.split(' - ')[0] || 'Unknown'}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title?.split(' - ')[1] || item.title}
+                        </p>
+                        {item.price && (
+                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: accentColor }}>
+                            EUR {item.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(item.id);
+                        }}
+                        style={{
+                          padding: '16px',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Heart
+                          size={20}
+                          fill={item.isFavorite ? accentColor : 'none'}
+                          stroke={item.isFavorite ? accentColor : 'white'}
+                        />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
       </div>
-    );
-  };
+    </SafeWrapper>
+  );
 
   const renderProfileTab = () => (
-    <div className="pb-4">
-      <div className="text-center py-8">
-        <div 
-          className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center"
-          style={{ backgroundColor: accentColor }}
+    <SafeWrapper>
+      <div style={{ paddingBottom: '16px', textAlign: 'center', paddingTop: '32px' }}>
+        <div
+          style={{
+            width: '96px',
+            height: '96px',
+            borderRadius: '50%',
+            backgroundColor: accentColor,
+            margin: '0 auto 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
         >
           <User size={48} style={{ color: primaryColor }} />
         </div>
-        <h2 className="text-xl font-bold mb-2">VinylScout User</h2>
-        <p className="text-gray-400 text-sm mb-6">Vinyl collector</p>
-        
-        <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
-          <div className="p-4 rounded-lg" style={{ backgroundColor: primaryColor }}>
-            <p className="text-2xl font-bold" style={{ color: accentColor }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>VinylScout User</h2>
+        <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '24px' }}>Vinyl collector</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', maxWidth: '300px', margin: '0 auto' }}>
+          <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, marginBottom: '4px' }}>
               {collection.length}
             </p>
-            <p className="text-xs text-gray-400">Collection</p>
+            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Collection</p>
           </div>
-          <div className="p-4 rounded-lg" style={{ backgroundColor: primaryColor }}>
-            <p className="text-2xl font-bold" style={{ color: accentColor }}>
+          <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: primaryColor }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, marginBottom: '4px' }}>
               {collection.filter(item => item.isFavorite).length}
             </p>
-            <p className="text-xs text-gray-400">Favorites</p>
+            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Favorites</p>
           </div>
         </div>
       </div>
-    </div>
+    </SafeWrapper>
   );
-
-  const renderDetailModal = () => {
-    if (!selectedResult) return null;
-
-    const isInCollection = collection.find(c => c.id === selectedResult.id);
-    const isFavorite = isInCollection?.isFavorite;
-
-    return (
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.95)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}
-        onClick={() => setSelectedResult(null)}
-      >
-        <div 
-          style={{
-            backgroundColor: primaryColor,
-            borderRadius: '12px',
-            maxWidth: '500px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{
-            position: 'sticky',
-            top: 0,
-            padding: '16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottom: `1px solid ${accentColor}`,
-            backgroundColor: primaryColor,
-            zIndex: 10
-          }}>
-            <h3 style={{ fontWeight: 'bold' }}>Album Details</h3>
-            <button onClick={() => setSelectedResult(null)}>
-              <X size={24} style={{ color: accentColor }} />
-            </button>
-          </div>
-          
-          <div style={{ padding: '16px' }}>
-            <img
-              src={selectedResult.cover_image || selectedResult.thumb || '/api/placeholder/400/400'}
-              alt={selectedResult.title}
-              style={{ width: '100%', borderRadius: '8px', marginBottom: '16px' }}
-            />
-            
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-              {selectedResult.title?.split(' - ')[0] || 'Unknown Artist'}
-            </h2>
-            <p style={{ color: '#9ca3af', marginBottom: '16px' }}>
-              {selectedResult.title?.split(' - ')[1] || selectedResult.title}
-            </p>
-            
-            {selectedResult.year && (
-              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-                Year: {selectedResult.year}
-              </p>
-            )}
-            
-            {selectedResult.price && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
-                  EUR {selectedResult.price.toFixed(2)}
-                </p>
-                {selectedResult.num_for_sale > 0 && (
-                  <p style={{ fontSize: '12px', color: '#9ca3af' }}>
-                    {selectedResult.num_for_sale} available on Discogs
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {isInCollection && (
-              <button
-                onClick={() => toggleFavorite(selectedResult.id)}
-                style={{
-                  width: '100%',
-                  marginBottom: '8px',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  backgroundColor: isFavorite ? accentColor : primaryColor,
-                  color: isFavorite ? primaryColor : accentColor,
-                  border: `2px solid ${accentColor}`,
-                  cursor: 'pointer'
-                }}
-              >
-                <Heart fill={isFavorite ? primaryColor : 'none'} size={20} />
-                {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-              </button>
-            )}
-            
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {!isInCollection ? (
-                <button
-                  onClick={() => addToCollection(selectedResult)}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '8px',
-                    fontWeight: '600',
-                    backgroundColor: accentColor,
-                    color: primaryColor,
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Add to Collection
-                </button>
-              ) : (
-                <button
-                  onClick={() => removeFromCollection(selectedResult.id)}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '8px',
-                    fontWeight: '600',
-                    backgroundColor: primaryColor,
-                    border: `2px solid ${accentColor}`,
-                    color: accentColor,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Remove from Collection
-                </button>
-              )}
-              
-              {selectedResult.uri && (
-                <a
-                  href={`https://www.discogs.com${selectedResult.uri}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: `2px solid ${accentColor}`,
-                    color: accentColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textDecoration: 'none'
-                  }}
-                >
-                  <ExternalLink size={20} />
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSettings = () => {
-    if (!showSettings) return null;
-
-    return (
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.95)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}
-        onClick={() => setShowSettings(false)}
-      >
-        <div 
-          style={{
-            backgroundColor: primaryColor,
-            borderRadius: '12px',
-            maxWidth: '500px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{
-            position: 'sticky',
-            top: 0,
-            padding: '16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottom: `1px solid ${accentColor}`,
-            backgroundColor: primaryColor,
-            zIndex: 10
-          }}>
-            <h3 style={{ fontWeight: 'bold', fontSize: '18px' }}>Settings</h3>
-            <button onClick={() => setShowSettings(false)}>
-              <X size={24} style={{ color: accentColor }} />
-            </button>
-          </div>
-          
-          <div style={{ padding: '16px' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                Discogs API Token
-              </label>
-              <input
-                type="password"
-                value={discogsToken}
-                onChange={(e) => setDiscogsToken(e.target.value)}
-                placeholder="Enter your token"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  backgroundColor: '#1f2937',
-                  color: 'white',
-                  border: 'none'
-                }}
-              />
-              <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                Get your token at discogs.com/settings/developers
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                Price Sources
-              </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {[
-                  { id: 'discogs', name: 'Discogs' },
-                  { id: 'hhv', name: 'HHV' },
-                  { id: 'ebay', name: 'eBay' }
-                ].map(shop => (
-                  <label key={shop.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedShops.includes(shop.id)}
-                      onChange={() => toggleShop(shop.id)}
-                      style={{ width: '20px', height: '20px' }}
-                    />
-                    <span>{shop.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                Primary Color
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  style={{ width: '64px', height: '40px', borderRadius: '8px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: '#1f2937',
-                    color: 'white',
-                    border: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                Accent Color
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  style={{ width: '64px', height: '40px', borderRadius: '8px', cursor: 'pointer' }}
-                />
-                <input
-                  type="text"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: '#1f2937',
-                    color: 'white',
-                    border: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={saveSettings}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                fontWeight: '600',
-                backgroundColor: accentColor,
-                color: primaryColor,
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Save Settings
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div style={{
@@ -876,8 +634,8 @@ const VinylPriceFinder = () => {
         alignItems: 'center',
         backgroundColor: primaryColor
       }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>VinylScout</h1>
-        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor, margin: 0 }}>VinylScout</h1>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
           <Settings size={24} style={{ color: accentColor }} />
         </button>
       </div>
@@ -887,7 +645,7 @@ const VinylPriceFinder = () => {
         flex: 1,
         overflowY: 'auto',
         padding: '16px',
-        paddingBottom: '100px'
+        paddingBottom: '80px'
       }}>
         {activeTab === 'search' && renderSearchTab()}
         {activeTab === 'camera' && renderCameraTab()}
@@ -895,23 +653,22 @@ const VinylPriceFinder = () => {
         {activeTab === 'profile' && renderProfileTab()}
       </div>
 
-      {/* Bottom Navigation - ABSOLUTELY FIXED */}
+      {/* Bottom Navigation */}
       <div style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        width: '100%',
         backgroundColor: primaryColor,
         borderTop: `1px solid ${accentColor}`,
+        padding: '8px 0',
         zIndex: 1000
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
           gap: 0,
-          width: '100%',
-          padding: '8px 0'
+          maxWidth: '100%'
         }}>
           {[
             { id: 'search', icon: Search, label: 'Search' },
@@ -928,28 +685,355 @@ const VinylPriceFinder = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '4px',
+                padding: '8px 4px',
                 background: 'none',
                 border: 'none',
-                padding: '4px',
                 cursor: 'pointer',
                 color: activeTab === id ? accentColor : '#666'
               }}
             >
-              <Icon size={20} style={{ flexShrink: 0 }} />
-              <span style={{ 
-                fontSize: '9px', 
-                textAlign: 'center',
-                lineHeight: '1.2'
-              }}>
-                {label}
-              </span>
+              <Icon size={20} />
+              <span style={{ fontSize: '10px', textAlign: 'center' }}>{label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {renderSettings()}
-      {renderDetailModal()}
+      {/* Settings Modal */}
+      {showSettings && (
+        <div
+          onClick={() => setShowSettings(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: primaryColor,
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              padding: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: `1px solid ${accentColor}`,
+              backgroundColor: primaryColor
+            }}>
+              <h3 style={{ fontWeight: 'bold', fontSize: '18px', margin: 0 }}>Settings</h3>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Discogs API Token
+                </label>
+                <input
+                  type="password"
+                  value={discogsToken}
+                  onChange={(e) => setDiscogsToken(e.target.value)}
+                  placeholder="Enter your token"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1f2937',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '14px'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+                  Get your token at discogs.com/settings/developers
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Price Sources
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { id: 'discogs', name: 'Discogs' },
+                    { id: 'hhv', name: 'HHV' },
+                    { id: 'ebay', name: 'eBay' }
+                  ].map(shop => (
+                    <label key={shop.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedShops.includes(shop.id)}
+                        onChange={() => toggleShop(shop.id)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                      <span>{shop.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Primary Color
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    style={{ width: '60px', height: '40px', borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#1f2937',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  Accent Color
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    style={{ width: '60px', height: '40px', borderRadius: '8px', cursor: 'pointer', border: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#1f2937',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={saveSettings}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  backgroundColor: accentColor,
+                  color: primaryColor,
+                  border: 'none',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedResult && (
+        <div
+          onClick={() => setSelectedResult(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            overflowY: 'auto'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: primaryColor,
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              padding: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: `1px solid ${accentColor}`,
+              backgroundColor: primaryColor
+            }}>
+              <h3 style={{ fontWeight: 'bold', margin: 0 }}>Album Details</h3>
+              <button onClick={() => setSelectedResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px' }}>
+              <img
+                src={selectedResult.cover_image || selectedResult.thumb || '/api/placeholder/400/400'}
+                alt={selectedResult.title}
+                style={{ width: '100%', borderRadius: '8px', marginBottom: '16px' }}
+              />
+
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
+                {selectedResult.title?.split(' - ')[0] || 'Unknown'}
+              </h2>
+              <p style={{ color: '#9ca3af', marginBottom: '16px' }}>
+                {selectedResult.title?.split(' - ')[1] || selectedResult.title}
+              </p>
+
+              {selectedResult.year && (
+                <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
+                  Year: {selectedResult.year}
+                </p>
+              )}
+
+              {selectedResult.price && (
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '24px', fontWeight: 'bold', color: accentColor }}>
+                    EUR {selectedResult.price.toFixed(2)}
+                  </p>
+                  {selectedResult.num_for_sale > 0 && (
+                    <p style={{ fontSize: '12px', color: '#9ca3af' }}>
+                      {selectedResult.num_for_sale} available
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {collection.find(c => c.id === selectedResult.id) && (
+                <button
+                  onClick={() => toggleFavorite(selectedResult.id)}
+                  style={{
+                    width: '100%',
+                    marginBottom: '8px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: collection.find(c => c.id === selectedResult.id)?.isFavorite ? accentColor : primaryColor,
+                    color: collection.find(c => c.id === selectedResult.id)?.isFavorite ? primaryColor : accentColor,
+                    border: `2px solid ${accentColor}`,
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Heart size={20} fill={collection.find(c => c.id === selectedResult.id)?.isFavorite ? primaryColor : 'none'} />
+                  {collection.find(c => c.id === selectedResult.id)?.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                </button>
+              )}
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {!collection.find(c => c.id === selectedResult.id) ? (
+                  <button
+                    onClick={() => addToCollection(selectedResult)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: accentColor,
+                      color: primaryColor,
+                      border: 'none',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Add to Collection
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => removeFromCollection(selectedResult.id)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: primaryColor,
+                      color: accentColor,
+                      border: `2px solid ${accentColor}`,
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+
+                {selectedResult.uri && (
+                  <a
+                    href={`https://www.discogs.com${selectedResult.uri}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: `2px solid ${accentColor}`,
+                      color: accentColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <ExternalLink size={20} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
