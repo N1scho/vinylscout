@@ -1306,9 +1306,19 @@ const VinylPriceFinder = () => {
                       </h3>
                       <div className="flex gap-3">
                         {stats.highest.cover_image && (
-                          <img src={stats.highest.cover_image} alt={stats.highest.title} className="w-20 h-20 rounded object-cover" />
+                          <img 
+                            src={stats.highest.cover_image} 
+                            alt={stats.highest.title} 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              flexShrink: 0
+                            }}
+                          />
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold text-sm">{stats.highest.title?.split(' - ')[0] || 'Unknown'}</p>
                           <p className="text-white/70 text-xs">{stats.highest.title?.split(' - ')[1] || stats.highest.title}</p>
                           <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
@@ -1327,9 +1337,19 @@ const VinylPriceFinder = () => {
                       </h3>
                       <div className="flex gap-3">
                         {stats.lowest.cover_image && (
-                          <img src={stats.lowest.cover_image} alt={stats.lowest.title} className="w-20 h-20 rounded object-cover" />
+                          <img 
+                            src={stats.lowest.cover_image} 
+                            alt={stats.lowest.title} 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              flexShrink: 0
+                            }}
+                          />
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold text-sm">{stats.lowest.title?.split(' - ')[0] || 'Unknown'}</p>
                           <p className="text-white/70 text-xs">{stats.lowest.title?.split(' - ')[1] || stats.lowest.title}</p>
                           <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
@@ -1344,27 +1364,67 @@ const VinylPriceFinder = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {stats.oldest && (
                       <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                        <h3 className="text-white font-semibold mb-2 text-sm flex items-center gap-1">
+                        <h3 className="text-white font-semibold mb-2 text-xs flex items-center gap-1">
                           <span>⏳</span> Oldest
                         </h3>
                         {stats.oldest.cover_image && (
-                          <img src={stats.oldest.cover_image} alt={stats.oldest.title} className="w-full aspect-square rounded object-cover mb-2" />
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            paddingTop: '100%',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            marginBottom: '8px'
+                          }}>
+                            <img 
+                              src={stats.oldest.cover_image} 
+                              alt={stats.oldest.title} 
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          </div>
                         )}
-                        <p className="text-white text-xs font-semibold">{stats.oldest.title?.split(' - ')[0] || 'Unknown'}</p>
-                        <p className="text-white/70 text-xs" style={{ color: accentColor }}>{stats.oldest.year}</p>
+                        <p className="text-white text-xs font-semibold truncate">{stats.oldest.title?.split(' - ')[0] || 'Unknown'}</p>
+                        <p className="text-xs truncate" style={{ color: accentColor }}>{stats.oldest.year}</p>
                       </div>
                     )}
                     
                     {stats.newest && (
                       <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                        <h3 className="text-white font-semibold mb-2 text-sm flex items-center gap-1">
+                        <h3 className="text-white font-semibold mb-2 text-xs flex items-center gap-1">
                           <span>🆕</span> Newest
                         </h3>
                         {stats.newest.cover_image && (
-                          <img src={stats.newest.cover_image} alt={stats.newest.title} className="w-full aspect-square rounded object-cover mb-2" />
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            paddingTop: '100%',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            marginBottom: '8px'
+                          }}>
+                            <img 
+                              src={stats.newest.cover_image} 
+                              alt={stats.newest.title} 
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          </div>
                         )}
-                        <p className="text-white text-xs font-semibold">{stats.newest.title?.split(' - ')[0] || 'Unknown'}</p>
-                        <p className="text-white/70 text-xs" style={{ color: accentColor }}>{stats.newest.year}</p>
+                        <p className="text-white text-xs font-semibold truncate">{stats.newest.title?.split(' - ')[0] || 'Unknown'}</p>
+                        <p className="text-xs truncate" style={{ color: accentColor }}>{stats.newest.year}</p>
                       </div>
                     )}
                   </div>
