@@ -19,6 +19,7 @@ const VinylScout = () => {
   const [collection, setCollection] = useState([]);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [statsModalType, setStatsModalType] = useState('all'); // 'all', 'favorites', 'prices'
+  const [showValueModal, setShowValueModal] = useState(false);
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
   const [collectionFilter, setCollectionFilter] = useState('all'); // 'all' or 'favorites'
@@ -498,7 +499,7 @@ const VinylScout = () => {
         {activeTab === 'search' && (
           <div className="space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1 }}>
-              {/* Simple Search Bar - Full Width */}
+              {/* Simple Search Bar - Full Width, Large Size (64px) */}
               <div className="space-y-3">
                 <input
                   type="text"
@@ -506,11 +507,14 @@ const VinylScout = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Quick search..."
-                  className="px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
+                  className="rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40"
                   style={{ 
                     backgroundColor: secondaryColor,
                     width: '100%',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    height: '80px',
+                    fontSize: '18px',
+                    padding: '0 20px'
                   }}
                 />
               </div>
@@ -669,9 +673,11 @@ const VinylScout = () => {
                   backgroundColor: accentColor, 
                   color: primaryColor,
                   width: '100%',
+                  height: '80px',
                   border: 'none',
                   cursor: 'pointer',
-                  fontSize: '16px'
+                  fontSize: '20px',
+                  fontWeight: 'bold'
                 }}
               >
                 {isLoading ? 'Searching...' : 'Search'}
@@ -994,7 +1000,11 @@ const VinylScout = () => {
             </div>
             
             {/* Collection Value */}
-            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+            <div 
+              className="rounded-lg p-4 border border-white/10 cursor-pointer transition-all hover:bg-white/5" 
+              style={{ backgroundColor: secondaryColor }}
+              onClick={() => setShowValueModal(true)}
+            >
               <h3 className="text-white font-semibold mb-3">Collection Value</h3>
               <div className="flex justify-between items-center">
                 <span className="text-white/60">Total Value:</span>
@@ -1004,6 +1014,9 @@ const VinylScout = () => {
               </div>
               <p className="text-white/40 text-xs mt-2">
                 Based on {calculateCollectionValue().count} of {collection.length} records with price data
+              </p>
+              <p className="text-white/60 text-xs mt-2 text-center">
+                👆 Tap to see detailed breakdown
               </p>
             </div>
 
@@ -1423,6 +1436,362 @@ const VinylScout = () => {
           </span>
         </button>
       </div>
+
+      {/* Collection Value Detail Modal */}
+      {showValueModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000,
+            overflowY: 'auto'
+          }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: '448px',
+              backgroundColor: primaryColor,
+              border: `1px solid ${accentColor}`,
+              borderRadius: '8px',
+              padding: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 'auto'
+            }}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Collection Value</h2>
+              <button onClick={() => setShowValueModal(false)}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Total Value Summary */}
+              <div className="rounded-lg p-4 border-2" style={{ backgroundColor: secondaryColor, borderColor: accentColor }}>
+                <div className="text-center">
+                  <p className="text-white/60 text-sm mb-2">Total Collection Value</p>
+                  <p className="text-4xl font-bold mb-2" style={{ color: accentColor }}>
+                    {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                  </p>
+                  <p className="text-white/60 text-xs">
+                    Based on {calculateCollectionValue().count} of {collection.length} records
+                  </p>
+                </div>
+              </div>
+
+              {/* Most Expensive Album */}
+              {collection.filter(item => item.price && item.price.value).length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">💎 Most Expensive</h3>
+                  {(() => {
+                    const mostExpensive = collection
+                      .filter(item => item.price && item.price.value)
+                      .sort((a, b) => b.price.value - a.price.value)[0];
+                    return (
+                      <div className="flex gap-3 items-center">
+                        <img
+                          src={mostExpensive.cover_image || 'https://via.placeholder.com/80?text=No+Cover'}
+                          alt={mostExpensive.title}
+                          className="w-20 h-20 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm mb-1">
+                            {mostExpensive.title?.split(' - ')[1] || mostExpensive.title}
+                          </p>
+                          <p className="text-white/60 text-xs mb-2">
+                            {mostExpensive.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </p>
+                          <p className="text-xl font-bold" style={{ color: accentColor }}>
+                            {mostExpensive.price.currency} {mostExpensive.price.value.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Top 5 Most Expensive */}
+              {collection.filter(item => item.price && item.price.value).length > 1 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">📈 Top 5 Most Expensive</h3>
+                  <div className="space-y-2">
+                    {collection
+                      .filter(item => item.price && item.price.value)
+                      .sort((a, b) => b.price.value - a.price.value)
+                      .slice(0, 5)
+                      .map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <p className="text-white text-sm truncate">
+                              {item.title?.split(' - ')[1] || item.title}
+                            </p>
+                            <p className="text-white/40 text-xs truncate">
+                              {item.title?.split(' - ')[0] || 'Unknown'}
+                            </p>
+                          </div>
+                          <p className="font-bold text-sm" style={{ color: accentColor }}>
+                            {item.price.currency} {item.price.value.toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cheapest Album */}
+              {collection.filter(item => item.price && item.price.value).length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">💰 Cheapest</h3>
+                  {(() => {
+                    const cheapest = collection
+                      .filter(item => item.price && item.price.value)
+                      .sort((a, b) => a.price.value - b.price.value)[0];
+                    return (
+                      <div className="flex gap-3 items-center">
+                        <img
+                          src={cheapest.cover_image || 'https://via.placeholder.com/80?text=No+Cover'}
+                          alt={cheapest.title}
+                          className="w-20 h-20 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm mb-1">
+                            {cheapest.title?.split(' - ')[1] || cheapest.title}
+                          </p>
+                          <p className="text-white/60 text-xs mb-2">
+                            {cheapest.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </p>
+                          <p className="text-xl font-bold" style={{ color: accentColor }}>
+                            {cheapest.price.currency} {cheapest.price.value.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Top 5 Cheapest */}
+              {collection.filter(item => item.price && item.price.value).length > 1 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">📉 Top 5 Cheapest</h3>
+                  <div className="space-y-2">
+                    {collection
+                      .filter(item => item.price && item.price.value)
+                      .sort((a, b) => a.price.value - b.price.value)
+                      .slice(0, 5)
+                      .map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <p className="text-white text-sm truncate">
+                              {item.title?.split(' - ')[1] || item.title}
+                            </p>
+                            <p className="text-white/40 text-xs truncate">
+                              {item.title?.split(' - ')[0] || 'Unknown'}
+                            </p>
+                          </div>
+                          <p className="font-bold text-sm" style={{ color: accentColor }}>
+                            {item.price.currency} {item.price.value.toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Newest Addition */}
+              {collection.length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">🆕 Newest Addition</h3>
+                  {(() => {
+                    const newest = collection.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))[0];
+                    return (
+                      <div className="flex gap-3 items-center">
+                        <img
+                          src={newest.cover_image || 'https://via.placeholder.com/80?text=No+Cover'}
+                          alt={newest.title}
+                          className="w-20 h-20 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm mb-1">
+                            {newest.title?.split(' - ')[1] || newest.title}
+                          </p>
+                          <p className="text-white/60 text-xs mb-2">
+                            {newest.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </p>
+                          <p className="text-xs text-white/40">
+                            Added: {new Date(newest.addedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Top 5 Newest */}
+              {collection.length > 1 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">🕒 Last 5 Added</h3>
+                  <div className="space-y-2">
+                    {collection
+                      .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
+                      .slice(0, 5)
+                      .map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <p className="text-white text-sm truncate">
+                              {item.title?.split(' - ')[1] || item.title}
+                            </p>
+                            <p className="text-white/40 text-xs truncate">
+                              {item.title?.split(' - ')[0] || 'Unknown'}
+                            </p>
+                          </div>
+                          <p className="text-xs text-white/60">
+                            {new Date(item.addedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Oldest Addition */}
+              {collection.length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">⏳ Oldest Addition</h3>
+                  {(() => {
+                    const oldest = collection.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))[0];
+                    return (
+                      <div className="flex gap-3 items-center">
+                        <img
+                          src={oldest.cover_image || 'https://via.placeholder.com/80?text=No+Cover'}
+                          alt={oldest.title}
+                          className="w-20 h-20 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-sm mb-1">
+                            {oldest.title?.split(' - ')[1] || oldest.title}
+                          </p>
+                          <p className="text-white/60 text-xs mb-2">
+                            {oldest.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </p>
+                          <p className="text-xs text-white/40">
+                            Added: {new Date(oldest.addedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Top 5 Oldest */}
+              {collection.length > 1 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">📅 First 5 Added</h3>
+                  <div className="space-y-2">
+                    {collection
+                      .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
+                      .slice(0, 5)
+                      .map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <p className="text-white text-sm truncate">
+                              {item.title?.split(' - ')[1] || item.title}
+                            </p>
+                            <p className="text-white/40 text-xs truncate">
+                              {item.title?.split(' - ')[0] || 'Unknown'}
+                            </p>
+                          </div>
+                          <p className="text-xs text-white/60">
+                            {new Date(item.addedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Average Price */}
+              {collection.filter(item => item.price && item.price.value).length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">📊 Price Statistics</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Average Price:</span>
+                      <span className="text-white font-bold">
+                        {(() => {
+                          const withPrices = collection.filter(item => item.price && item.price.value);
+                          const avg = withPrices.reduce((sum, item) => sum + item.price.value, 0) / withPrices.length;
+                          return `${withPrices[0].price.currency} ${avg.toFixed(2)}`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Median Price:</span>
+                      <span className="text-white font-bold">
+                        {(() => {
+                          const withPrices = collection.filter(item => item.price && item.price.value).sort((a, b) => a.price.value - b.price.value);
+                          const mid = Math.floor(withPrices.length / 2);
+                          const median = withPrices.length % 2 === 0 
+                            ? (withPrices[mid - 1].price.value + withPrices[mid].price.value) / 2 
+                            : withPrices[mid].price.value;
+                          return `${withPrices[0].price.currency} ${median.toFixed(2)}`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Price Range:</span>
+                      <span className="text-white font-bold">
+                        {(() => {
+                          const withPrices = collection.filter(item => item.price && item.price.value);
+                          const min = Math.min(...withPrices.map(item => item.price.value));
+                          const max = Math.max(...withPrices.map(item => item.price.value));
+                          return `${withPrices[0].price.currency} ${min.toFixed(2)} - ${max.toFixed(2)}`;
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Collection Growth */}
+              <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                <h3 className="text-white font-semibold mb-3">📈 Collection Growth</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Total Records:</span>
+                    <span className="text-white font-bold">{collection.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">With Prices:</span>
+                    <span className="text-white font-bold">
+                      {collection.filter(item => item.price).length} ({((collection.filter(item => item.price).length / collection.length) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Favorites:</span>
+                    <span className="text-white font-bold">
+                      {collection.filter(item => item.isFavorite).length} ({((collection.filter(item => item.isFavorite).length / collection.length) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detailed Statistics Modal */}
       {showStatsModal && (
