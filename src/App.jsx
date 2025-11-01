@@ -17,6 +17,8 @@ const VinylScout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
   const [collection, setCollection] = useState([]);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [statsModalType, setStatsModalType] = useState('all'); // 'all', 'favorites', 'prices'
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
   const [collectionFilter, setCollectionFilter] = useState('all'); // 'all' or 'favorites'
@@ -496,7 +498,7 @@ const VinylScout = () => {
         {activeTab === 'search' && (
           <div className="space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1 }}>
-              {/* Simple Search Bar */}
+              {/* Simple Search Bar - Full Width */}
               <div className="space-y-3">
                 <input
                   type="text"
@@ -504,8 +506,12 @@ const VinylScout = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Quick search..."
-                  className="w-full px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
-                  style={{ backgroundColor: secondaryColor }}
+                  className="px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
+                  style={{ 
+                    backgroundColor: secondaryColor,
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
                 />
               </div>
 
@@ -653,13 +659,20 @@ const VinylScout = () => {
               )}
             </div>
 
-            {/* Search Button - Fixed at bottom of search content */}
+            {/* Search Button - Fixed at bottom of search content - Full Width */}
             <div style={{ paddingTop: '16px', paddingBottom: '8px' }}>
               <button
                 onClick={showAdvancedSearch ? handleAdvancedSearch : handleSearch}
                 disabled={isLoading}
-                className="w-full py-3 rounded-lg font-semibold transition-all"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
+                className="py-3 rounded-lg font-semibold transition-all"
+                style={{ 
+                  backgroundColor: accentColor, 
+                  color: primaryColor,
+                  width: '100%',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
@@ -997,17 +1010,38 @@ const VinylScout = () => {
             {/* Statistics */}
             <div className="rounded-lg p-4 space-y-2 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">Statistics</h3>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div 
+                className="flex justify-between" 
+                style={{ gap: '16px', cursor: 'pointer' }}
+                onClick={() => {
+                  setStatsModalType('all');
+                  setShowStatsModal(true);
+                }}
+              >
                 <span className="text-white/60">Total Records</span>
-                <span className="text-white font-semibold">{collection.length}</span>
+                <span className="text-white font-semibold" style={{ marginLeft: '8px' }}>{collection.length}</span>
               </div>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div 
+                className="flex justify-between" 
+                style={{ gap: '16px', cursor: 'pointer' }}
+                onClick={() => {
+                  setStatsModalType('favorites');
+                  setShowStatsModal(true);
+                }}
+              >
                 <span className="text-white/60">Favorites</span>
-                <span className="text-white font-semibold">{collection.filter(item => item.isFavorite).length}</span>
+                <span className="text-white font-semibold" style={{ marginLeft: '8px' }}>{collection.filter(item => item.isFavorite).length}</span>
               </div>
-              <div className="flex justify-between" style={{ gap: '16px' }}>
+              <div 
+                className="flex justify-between" 
+                style={{ gap: '16px', cursor: 'pointer' }}
+                onClick={() => {
+                  setStatsModalType('prices');
+                  setShowStatsModal(true);
+                }}
+              >
                 <span className="text-white/60">With Prices</span>
-                <span className="text-white font-semibold">
+                <span className="text-white font-semibold" style={{ marginLeft: '8px' }}>
                   {collection.filter(item => item.price).length}
                 </span>
               </div>
@@ -1389,6 +1423,146 @@ const VinylScout = () => {
           </span>
         </button>
       </div>
+
+      {/* Detailed Statistics Modal */}
+      {showStatsModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000,
+            overflowY: 'auto'
+          }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: '448px',
+              backgroundColor: primaryColor,
+              border: `1px solid ${accentColor}`,
+              borderRadius: '8px',
+              padding: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 'auto'
+            }}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                {statsModalType === 'all' ? 'Collection Details' : 
+                 statsModalType === 'favorites' ? 'Favorites Details' : 
+                 'Price Statistics'}
+              </h2>
+              <button onClick={() => setShowStatsModal(false)}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Most Valuable */}
+              {collection.filter(item => item.price).length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">Most Valuable</h3>
+                  {collection
+                    .filter(item => item.price && item.price.value)
+                    .sort((a, b) => b.price.value - a.price.value)
+                    .slice(0, 3)
+                    .map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center mb-2">
+                        <span className="text-white/80 text-sm">{item.title?.split(' - ')[1] || item.title}</span>
+                        <span className="font-bold" style={{ color: accentColor }}>
+                          {item.price.currency} {item.price.value.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Least Valuable */}
+              {collection.filter(item => item.price).length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">Least Valuable</h3>
+                  {collection
+                    .filter(item => item.price && item.price.value)
+                    .sort((a, b) => a.price.value - b.price.value)
+                    .slice(0, 3)
+                    .map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center mb-2">
+                        <span className="text-white/80 text-sm">{item.title?.split(' - ')[1] || item.title}</span>
+                        <span className="font-bold" style={{ color: accentColor }}>
+                          {item.price.currency} {item.price.value.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Most Recent Additions */}
+              {collection.length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">Most Recent</h3>
+                  {collection
+                    .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
+                    .slice(0, 3)
+                    .map((item, idx) => (
+                      <div key={idx} className="text-white/80 text-sm mb-2">
+                        {item.title?.split(' - ')[1] || item.title}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Oldest Additions */}
+              {collection.length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">Oldest</h3>
+                  {collection
+                    .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
+                    .slice(0, 3)
+                    .map((item, idx) => (
+                      <div key={idx} className="text-white/80 text-sm mb-2">
+                        {item.title?.split(' - ')[1] || item.title}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Genre Breakdown */}
+              {collection.length > 0 && (
+                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                  <h3 className="text-white font-semibold mb-3">By Genre</h3>
+                  {(() => {
+                    const genreCounts = {};
+                    collection.forEach(item => {
+                      if (item.genre && item.genre[0]) {
+                        const genre = item.genre[0];
+                        genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+                      }
+                    });
+                    return Object.entries(genreCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5)
+                      .map(([genre, count]) => (
+                        <div key={genre} className="flex justify-between items-center mb-2">
+                          <span className="text-white/80 text-sm">{genre}</span>
+                          <span className="font-bold" style={{ color: accentColor }}>{count}</span>
+                        </div>
+                      ));
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Result Detail Modal */}
       {selectedResult && (
