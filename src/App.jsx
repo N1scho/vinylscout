@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, Heart, User, Settings, X, ChevronRight, ExternalLink } from 'lucide-react';
 
-const VinylPriceFinder = () => {
+const VinylScout = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -15,16 +15,11 @@ const VinylPriceFinder = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [resultPrices, setResultPrices] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
-  const [priceInfo, setPriceInfo] = useState(null);
-  const [loadingPrice, setLoadingPrice] = useState(false);
   const [collection, setCollection] = useState([]);
-  const [favorites, setFavorites] = useState([]);
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionSort, setCollectionSort] = useState('artist-asc');
   const [collectionFilter, setCollectionFilter] = useState('all'); // 'all' or 'favorites'
-  const [showStatsDetail, setShowStatsDetail] = useState(false);
   
   // Settings state
   const [discogsToken, setDiscogsToken] = useState('');
@@ -35,7 +30,6 @@ const VinylPriceFinder = () => {
   const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
   const [accentColor, setAccentColor] = useState('#ffb700');
   
-  const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
@@ -62,7 +56,6 @@ const VinylPriceFinder = () => {
     const savedSecondaryColor = localStorage.getItem('secondaryColor');
     const savedAccentColor = localStorage.getItem('accentColor');
     const savedCollection = localStorage.getItem('collection');
-    const savedFavorites = localStorage.getItem('favorites');
     
     if (savedToken) setDiscogsToken(savedToken);
     if (savedAnthropicToken) setAnthropicToken(savedAnthropicToken);
@@ -72,7 +65,6 @@ const VinylPriceFinder = () => {
     if (savedSecondaryColor) setSecondaryColor(savedSecondaryColor);
     if (savedAccentColor) setAccentColor(savedAccentColor);
     if (savedCollection) setCollection(JSON.parse(savedCollection));
-    if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
   }, []);
 
   // Apply theme
@@ -97,7 +89,7 @@ const VinylPriceFinder = () => {
     localStorage.setItem('primaryColor', primaryColor);
     localStorage.setItem('secondaryColor', secondaryColor);
     localStorage.setItem('accentColor', accentColor);
-    setShowSettings(false);
+    alert('Settings saved successfully!');
   };
 
   // Search Discogs API
@@ -309,11 +301,6 @@ const VinylPriceFinder = () => {
     localStorage.setItem('collection', JSON.stringify(newCollection));
   };
 
-  const isFavorited = (item) => {
-    const collectionItem = collection.find(c => c.id === item.id);
-    return collectionItem?.isFavorite || false;
-  };
-
   // Fetch price information
   const fetchPriceInfo = async (releaseId) => {
     if (!discogsToken) return null;
@@ -467,42 +454,6 @@ const VinylPriceFinder = () => {
     };
   };
 
-  // Get collection statistics details
-  const getCollectionStats = () => {
-    const itemsWithPrices = collection.filter(item => item.price && item.price.value);
-    
-    if (itemsWithPrices.length === 0) {
-      return {
-        highest: null,
-        lowest: null,
-        oldest: null,
-        newest: null,
-        mostExpensive5: [],
-        cheapest5: []
-      };
-    }
-
-    // Sort by price
-    const sortedByPrice = [...itemsWithPrices].sort((a, b) => b.price.value - a.price.value);
-    
-    // Sort by year
-    const itemsWithYear = collection.filter(item => item.year);
-    const sortedByYear = [...itemsWithYear].sort((a, b) => {
-      const yearA = parseInt(a.year) || 9999;
-      const yearB = parseInt(b.year) || 9999;
-      return yearA - yearB;
-    });
-
-    return {
-      highest: sortedByPrice[0],
-      lowest: sortedByPrice[sortedByPrice.length - 1],
-      oldest: sortedByYear[0],
-      newest: sortedByYear[sortedByYear.length - 1],
-      mostExpensive5: sortedByPrice.slice(0, 5),
-      cheapest5: sortedByPrice.slice(-5).reverse()
-    };
-  };
-
   return (
     <div 
       className="w-full h-full"
@@ -545,27 +496,18 @@ const VinylPriceFinder = () => {
         {activeTab === 'search' && (
           <div className="space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1 }}>
-              {/* Simple Search Bar - FULL WIDTH */}
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Search for albums or artists..."
-                className="text-white placeholder-white/50 focus:outline-none"
-                style={{ 
-                  backgroundColor: secondaryColor,
-                  padding: '20px 24px',
-                  fontSize: '18px',
-                  border: '3px solid',
-                  borderColor: accentColor + '60',
-                  borderRadius: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => e.target.style.borderColor = accentColor}
-                onBlur={(e) => e.target.style.borderColor = accentColor + '60'}
-              />
+              {/* Simple Search Bar */}
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Quick search..."
+                  className="w-full px-4 py-4 rounded-lg text-white placeholder-white/50 border-2 border-white/20 focus:outline-none focus:border-white/40 text-base"
+                  style={{ backgroundColor: secondaryColor }}
+                />
+              </div>
 
               {/* Advanced Search Toggle */}
               <button
@@ -1041,26 +983,14 @@ const VinylPriceFinder = () => {
             {/* Collection Value */}
             <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-3">Collection Value</h3>
-              <div 
-                className="flex justify-between items-center cursor-pointer"
-                onClick={() => setShowStatsDetail(true)}
-                style={{ transition: 'opacity 0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
+              <div className="flex justify-between items-center">
                 <span className="text-white/60">Total Value:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold" style={{ color: accentColor }}>
-                    {calculateCollectionValue().currency} {calculateCollectionValue().value}
-                  </span>
-                  <ChevronRight size={20} style={{ color: accentColor }} />
-                </div>
+                <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                  {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                </span>
               </div>
               <p className="text-white/40 text-xs mt-2">
                 Based on {calculateCollectionValue().count} of {collection.length} records with price data
-              </p>
-              <p className="text-white/40 text-xs mt-1">
-                Tap to view detailed statistics →
               </p>
             </div>
 
@@ -1082,6 +1012,211 @@ const VinylPriceFinder = () => {
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white mb-4">Settings</h2>
+
+            {/* Theme Selection */}
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-3 font-semibold">
+                Theme
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {themePresets.map(theme => (
+                  <button
+                    key={theme.id}
+                    onClick={() => applyTheme(theme.id)}
+                    className="px-3 py-2 rounded text-sm font-medium border-2 transition-all"
+                    style={{
+                      backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : primaryColor,
+                      borderColor: theme.id === selectedTheme ? accentColor : 'rgba(255,255,255,0.2)',
+                      color: theme.id === selectedTheme ? accentColor : 'white'
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          backgroundColor: theme.accent,
+                          border: '2px solid rgba(255,255,255,0.3)'
+                        }}
+                      />
+                      {theme.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Colors - Only show when Custom theme selected */}
+            {selectedTheme === 'custom' && (
+              <div className="rounded-lg p-4 border border-white/10 space-y-4" style={{ backgroundColor: secondaryColor }}>
+                <h3 className="text-white font-semibold">Custom Colors</h3>
+                
+                {/* Primary Color */}
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">
+                    Primary Color (Background)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="w-12 h-10 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                      style={{ backgroundColor: primaryColor }}
+                    />
+                  </div>
+                </div>
+
+                {/* Secondary Color */}
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">
+                    Secondary Color (Cards/Inputs)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={secondaryColor}
+                      onChange={(e) => setSecondaryColor(e.target.value)}
+                      className="w-12 h-10 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={secondaryColor}
+                      onChange={(e) => setSecondaryColor(e.target.value)}
+                      className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                      style={{ backgroundColor: primaryColor }}
+                    />
+                  </div>
+                </div>
+
+                {/* Accent Color */}
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">
+                    Accent Color (Highlights)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="w-12 h-10 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
+                      style={{ backgroundColor: primaryColor }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Discogs Token */}
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">
+                Discogs API Token
+              </label>
+              <input
+                type="text"
+                value={discogsToken}
+                onChange={(e) => setDiscogsToken(e.target.value)}
+                placeholder="Enter your Discogs token"
+                className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
+                style={{ backgroundColor: primaryColor }}
+              />
+              <a 
+                href="https://www.discogs.com/settings/developers"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs mt-2 flex items-center gap-1"
+                style={{ color: accentColor }}
+              >
+                Get token <ExternalLink size={12} />
+              </a>
+            </div>
+
+            {/* Anthropic Token */}
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">
+                Anthropic API Token (for AI Camera Search)
+              </label>
+              <input
+                type="password"
+                value={anthropicToken}
+                onChange={(e) => setAnthropicToken(e.target.value)}
+                placeholder="Enter your Anthropic API key"
+                className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
+                style={{ backgroundColor: primaryColor }}
+              />
+              <div className="mt-2 space-y-1">
+                <a 
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs flex items-center gap-1"
+                  style={{ color: accentColor }}
+                >
+                  Get API key <ExternalLink size={12} />
+                </a>
+                <p className="text-white/60 text-xs">
+                  Required for AI-powered album identification from camera photos
+                </p>
+              </div>
+            </div>
+
+            {/* Shop Selection */}
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">
+                Price Sources
+              </label>
+              <p className="text-white/60 text-xs mb-3">
+                Note: Only Discogs has real-time API pricing. HHV and eBay require manual checking via links.
+              </p>
+              <div className="space-y-2">
+                {[
+                  { id: 'discogs', name: 'Discogs', note: 'API available' },
+                  { id: 'hhv', name: 'HHV Store', note: 'Manual check' },
+                  { id: 'ebay', name: 'eBay', note: 'Manual check' }
+                ].map(shop => (
+                  <label key={shop.id} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedShops.includes(shop.id)}
+                      onChange={() => toggleShop(shop.id)}
+                      className="w-5 h-5"
+                      style={{ accentColor: accentColor }}
+                    />
+                    <span className="text-white flex-1">{shop.name}</span>
+                    <span className="text-white/40 text-xs">{shop.note}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={saveSettings}
+              className="w-full py-3 rounded-lg font-semibold transition-all"
+              style={{ backgroundColor: accentColor, color: primaryColor }}
+            >
+              Save Settings
+            </button>
           </div>
         )}
       </div>
@@ -1225,7 +1360,7 @@ const VinylPriceFinder = () => {
         </button>
 
         <button
-          onClick={() => setShowSettings(true)}
+          onClick={() => setActiveTab('settings')}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -1241,12 +1376,12 @@ const VinylPriceFinder = () => {
         >
           <Settings 
             size={22} 
-            style={{ color: 'rgba(255,255,255,0.5)' }}
+            style={{ color: activeTab === 'settings' ? accentColor : 'rgba(255,255,255,0.5)' }}
           />
           <span 
             style={{ 
               fontSize: '10px',
-              color: 'rgba(255,255,255,0.5)',
+              color: activeTab === 'settings' ? accentColor : 'rgba(255,255,255,0.5)',
               whiteSpace: 'nowrap'
             }}
           >
@@ -1254,469 +1389,6 @@ const VinylPriceFinder = () => {
           </span>
         </button>
       </div>
-
-      {/* Collection Statistics Detail Modal */}
-      {showStatsDetail && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            zIndex: 2000,
-            overflowY: 'auto'
-          }}
-        >
-          <div 
-            style={{
-              width: '100%',
-              maxWidth: '448px',
-              backgroundColor: primaryColor,
-              border: `1px solid ${accentColor}`,
-              borderRadius: '8px',
-              padding: '24px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              margin: 'auto'
-            }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Collection Statistics</h2>
-              <button onClick={() => setShowStatsDetail(false)}>
-                <X size={24} style={{ color: accentColor }} />
-              </button>
-            </div>
-
-            {(() => {
-              const stats = getCollectionStats();
-              
-              return (
-                <div className="space-y-4">
-                  {/* Most Expensive */}
-                  {stats.highest && (
-                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <span>💎</span> Most Expensive Record
-                      </h3>
-                      <div className="flex gap-3">
-                        {stats.highest.cover_image && (
-                          <img 
-                            src={stats.highest.cover_image} 
-                            alt={stats.highest.title} 
-                            style={{
-                              width: '80px',
-                              height: '80px',
-                              objectFit: 'cover',
-                              borderRadius: '8px',
-                              flexShrink: 0
-                            }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold text-sm">{stats.highest.title?.split(' - ')[0] || 'Unknown'}</p>
-                          <p className="text-white/70 text-xs">{stats.highest.title?.split(' - ')[1] || stats.highest.title}</p>
-                          <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
-                            {stats.highest.price.currency} {Number(stats.highest.price.value).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cheapest */}
-                  {stats.lowest && (
-                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <span>💰</span> Cheapest Record
-                      </h3>
-                      <div className="flex gap-3">
-                        {stats.lowest.cover_image && (
-                          <img 
-                            src={stats.lowest.cover_image} 
-                            alt={stats.lowest.title} 
-                            style={{
-                              width: '80px',
-                              height: '80px',
-                              objectFit: 'cover',
-                              borderRadius: '8px',
-                              flexShrink: 0
-                            }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold text-sm">{stats.lowest.title?.split(' - ')[0] || 'Unknown'}</p>
-                          <p className="text-white/70 text-xs">{stats.lowest.title?.split(' - ')[1] || stats.lowest.title}</p>
-                          <p className="text-lg font-bold mt-2" style={{ color: accentColor }}>
-                            {stats.lowest.price.currency} {Number(stats.lowest.price.value).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Oldest & Newest */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {stats.oldest && (
-                      <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                        <h3 className="text-white font-semibold mb-2 text-xs flex items-center gap-1">
-                          <span>⏳</span> Oldest
-                        </h3>
-                        {stats.oldest.cover_image && (
-                          <div style={{
-                            position: 'relative',
-                            width: '100%',
-                            paddingTop: '100%',
-                            borderRadius: '6px',
-                            overflow: 'hidden',
-                            marginBottom: '8px'
-                          }}>
-                            <img 
-                              src={stats.oldest.cover_image} 
-                              alt={stats.oldest.title} 
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          </div>
-                        )}
-                        <p className="text-white text-xs font-semibold truncate">{stats.oldest.title?.split(' - ')[0] || 'Unknown'}</p>
-                        <p className="text-xs truncate" style={{ color: accentColor }}>{stats.oldest.year}</p>
-                      </div>
-                    )}
-                    
-                    {stats.newest && (
-                      <div className="rounded-lg p-3 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                        <h3 className="text-white font-semibold mb-2 text-xs flex items-center gap-1">
-                          <span>🆕</span> Newest
-                        </h3>
-                        {stats.newest.cover_image && (
-                          <div style={{
-                            position: 'relative',
-                            width: '100%',
-                            paddingTop: '100%',
-                            borderRadius: '6px',
-                            overflow: 'hidden',
-                            marginBottom: '8px'
-                          }}>
-                            <img 
-                              src={stats.newest.cover_image} 
-                              alt={stats.newest.title} 
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          </div>
-                        )}
-                        <p className="text-white text-xs font-semibold truncate">{stats.newest.title?.split(' - ')[0] || 'Unknown'}</p>
-                        <p className="text-xs truncate" style={{ color: accentColor }}>{stats.newest.year}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Top 5 Most Expensive */}
-                  {stats.mostExpensive5.length > 0 && (
-                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <span>🏆</span> Top 5 Most Expensive
-                      </h3>
-                      <div className="space-y-2">
-                        {stats.mostExpensive5.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="text-white/60 text-sm font-bold" style={{ minWidth: '20px' }}>#{idx + 1}</span>
-                              <span className="text-white text-sm truncate">{item.title?.split(' - ')[0] || 'Unknown'}</span>
-                            </div>
-                            <span className="text-white font-bold text-sm" style={{ color: accentColor }}>
-                              {item.price.currency} {Number(item.price.value).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Top 5 Cheapest */}
-                  {stats.cheapest5.length > 0 && (
-                    <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                        <span>🎯</span> Top 5 Cheapest
-                      </h3>
-                      <div className="space-y-2">
-                        {stats.cheapest5.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="text-white/60 text-sm font-bold" style={{ minWidth: '20px' }}>#{idx + 1}</span>
-                              <span className="text-white text-sm truncate">{item.title?.split(' - ')[0] || 'Unknown'}</span>
-                            </div>
-                            <span className="text-white font-bold text-sm" style={{ color: accentColor }}>
-                              {item.price.currency} {Number(item.price.value).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            zIndex: 2000,
-            overflowY: 'auto'
-          }}
-        >
-          <div 
-            style={{
-              width: '100%',
-              maxWidth: '448px',
-              backgroundColor: primaryColor,
-              border: `1px solid ${accentColor}`,
-              borderRadius: '8px',
-              padding: '24px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              margin: 'auto'
-            }}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">Settings</h2>
-              <button onClick={() => setShowSettings(false)}>
-                <X size={24} style={{ color: accentColor }} />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Theme Selection */}
-              <div>
-                <label className="block text-white/80 text-sm mb-3 font-semibold">
-                  Theme
-                </label>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {themePresets.map(theme => (
-                    <button
-                      key={theme.id}
-                      onClick={() => applyTheme(theme.id)}
-                      className="px-3 py-2 rounded text-sm font-medium border-2 transition-all"
-                      style={{
-                        backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : secondaryColor,
-                        borderColor: theme.id === selectedTheme ? accentColor : 'rgba(255,255,255,0.2)',
-                        color: theme.id === selectedTheme ? accentColor : 'white'
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div 
-                          style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            backgroundColor: theme.accent,
-                            border: '2px solid rgba(255,255,255,0.3)'
-                          }}
-                        />
-                        {theme.name}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Colors - Only show when Custom theme selected */}
-              {selectedTheme === 'custom' && (
-                <>
-                  {/* Primary Color */}
-                  <div>
-                    <label className="block text-white/80 text-sm mb-2">
-                      Primary Color (Background)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
-                        style={{ backgroundColor: secondaryColor }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Secondary Color */}
-                  <div>
-                    <label className="block text-white/80 text-sm mb-2">
-                      Secondary Color (Cards/Inputs)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
-                        style={{ backgroundColor: secondaryColor }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Accent Color */}
-                  <div>
-                    <label className="block text-white/80 text-sm mb-2">
-                      Accent Color (Highlights)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="flex-1 px-4 py-2 rounded text-white border border-white/20 focus:outline-none"
-                        style={{ backgroundColor: secondaryColor }}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Discogs Token */}
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Discogs API Token
-                </label>
-                <input
-                  type="text"
-                  value={discogsToken}
-                  onChange={(e) => setDiscogsToken(e.target.value)}
-                  placeholder="Enter your Discogs token"
-                  className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
-                  style={{ backgroundColor: secondaryColor }}
-                />
-                <a 
-                  href="https://www.discogs.com/settings/developers"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs mt-1 flex items-center gap-1"
-                  style={{ color: accentColor }}
-                >
-                  Get token <ExternalLink size={12} />
-                </a>
-              </div>
-
-              {/* Anthropic Token */}
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Anthropic API Token (for AI Camera Search)
-                </label>
-                <input
-                  type="password"
-                  value={anthropicToken}
-                  onChange={(e) => setAnthropicToken(e.target.value)}
-                  placeholder="Enter your Anthropic API key"
-                  className="w-full px-4 py-2 rounded text-white border border-white/20 focus:outline-none focus:border-white/40"
-                  style={{ backgroundColor: secondaryColor }}
-                />
-                <div className="mt-2 space-y-1">
-                  <a 
-                    href="https://console.anthropic.com/settings/keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs flex items-center gap-1"
-                    style={{ color: accentColor }}
-                  >
-                    Get API key <ExternalLink size={12} />
-                  </a>
-                  <p className="text-white/60 text-xs">
-                    Required for AI-powered album identification from camera photos
-                  </p>
-                </div>
-              </div>
-
-              {/* Shop Selection */}
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Price Sources
-                </label>
-                <p className="text-white/60 text-xs mb-3">
-                  Note: Only Discogs has real-time API pricing. HHV and eBay require manual checking via links.
-                </p>
-                <div className="space-y-2">
-                  {[
-                    { id: 'discogs', name: 'Discogs', note: 'API available' },
-                    { id: 'hhv', name: 'HHV Store', note: 'Manual check' },
-                    { id: 'ebay', name: 'eBay', note: 'Manual check' }
-                  ].map(shop => (
-                    <label key={shop.id} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedShops.includes(shop.id)}
-                        onChange={() => toggleShop(shop.id)}
-                        className="w-5 h-5"
-                        style={{ accentColor: accentColor }}
-                      />
-                      <span className="text-white flex-1">{shop.name}</span>
-                      <span className="text-white/40 text-xs">{shop.note}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <button
-                onClick={saveSettings}
-                className="w-full py-3 rounded-lg font-semibold transition-all"
-                style={{ backgroundColor: accentColor, color: primaryColor }}
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Result Detail Modal */}
       {selectedResult && (
@@ -1922,4 +1594,4 @@ const VinylPriceFinder = () => {
   );
 };
 
-export default VinylPriceFinder;
+export default VinylScout;
