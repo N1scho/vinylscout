@@ -42,7 +42,6 @@ const VinylScout = () => {
     { id: 'berry', name: 'Berry Pink', primary: '#1a0614', secondary: '#2d0f23', accent: '#ff006e' }
   ];
 
-  // Load from localStorage
   useEffect(() => {
     const saved = {
       token: localStorage.getItem('discogsToken'),
@@ -509,7 +508,7 @@ const VinylScout = () => {
           </div>
         )}
 
-        {/* COLLECTION TAB - WITH NEW 2x3 GRID LAYOUT */}
+        {/* COLLECTION TAB - FIXED 2 ROWS LAYOUT */}
         {activeTab === 'collection' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-4">
@@ -571,40 +570,46 @@ const VinylScout = () => {
                       </button>
                     </div>
                     
-                    {/* Artist and Album at top */}
-                    <div className="mb-2">
-                      <p className="text-white/60 text-xs">Artist</p>
-                      <h3 className="text-white font-bold text-sm mb-1">{item.title?.split(' - ')[0] || 'Unknown'}</h3>
-                      <p className="text-white/60 text-xs">Album</p>
-                      <p className="text-white/80 text-xs mb-2">{item.title?.split(' - ')[1] || item.title}</p>
+                    {/* Artist and Album - inline format */}
+                    <p className="text-white text-xs mb-1">
+                      <span className="text-white/60">Artist: </span>
+                      {item.title?.split(' - ')[0] || 'Unknown'}
+                    </p>
+                    <p className="text-white text-xs mb-3">
+                      <span className="text-white/60">Album: </span>
+                      {item.title?.split(' - ')[1] || item.title}
+                    </p>
+                    
+                    {/* First row - 3 columns */}
+                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
+                      <p className="text-white">
+                        <span className="text-white/60">Year: </span>
+                        {item.year || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Format: </span>
+                        {item.format?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Country: </span>
+                        {item.country || '-'}
+                      </p>
                     </div>
                     
-                    {/* 2 rows x 3 columns grid */}
-                    <div className="grid grid-cols-3 gap-x-2 gap-y-1 mb-2 text-xs">
-                      <div>
-                        <p className="text-white/60">Year</p>
-                        <p className="text-white">{item.year || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/60">Format</p>
-                        <p className="text-white">{item.format?.[0] || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/60">Country</p>
-                        <p className="text-white">{item.country || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/60">Label</p>
-                        <p className="text-white">{item.label?.[0] || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/60">Genre</p>
-                        <p className="text-white">{item.genre?.[0] || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/60">Catalog</p>
-                        <p className="text-white">{item.catno || '-'}</p>
-                      </div>
+                    {/* Second row - 3 columns */}
+                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
+                      <p className="text-white">
+                        <span className="text-white/60">Label: </span>
+                        {item.label?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Genre: </span>
+                        {item.genre?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Catalog: </span>
+                        {item.catno || '-'}
+                      </p>
                     </div>
                     
                     {item.price && (
@@ -787,7 +792,7 @@ const VinylScout = () => {
         ))}
       </div>
 
-      {/* Result Modal - WITH NEW 2x3 GRID LAYOUT AND PRICE */}
+      {/* Result Modal - FIXED WITH PROPER INLINE LABELS */}
       {selectedResult && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -818,46 +823,52 @@ const VinylScout = () => {
               )}
             </div>
             
-            {/* Artist and Album at top */}
+            {/* Artist and Album - inline format */}
             <div className="mb-4 rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-              <div className="mb-3">
-                <p className="text-white/60 text-xs mb-1">Artist</p>
-                <h3 className="text-white font-bold text-lg">{selectedResult.title?.split(' - ')[0] || 'Unknown'}</h3>
-              </div>
-              <div>
-                <p className="text-white/60 text-xs mb-1">Album</p>
-                <p className="text-white text-base">{selectedResult.title?.split(' - ')[1] || selectedResult.title}</p>
-              </div>
+              <p className="text-white text-sm mb-2">
+                <span className="text-white/60">Artist: </span>
+                {selectedResult.title?.split(' - ')[0] || 'Unknown'}
+              </p>
+              <p className="text-white text-sm">
+                <span className="text-white/60">Album: </span>
+                {selectedResult.title?.split(' - ')[1] || selectedResult.title}
+              </p>
             </div>
             
-            {/* 2 rows x 3 columns grid */}
+            {/* Details in 2 rows x 3 columns */}
             <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-3">Details</h3>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-3 text-sm">
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Year</p>
-                  <p className="text-white">{selectedResult.year || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Format</p>
-                  <p className="text-white">{selectedResult.format?.[0] || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Country</p>
-                  <p className="text-white">{selectedResult.country || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Label</p>
-                  <p className="text-white">{selectedResult.label?.[0] || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Genre</p>
-                  <p className="text-white">{selectedResult.genre?.[0] || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-white/60 text-xs mb-1">Catalog</p>
-                  <p className="text-white">{selectedResult.catno || '-'}</p>
-                </div>
+              
+              {/* First row */}
+              <div className="grid grid-cols-3 gap-x-3 mb-3 text-xs">
+                <p className="text-white">
+                  <span className="text-white/60">Year: </span>
+                  {selectedResult.year || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Format: </span>
+                  {selectedResult.format?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Country: </span>
+                  {selectedResult.country || '-'}
+                </p>
+              </div>
+              
+              {/* Second row */}
+              <div className="grid grid-cols-3 gap-x-3 text-xs">
+                <p className="text-white">
+                  <span className="text-white/60">Label: </span>
+                  {selectedResult.label?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Genre: </span>
+                  {selectedResult.genre?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Catalog: </span>
+                  {selectedResult.catno || '-'}
+                </p>
               </div>
             </div>
             
