@@ -787,7 +787,7 @@ const VinylScout = () => {
         </div>
       )}
 
-      {/* Value Modal - CONTINUED IN NEXT MESSAGE */}
+      {/* Value Modal - WITH FIXED SMALL ALBUM COVERS */}
       {showValueModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -813,9 +813,19 @@ const VinylScout = () => {
                     {(() => {
                       const mostExpensive = collection.filter(item => item.price && item.price.value).sort((a, b) => b.price.value - a.price.value)[0];
                       return (
-                        <div className="flex gap-3">
-                          <img src={mostExpensive.cover_image} alt="" className="w-20 h-20 rounded object-cover" />
-                          <div className="flex-1">
+                        <div className="flex gap-3 items-start">
+                          <img 
+                            src={mostExpensive.cover_image} 
+                            alt="" 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
                             <p className="text-white font-semibold text-sm mb-1">{mostExpensive.title?.split(' - ')[1] || mostExpensive.title}</p>
                             <p className="text-white/60 text-xs mb-2">{mostExpensive.title?.split(' - ')[0]}</p>
                             <p className="text-xl font-bold" style={{ color: accentColor }}>{mostExpensive.price.currency} {mostExpensive.price.value.toFixed(2)}</p>
@@ -830,9 +840,19 @@ const VinylScout = () => {
                     {(() => {
                       const cheapest = collection.filter(item => item.price && item.price.value).sort((a, b) => a.price.value - b.price.value)[0];
                       return (
-                        <div className="flex gap-3">
-                          <img src={cheapest.cover_image} alt="" className="w-20 h-20 rounded object-cover" />
-                          <div className="flex-1">
+                        <div className="flex gap-3 items-start">
+                          <img 
+                            src={cheapest.cover_image} 
+                            alt="" 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
                             <p className="text-white font-semibold text-sm mb-1">{cheapest.title?.split(' - ')[1] || cheapest.title}</p>
                             <p className="text-white/60 text-xs mb-2">{cheapest.title?.split(' - ')[0]}</p>
                             <p className="text-xl font-bold" style={{ color: accentColor }}>{cheapest.price.currency} {cheapest.price.value.toFixed(2)}</p>
