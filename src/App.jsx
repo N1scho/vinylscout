@@ -57,7 +57,12 @@ const VinylScout = () => {
     };
     
     if (saved.token) setDiscogsToken(saved.token);
-    if (saved.anthropic) setAnthropicToken(saved.anthropic);
+    
+    // Load Anthropic API key from localStorage
+    if (saved.anthropic) {
+      setAnthropicToken(saved.anthropic);
+    }
+    
     if (saved.shops) setSelectedShops(JSON.parse(saved.shops));
     if (saved.theme) setSelectedTheme(saved.theme);
     if (saved.primary) setPrimaryColor(saved.primary);
@@ -303,20 +308,38 @@ const VinylScout = () => {
   };
 
   const capturePhoto = () => {
+    if (!videoRef.current) {
+      alert('Camera not ready. Please wait a moment.');
+      return;
+    }
+    
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
+    
+    if (canvas.width === 0 || canvas.height === 0) {
+      alert('Camera not ready. Please wait for the video to load.');
+      return;
+    }
+    
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
     if (anthropicToken) {
       identifyAlbumWithAI(imageData);
     } else {
-      alert('Please add Anthropic API token in Settings');
+      alert('Please add Anthropic API token in Settings to use AI camera search');
     }
+    
     stopCamera();
   };
 
   const identifyAlbumWithAI = async (imageBase64) => {
+    if (!anthropicToken) {
+      alert('Anthropic API token not configured. Please check Settings.');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -342,23 +365,34 @@ const VinylScout = () => {
               },
               {
                 type: 'text',
-                text: 'This is a vinyl record album cover. Identify the artist and album title. Respond ONLY with: "Artist - Album Title".'
+                text: 'This is a vinyl record album cover. Identify the artist and album title. Respond ONLY with: "Artist - Album Title". Be precise and accurate.'
               }
             ]
           }]
         })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Anthropic API error:', errorData);
+        alert(`AI identification failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+        setIsLoading(false);
+        return;
+      }
+      
       const data = await response.json();
       if (data.content && data.content[0] && data.content[0].text) {
         const albumInfo = data.content[0].text.trim();
+        console.log('AI identified:', albumInfo);
         setSearchQuery(albumInfo);
-        searchDiscogs(false, albumInfo);
+        await searchDiscogs(false, albumInfo);
         setActiveTab('search');
       } else {
-        alert('Could not identify album');
+        alert('Could not identify album from image. Please try again with a clearer photo.');
       }
     } catch (error) {
-      alert('Error identifying album');
+      console.error('Error identifying album:', error);
+      alert(`Error identifying album: ${error.message}`);
     }
     setIsLoading(false);
   };
@@ -608,27 +642,52 @@ const VinylScout = () => {
         {/* CAMERA TAB */}
         {activeTab === 'camera' && (
           <div className="space-y-4">
-            <div className="relative rounded-lg overflow-hidden bg-black">
-              <video ref={videoRef} autoPlay playsInline className="w-full" />
+            <div className="relative rounded-lg overflow-hidden bg-black" style={{ minHeight: '400px' }}>
+              <video ref={videoRef} autoPlay playsInline className="w-full" style={{ minHeight: '400px', objectFit: 'cover' }} />
               {isCameraActive && (
-                <button
-                  onClick={capturePhoto}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4 flex items-center justify-center"
-                  style={{ borderColor: accentColor, backgroundColor: accentColor }}
-                >
-                  <Camera size={28} style={{ color: primaryColor }} />
-                </button>
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                  <button
+                    onClick={capturePhoto}
+                    className="w-20 h-20 rounded-full border-4 flex items-center justify-center shadow-lg"
+                    style={{ 
+                      borderColor: accentColor, 
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Camera size={36} style={{ color: primaryColor }} />
+                  </button>
+                </div>
+              )}
+              {!isCameraActive && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                  <p className="text-white/60">Starting camera...</p>
+                </div>
               )}
             </div>
+            
             <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">📸 AI Camera Search</h3>
-              <p className="text-white/60 text-sm">Point camera at vinyl cover and tap to capture</p>
+              <p className="text-white/60 text-sm mb-2">Point camera at vinyl cover and tap the button to capture</p>
               {anthropicToken ? (
-                <p className="text-xs mt-2" style={{ color: accentColor }}>✓ AI enabled</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
+                  <p className="text-xs" style={{ color: '#22c55e' }}>AI Ready - Camera enabled</p>
+                </div>
               ) : (
-                <p className="text-white/60 text-xs mt-2">⚠️ Add Anthropic token in Settings</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
+                  <p className="text-xs" style={{ color: '#ef4444' }}>Add Anthropic token in Settings</p>
+                </div>
               )}
             </div>
+            
+            {isLoading && (
+              <div className="rounded-lg p-4 border border-white/10 text-center" style={{ backgroundColor: secondaryColor }}>
+                <p className="text-white font-semibold mb-2">🔍 Identifying album...</p>
+                <p className="text-white/60 text-sm">Please wait while AI analyzes the cover</p>
+              </div>
+            )}
           </div>
         )}
 
