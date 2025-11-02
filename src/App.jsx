@@ -560,32 +560,104 @@ const VinylScout = () => {
 
             {searchResults.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => alert('Pagination: First page')}
+                      className="px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: secondaryColor, color: accentColor, border: `1px solid ${accentColor}` }}
+                    >
+                      ⏮ First
+                    </button>
+                    <button 
+                      onClick={() => alert('Pagination: Previous page')}
+                      className="px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: secondaryColor, color: accentColor, border: `1px solid ${accentColor}` }}
+                    >
+                      ◀ Prev
+                    </button>
+                    <button 
+                      onClick={() => alert('Pagination: Next page')}
+                      className="px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: secondaryColor, color: accentColor, border: `1px solid ${accentColor}` }}
+                    >
+                      Next ▶
+                    </button>
+                    <button 
+                      onClick={() => alert('Pagination: Last page')}
+                      className="px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: secondaryColor, color: accentColor, border: `1px solid ${accentColor}` }}
+                    >
+                      Last ⏭
+                    </button>
+                  </div>
+                </div>
                 {searchResults.map((result) => {
                   const price = calculateDisplayPrice(resultPrices[result.id]);
                   return (
                     <div
                       key={result.id}
                       onClick={() => setSelectedResult(result)}
-                      className="rounded-lg p-3 cursor-pointer border border-white/10"
-                      style={{ backgroundColor: secondaryColor }}
+                      className="rounded-lg p-3 cursor-pointer border-2"
+                      style={{ 
+                        backgroundColor: secondaryColor,
+                        borderColor: accentColor,
+                        boxShadow: `0 2px 8px ${accentColor}40`
+                      }}
                     >
                       <div className="flex gap-3">
                         {result.cover_image ? (
-                          <img src={result.cover_image} alt={result.title} className="w-24 h-24 rounded object-cover flex-shrink-0" />
+                          <img 
+                            src={result.cover_image} 
+                            alt={result.title} 
+                            className="rounded object-cover flex-shrink-0" 
+                            style={{ width: '100px', height: '100px' }}
+                          />
                         ) : (
-                          <div className="w-24 h-24 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
+                          <div 
+                            className="rounded flex items-center justify-center flex-shrink-0" 
+                            style={{ 
+                              backgroundColor: primaryColor, 
+                              width: '100px', 
+                              height: '100px' 
+                            }}
+                          >
                             <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-white font-bold text-base mb-1">
+                          {/* Artist and Album */}
+                          <h3 className="text-white font-bold text-sm mb-1">
                             {result.title?.split(' - ')[0] || 'Unknown Artist'}
                           </h3>
                           <p className="text-white/80 text-sm mb-2">
                             {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
                           </p>
                           
+                          {/* Details Grid - 2 rows x 3 columns */}
+                          <div className="grid grid-cols-3 gap-x-2 gap-y-1 mb-2 text-xs">
+                            <p className="text-white/70">
+                              <span className="text-white/50">Year:</span> {result.year || '-'}
+                            </p>
+                            <p className="text-white/70">
+                              <span className="text-white/50">Format:</span> {result.format?.[0] || '-'}
+                            </p>
+                            <p className="text-white/70">
+                              <span className="text-white/50">Country:</span> {result.country || '-'}
+                            </p>
+                            <p className="text-white/70 truncate">
+                              <span className="text-white/50">Label:</span> {result.label?.[0] || '-'}
+                            </p>
+                            <p className="text-white/70 truncate">
+                              <span className="text-white/50">Genre:</span> {result.genre?.[0] || '-'}
+                            </p>
+                            <p className="text-white/70 truncate">
+                              <span className="text-white/50">Cat#:</span> {result.catno || '-'}
+                            </p>
+                          </div>
+                          
+                          {/* Price Section */}
                           {price && (
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-lg font-bold" style={{ color: accentColor }}>
