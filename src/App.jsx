@@ -447,18 +447,9 @@ const VinylScout = () => {
                           <h3 className="text-white font-bold text-base mb-1">
                             {result.title?.split(' - ')[0] || 'Unknown Artist'}
                           </h3>
-                          <p className="text-white/80 text-sm mb-1">
+                          <p className="text-white/80 text-sm mb-2">
                             {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
                           </p>
-                          
-                          {/* Additional Info */}
-                          <div className="space-y-0.5 mb-2">
-                            {result.year && <p className="text-white/50 text-xs">📅 {result.year}</p>}
-                            {result.format && result.format[0] && <p className="text-white/50 text-xs">💿 {result.format[0]}</p>}
-                            {result.country && <p className="text-white/50 text-xs">🌍 {result.country}</p>}
-                            {result.label && result.label[0] && <p className="text-white/50 text-xs">🏷️ {result.label[0]}</p>}
-                            {result.genre && result.genre[0] && <p className="text-white/50 text-xs">🎵 {result.genre[0]}</p>}
-                          </div>
                           
                           {price && (
                             <p className="text-lg font-bold" style={{ color: accentColor }}>
@@ -518,7 +509,7 @@ const VinylScout = () => {
           </div>
         )}
 
-        {/* COLLECTION TAB */}
+        {/* COLLECTION TAB - WITH NEW 2x3 GRID LAYOUT */}
         {activeTab === 'collection' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-4">
@@ -579,17 +570,41 @@ const VinylScout = () => {
                         <Heart size={18} style={{ color: accentColor }} fill={item.isFavorite ? accentColor : 'none'} />
                       </button>
                     </div>
-                    <h3 className="text-white font-bold text-sm mb-1">{item.title?.split(' - ')[0] || 'Unknown'}</h3>
-                    <p className="text-white/80 text-xs mb-2">{item.title?.split(' - ')[1] || item.title}</p>
                     
-                    {/* Additional Info in Collection */}
-                    <div className="space-y-0.5 mb-2">
-                      {item.year && <p className="text-white/50 text-xs">📅 {item.year}</p>}
-                      {item.format && item.format[0] && <p className="text-white/50 text-xs">💿 {item.format[0]}</p>}
-                      {item.country && <p className="text-white/50 text-xs">🌍 {item.country}</p>}
-                      {item.label && item.label[0] && <p className="text-white/50 text-xs">🏷️ {item.label[0]}</p>}
-                      {item.genre && item.genre[0] && <p className="text-white/50 text-xs">🎵 {item.genre[0]}</p>}
-                      {item.catno && <p className="text-white/50 text-xs">🔢 {item.catno}</p>}
+                    {/* Artist and Album at top */}
+                    <div className="mb-2">
+                      <p className="text-white/60 text-xs">Artist</p>
+                      <h3 className="text-white font-bold text-sm mb-1">{item.title?.split(' - ')[0] || 'Unknown'}</h3>
+                      <p className="text-white/60 text-xs">Album</p>
+                      <p className="text-white/80 text-xs mb-2">{item.title?.split(' - ')[1] || item.title}</p>
+                    </div>
+                    
+                    {/* 2 rows x 3 columns grid */}
+                    <div className="grid grid-cols-3 gap-x-2 gap-y-1 mb-2 text-xs">
+                      <div>
+                        <p className="text-white/60">Year</p>
+                        <p className="text-white">{item.year || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Format</p>
+                        <p className="text-white">{item.format?.[0] || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Country</p>
+                        <p className="text-white">{item.country || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Label</p>
+                        <p className="text-white">{item.label?.[0] || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Genre</p>
+                        <p className="text-white">{item.genre?.[0] || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60">Catalog</p>
+                        <p className="text-white">{item.catno || '-'}</p>
+                      </div>
                     </div>
                     
                     {item.price && (
@@ -604,7 +619,7 @@ const VinylScout = () => {
           </div>
         )}
 
-        {/* PROFILE TAB - FIXED STATISTICS SPACING */}
+        {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-white">Profile</h2>
@@ -772,21 +787,18 @@ const VinylScout = () => {
         ))}
       </div>
 
-      {/* Result Modal - IMPROVED WITH SMALLER IMAGE AND ALL INFO */}
+      {/* Result Modal - WITH NEW 2x3 GRID LAYOUT AND PRICE */}
       {selectedResult && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-white mb-1">{selectedResult.title?.split(' - ')[0] || 'Unknown'}</h2>
-                <p className="text-white/80 mb-3">{selectedResult.title?.split(' - ')[1] || selectedResult.title}</p>
-              </div>
+              <h2 className="text-xl font-bold text-white">Album Details</h2>
               <button onClick={() => setSelectedResult(null)}>
                 <X size={24} style={{ color: accentColor }} />
               </button>
             </div>
             
-            {/* SMALLER Album Cover - Same size as collection grid */}
+            {/* Album Cover */}
             <div className="flex justify-center mb-4">
               {selectedResult.cover_image ? (
                 <img 
@@ -806,60 +818,59 @@ const VinylScout = () => {
               )}
             </div>
             
-            {/* ALL DETAILS */}
-            <div className="space-y-3 mb-6">
-              {resultPrices[selectedResult.id] && (
-                <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                  <h3 className="text-white font-semibold mb-2">💰 Price</h3>
-                  <p className="text-2xl font-bold" style={{ color: accentColor }}>
-                    {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
-                  </p>
-                  <p className="text-white/60 text-sm mt-1">{resultPrices[selectedResult.id].num_for_sale} listings</p>
+            {/* Artist and Album at top */}
+            <div className="mb-4 rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <div className="mb-3">
+                <p className="text-white/60 text-xs mb-1">Artist</p>
+                <h3 className="text-white font-bold text-lg">{selectedResult.title?.split(' - ')[0] || 'Unknown'}</h3>
+              </div>
+              <div>
+                <p className="text-white/60 text-xs mb-1">Album</p>
+                <p className="text-white text-base">{selectedResult.title?.split(' - ')[1] || selectedResult.title}</p>
+              </div>
+            </div>
+            
+            {/* 2 rows x 3 columns grid */}
+            <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
+              <h3 className="text-white font-semibold mb-3">Details</h3>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-3 text-sm">
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Year</p>
+                  <p className="text-white">{selectedResult.year || '-'}</p>
                 </div>
-              )}
-              
-              <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
-                <h3 className="text-white font-semibold mb-3">📋 Details</h3>
-                <div className="space-y-2">
-                  {selectedResult.year && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">📅 Released:</span>
-                      <span className="text-white">{selectedResult.year}</span>
-                    </div>
-                  )}
-                  {selectedResult.format && selectedResult.format[0] && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">💿 Format:</span>
-                      <span className="text-white">{selectedResult.format[0]}</span>
-                    </div>
-                  )}
-                  {selectedResult.country && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">🌍 Country:</span>
-                      <span className="text-white">{selectedResult.country}</span>
-                    </div>
-                  )}
-                  {selectedResult.label && selectedResult.label[0] && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">🏷️ Label:</span>
-                      <span className="text-white">{selectedResult.label[0]}</span>
-                    </div>
-                  )}
-                  {selectedResult.genre && selectedResult.genre[0] && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">🎵 Genre:</span>
-                      <span className="text-white">{selectedResult.genre[0]}</span>
-                    </div>
-                  )}
-                  {selectedResult.catno && (
-                    <div className="flex justify-between">
-                      <span className="text-white/60">🔢 Catalog #:</span>
-                      <span className="text-white">{selectedResult.catno}</span>
-                    </div>
-                  )}
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Format</p>
+                  <p className="text-white">{selectedResult.format?.[0] || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Country</p>
+                  <p className="text-white">{selectedResult.country || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Label</p>
+                  <p className="text-white">{selectedResult.label?.[0] || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Genre</p>
+                  <p className="text-white">{selectedResult.genre?.[0] || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs mb-1">Catalog</p>
+                  <p className="text-white">{selectedResult.catno || '-'}</p>
                 </div>
               </div>
             </div>
+            
+            {/* PRICE */}
+            {resultPrices[selectedResult.id] && (
+              <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
+                <h3 className="text-white font-semibold mb-2">Price</h3>
+                <p className="text-3xl font-bold" style={{ color: accentColor }}>
+                  {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
+                </p>
+                <p className="text-white/60 text-sm mt-1">{resultPrices[selectedResult.id].num_for_sale} listings available</p>
+              </div>
+            )}
             
             <button onClick={() => { addToCollection(selectedResult); setSelectedResult(null); }} className="w-full py-3 rounded-lg font-semibold" style={{ backgroundColor: accentColor, color: primaryColor }}>
               Add to Collection
@@ -868,7 +879,7 @@ const VinylScout = () => {
         </div>
       )}
 
-      {/* Value Modal - WITH FIXED SMALL ALBUM COVERS */}
+      {/* Value Modal */}
       {showValueModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
