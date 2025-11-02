@@ -350,7 +350,8 @@ const VinylScout = () => {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': anthropicToken,
-          'anthropic-version': '2023-06-01'
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022',
@@ -687,41 +688,34 @@ const VinylScout = () => {
                 </div>
               )}
               {isCameraActive && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 10,
-                  pointerEvents: 'none'
-                }}>
-                  <button
-                    onClick={capturePhoto}
-                    style={{ 
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '50%',
-                      border: `4px solid ${accentColor}`,
-                      backgroundColor: 'white',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                      pointerEvents: 'auto',
-                      zIndex: 11
-                    }}
-                  >
-                    <Camera size={36} style={{ color: primaryColor }} />
-                  </button>
-                </div>
+                <button
+                  onClick={capturePhoto}
+                  style={{ 
+                    position: 'absolute',
+                    bottom: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    border: `4px solid ${accentColor}`,
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                    zIndex: 10
+                  }}
+                >
+                  <Camera size={36} style={{ color: primaryColor }} />
+                </button>
               )}
             </div>
             
             <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">📸 AI Camera Search</h3>
-              <p className="text-white/60 text-sm mb-2">Tap the center button to capture album cover</p>
+              <p className="text-white/60 text-sm mb-2">Tap the button at bottom to capture album cover</p>
               {anthropicToken ? (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
