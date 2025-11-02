@@ -336,12 +336,15 @@ const VinylScout = () => {
 
   const identifyAlbumWithAI = async (imageBase64) => {
     if (!anthropicToken) {
-      alert('Anthropic API token not configured. Please check Settings.');
+      alert('Anthropic API token not configured. Please add it in Settings.');
       return;
     }
     
     setIsLoading(true);
     try {
+      console.log('Starting AI identification...');
+      console.log('Using API key:', anthropicToken.substring(0, 20) + '...');
+      
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -372,15 +375,25 @@ const VinylScout = () => {
         })
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Anthropic API error:', errorData);
-        alert(`AI identification failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+        let errorMessage = `API Error ${response.status}`;
+        try {
+          const errorData = await response.json();
+          console.error('Anthropic API error:', errorData);
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response');
+        }
+        alert(`AI identification failed: ${errorMessage}\n\nPlease check your API key in Settings.`);
         setIsLoading(false);
         return;
       }
       
       const data = await response.json();
+      console.log('AI Response:', data);
+      
       if (data.content && data.content[0] && data.content[0].text) {
         const albumInfo = data.content[0].text.trim();
         console.log('AI identified:', albumInfo);
@@ -392,7 +405,11 @@ const VinylScout = () => {
       }
     } catch (error) {
       console.error('Error identifying album:', error);
-      alert(`Error identifying album: ${error.message}`);
+      if (error.message.includes('Failed to fetch')) {
+        alert('Network error: Could not connect to AI service. Please check your internet connection.');
+      } else {
+        alert(`Error identifying album: ${error.message}`);
+      }
     }
     setIsLoading(false);
   };
@@ -642,17 +659,25 @@ const VinylScout = () => {
         {/* CAMERA TAB */}
         {activeTab === 'camera' && (
           <div className="space-y-4">
-            <div className="relative rounded-lg overflow-hidden bg-black" style={{ minHeight: '400px' }}>
-              <video ref={videoRef} autoPlay playsInline className="w-full" style={{ minHeight: '400px', objectFit: 'cover' }} />
+            <div className="relative rounded-lg overflow-hidden bg-black" style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full h-full" 
+                style={{ objectFit: 'cover' }} 
+              />
               {isCameraActive && (
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <button
                     onClick={capturePhoto}
-                    className="w-20 h-20 rounded-full border-4 flex items-center justify-center shadow-lg"
+                    className="w-20 h-20 rounded-full border-4 flex items-center justify-center shadow-2xl pointer-events-auto"
                     style={{ 
                       borderColor: accentColor, 
                       backgroundColor: 'white',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      position: 'relative',
+                      zIndex: 10
                     }}
                   >
                     <Camera size={36} style={{ color: primaryColor }} />
@@ -668,7 +693,7 @@ const VinylScout = () => {
             
             <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
               <h3 className="text-white font-semibold mb-2">📸 AI Camera Search</h3>
-              <p className="text-white/60 text-sm mb-2">Point camera at vinyl cover and tap the button to capture</p>
+              <p className="text-white/60 text-sm mb-2">Tap the center button to capture album cover</p>
               {anthropicToken ? (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
