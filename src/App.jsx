@@ -659,34 +659,62 @@ const VinylScout = () => {
         {/* CAMERA TAB */}
         {activeTab === 'camera' && (
           <div className="space-y-4">
-            <div className="relative rounded-lg overflow-hidden bg-black" style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="relative rounded-lg overflow-hidden bg-black" style={{ height: '60vh', position: 'relative' }}>
               <video 
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                className="w-full h-full" 
-                style={{ objectFit: 'cover' }} 
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }} 
               />
+              {!isCameraActive && (
+                <div style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backgroundColor: 'black',
+                  zIndex: 5
+                }}>
+                  <p className="text-white/60">Starting camera...</p>
+                </div>
+              )}
               {isCameraActive && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                  pointerEvents: 'none'
+                }}>
                   <button
                     onClick={capturePhoto}
-                    className="w-20 h-20 rounded-full border-4 flex items-center justify-center shadow-2xl pointer-events-auto"
                     style={{ 
-                      borderColor: accentColor, 
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      border: `4px solid ${accentColor}`,
                       backgroundColor: 'white',
                       cursor: 'pointer',
-                      position: 'relative',
-                      zIndex: 10
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                      pointerEvents: 'auto',
+                      zIndex: 11
                     }}
                   >
                     <Camera size={36} style={{ color: primaryColor }} />
                   </button>
-                </div>
-              )}
-              {!isCameraActive && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black">
-                  <p className="text-white/60">Starting camera...</p>
                 </div>
               )}
             </div>
