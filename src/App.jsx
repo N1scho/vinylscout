@@ -13,6 +13,7 @@ const VinylScout = () => {
   const [resultPrices, setResultPrices] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [refreshingPrices, setRefreshingPrices] = useState({});
+  const [priceChanges, setPriceChanges] = useState({});
   const [selectedResult, setSelectedResult] = useState(null);
   const [collection, setCollection] = useState([]);
   const [showStatsModal, setShowStatsModal] = useState(false);
@@ -191,12 +192,44 @@ const VinylScout = () => {
       return;
     }
     
+    // Get old price before refreshing
+    let oldPrice = null;
+    if (resultPrices[itemId]) {
+      oldPrice = resultPrices[itemId].value;
+    } else if (isCollectionItem) {
+      const item = collection.find(i => i.id === itemId);
+      if (item && item.price) {
+        oldPrice = item.price.value;
+      }
+    }
+    
     setRefreshingPrices(prev => ({ ...prev, [itemId]: true }));
     
     try {
       const priceData = await fetchPriceInfo(itemId);
       
       if (priceData) {
+        // Calculate price change
+        if (oldPrice !== null) {
+          const change = priceData.value - oldPrice;
+          setPriceChanges(prev => ({
+            ...prev,
+            [itemId]: {
+              amount: change,
+              currency: priceData.currency
+            }
+          }));
+          
+          // Clear price change after 5 seconds
+          setTimeout(() => {
+            setPriceChanges(prev => {
+              const newChanges = { ...prev };
+              delete newChanges[itemId];
+              return newChanges;
+            });
+          }, 5000);
+        }
+        
         // Update search results prices
         setResultPrices(prev => ({
           ...prev,
@@ -502,7 +535,7 @@ const VinylScout = () => {
                           </p>
                           
                           {price && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-lg font-bold" style={{ color: accentColor }}>
                                 {price.currency} {price.value}
                               </p>
@@ -512,20 +545,38 @@ const VinylScout = () => {
                                   refreshPrice(result.id, false);
                                 }}
                                 disabled={refreshingPrices[result.id]}
-                                className="p-1 rounded"
+                                className="flex items-center gap-1 px-2 py-1 rounded text-xs"
                                 style={{
                                   backgroundColor: primaryColor,
                                   border: `1px solid ${accentColor}`,
                                   cursor: refreshingPrices[result.id] ? 'wait' : 'pointer',
-                                  opacity: refreshingPrices[result.id] ? 0.5 : 1
+                                  opacity: refreshingPrices[result.id] ? 0.5 : 1,
+                                  color: accentColor
                                 }}
                               >
                                 <RefreshCw 
-                                  size={14} 
+                                  size={12} 
                                   style={{ color: accentColor }}
                                   className={refreshingPrices[result.id] ? 'animate-spin' : ''}
                                 />
+                                <span>Refresh Price</span>
                               </button>
+                              {priceChanges[result.id] && (
+                                <div 
+                                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold"
+                                  style={{
+                                    backgroundColor: priceChanges[result.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                                    color: priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e',
+                                    border: `1px solid ${priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e'}`
+                                  }}
+                                >
+                                  {priceChanges[result.id].amount > 0 ? '↑' : '↓'}
+                                  <span>
+                                    {priceChanges[result.id].amount > 0 ? '+' : ''}
+                                    {priceChanges[result.id].amount.toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -686,7 +737,7 @@ const VinylScout = () => {
                     </div>
                     
                     {item.price && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <p className="text-sm font-bold" style={{ color: accentColor }}>
                           {item.price.currency} {Number(item.price.value).toFixed(2)}
                         </p>
@@ -696,20 +747,40 @@ const VinylScout = () => {
                             refreshPrice(item.id, true);
                           }}
                           disabled={refreshingPrices[item.id]}
-                          className="p-1 rounded"
+                          className="flex items-center gap-1 px-1 py-0.5 rounded"
                           style={{
                             backgroundColor: primaryColor,
                             border: `1px solid ${accentColor}`,
                             cursor: refreshingPrices[item.id] ? 'wait' : 'pointer',
-                            opacity: refreshingPrices[item.id] ? 0.5 : 1
+                            opacity: refreshingPrices[item.id] ? 0.5 : 1,
+                            fontSize: '9px',
+                            color: accentColor
                           }}
                         >
                           <RefreshCw 
-                            size={12} 
+                            size={10} 
                             style={{ color: accentColor }}
                             className={refreshingPrices[item.id] ? 'animate-spin' : ''}
                           />
+                          <span>Refresh</span>
                         </button>
+                        {priceChanges[item.id] && (
+                          <div 
+                            className="flex items-center gap-0.5 px-1 py-0.5 rounded font-bold"
+                            style={{
+                              backgroundColor: priceChanges[item.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                              color: priceChanges[item.id].amount > 0 ? '#ef4444' : '#22c55e',
+                              border: `1px solid ${priceChanges[item.id].amount > 0 ? '#ef4444' : '#22c55e'}`,
+                              fontSize: '9px'
+                            }}
+                          >
+                            {priceChanges[item.id].amount > 0 ? '↑' : '↓'}
+                            <span>
+                              {priceChanges[item.id].amount > 0 ? '+' : ''}
+                              {priceChanges[item.id].amount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -970,7 +1041,7 @@ const VinylScout = () => {
             {/* PRICE WITH REFRESH BUTTON */}
             {resultPrices[selectedResult.id] && (
               <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-3">
                   <h3 className="text-white font-semibold">Price</h3>
                   <button
                     onClick={(e) => {
@@ -978,24 +1049,45 @@ const VinylScout = () => {
                       refreshPrice(selectedResult.id, collection.some(item => item.id === selectedResult.id));
                     }}
                     disabled={refreshingPrices[selectedResult.id]}
-                    className="p-2 rounded"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded"
                     style={{
                       backgroundColor: primaryColor,
                       border: `1px solid ${accentColor}`,
                       cursor: refreshingPrices[selectedResult.id] ? 'wait' : 'pointer',
-                      opacity: refreshingPrices[selectedResult.id] ? 0.5 : 1
+                      opacity: refreshingPrices[selectedResult.id] ? 0.5 : 1,
+                      color: accentColor,
+                      fontSize: '12px'
                     }}
                   >
                     <RefreshCw 
-                      size={16} 
+                      size={14} 
                       style={{ color: accentColor }}
                       className={refreshingPrices[selectedResult.id] ? 'animate-spin' : ''}
                     />
+                    <span>Refresh Price</span>
                   </button>
                 </div>
-                <p className="text-3xl font-bold" style={{ color: accentColor }}>
+                <p className="text-3xl font-bold mb-2" style={{ color: accentColor }}>
                   {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
                 </p>
+                {priceChanges[selectedResult.id] && (
+                  <div 
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded text-sm font-bold mb-2"
+                    style={{
+                      backgroundColor: priceChanges[selectedResult.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                      color: priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e',
+                      border: `1px solid ${priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e'}`
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>
+                      {priceChanges[selectedResult.id].amount > 0 ? '↑' : '↓'}
+                    </span>
+                    <span>
+                      {priceChanges[selectedResult.id].amount > 0 ? '+' : ''}
+                      {priceChanges[selectedResult.id].amount.toFixed(2)} EUR
+                    </span>
+                  </div>
+                )}
                 <p className="text-white/60 text-sm mt-1">{resultPrices[selectedResult.id].num_for_sale} listings available</p>
               </div>
             )}
