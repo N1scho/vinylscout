@@ -292,8 +292,8 @@ const VinylScout = () => {
         break;
       case 'price':
         sorted.sort((a, b) => {
-          const priceA = parseFloat(a.price?.replace('EUR ', '') || 0);
-          const priceB = parseFloat(b.price?.replace('EUR ', '') || 0);
+          const priceA = a.price && typeof a.price === 'string' ? parseFloat(a.price.replace('EUR ', '')) : 0;
+          const priceB = b.price && typeof b.price === 'string' ? parseFloat(b.price.replace('EUR ', '')) : 0;
           return priceB - priceA;
         });
         break;
@@ -304,7 +304,7 @@ const VinylScout = () => {
 
   // Calculate stats
   const calculateStats = () => {
-    const withPrices = collection.filter(item => item.price && item.price !== 'N/A');
+    const withPrices = collection.filter(item => item.price && item.price !== 'N/A' && typeof item.price === 'string');
     const totalValue = withPrices.reduce((sum, item) => {
       const price = parseFloat(item.price.replace('EUR ', ''));
       return sum + (isNaN(price) ? 0 : price);
