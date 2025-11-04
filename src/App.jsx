@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, User, Settings, X, ExternalLink, Grid, List, Heart, ChevronDown, RefreshCw, TrendingUp, DollarSign } from 'lucide-react';
 
 const VinylScout = () => {
+  try {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -418,8 +419,6 @@ const VinylScout = () => {
     reader.readAsDataURL(imageBlob);
   };
 
-  const stats = calculateStats();
-
   // Error boundary
   if (error) {
     return (
@@ -454,6 +453,9 @@ const VinylScout = () => {
       </div>
     );
   }
+
+  // Calculate stats after error check
+  const stats = calculateStats();
 
   return (
     <div style={{
@@ -1466,6 +1468,37 @@ const VinylScout = () => {
       `}</style>
     </div>
   );
+  } catch (err) {
+    return (
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: '#000',
+        color: '#fff',
+        padding: '20px',
+        flexDirection: 'column'
+      }}>
+        <h1 style={{ color: '#ff4444' }}>App Crashed</h1>
+        <p>{err.toString()}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '15px 30px',
+            background: '#ffb700',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            marginTop: '20px'
+          }}
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
 };
 
 export default VinylScout;
