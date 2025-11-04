@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, User, Settings, X, ExternalLink, Grid, List, Heart, ChevronDown, RefreshCw, TrendingUp, DollarSign } from 'lucide-react';
 
 const VinylScout = () => {
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -41,6 +42,8 @@ const VinylScout = () => {
   // Load saved data
   useEffect(() => {
     try {
+      console.log('Loading VinylScout...');
+      
       const savedSettings = localStorage.getItem('vinylScoutSettings');
       if (savedSettings) {
         const s = JSON.parse(savedSettings);
@@ -60,8 +63,11 @@ const VinylScout = () => {
       
       const savedView = localStorage.getItem('vinylScoutCollectionView');
       if (savedView) setCollectionView(savedView);
+      
+      console.log('VinylScout loaded successfully');
     } catch (e) {
       console.error('Load error:', e);
+      setError(`Failed to load app: ${e.message}`);
     }
   }, []);
 
@@ -436,6 +442,41 @@ const VinylScout = () => {
 
   const stats = calculateStats();
 
+  // Error boundary
+  if (error) {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#000',
+        color: '#fff',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <div>
+          <h1 style={{ color: '#ff4444' }}>Error Loading App</h1>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '15px 30px',
+              background: '#ffb700',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginTop: '20px'
+            }}
+          >
+            Reload App
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       fontFamily: 'Arial, sans-serif',
@@ -560,6 +601,21 @@ const VinylScout = () => {
                 >
                   Search with Filters
                 </button>
+              </div>
+            )}
+
+            {searchResults.length === 0 && !isLoading && (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: '#aaa'
+              }}>
+                <Search size={60} color={accentColor} style={{ marginBottom: '20px' }} />
+                <h2 style={{ color: accentColor }}>Welcome to VinylScout</h2>
+                <p>Search for vinyl records to get started!</p>
+                <p style={{ fontSize: '12px', marginTop: '20px' }}>
+                  💡 Don't forget to add your Discogs token in Settings
+                </p>
               </div>
             )}
 
