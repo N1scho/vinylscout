@@ -128,31 +128,9 @@ const VinylScout = () => {
           genre: r.genre?.[0] || r.style?.[0] || 'N/A',
           cover_image: r.cover_image || r.thumb || '',
           resource_url: r.resource_url,
-          price: 'Loading...'
+          price: null // Don't auto-fetch, let user click refresh
         }));
         setSearchResults(results);
-        
-        // Auto-fetch prices for all results
-        results.forEach(async (result, index) => {
-          const price = await fetchPrice(result);
-          if (price) {
-            setSearchResults(prev => {
-              const updated = [...prev];
-              if (updated[index]) {
-                updated[index].price = `EUR ${price.toFixed(2)}`;
-              }
-              return updated;
-            });
-          } else {
-            setSearchResults(prev => {
-              const updated = [...prev];
-              if (updated[index]) {
-                updated[index].price = 'N/A';
-              }
-              return updated;
-            });
-          }
-        });
       } else {
         alert('No results found');
       }
@@ -743,7 +721,7 @@ const VinylScout = () => {
                         gap: '5px'
                       }}>
                         <DollarSign size={18} />
-                        {result.price || 'Loading...'}
+                        {result.price || 'Click refresh →'}
                       </div>
                     </div>
                   </div>
