@@ -824,6 +824,10 @@ const VinylScout = () => {
       borderRadius: '4px',
       objectFit: 'cover',
       backgroundColor: '#333'
+    },
+    tabContent: {
+      minHeight: '100%',
+      backgroundColor: primaryColor
     }
   };
 
@@ -832,7 +836,7 @@ const VinylScout = () => {
     switch (activeTab) {
       case 'search':
         return (
-          <div>
+          <div style={styles.tabContent}>
             <div style={styles.searchContainer}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <input
@@ -1018,7 +1022,8 @@ const VinylScout = () => {
 
       case 'camera':
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={styles.tabContent}>
+            <div style={{ textAlign: 'center' }}>
             {!showCamera ? (
               <div>
                 <div style={{
@@ -1072,7 +1077,7 @@ const VinylScout = () => {
         const sortedCollection = getSortedCollection();
         
         return (
-          <div>
+          <div style={styles.tabContent}>
             <div style={{
               display: 'flex',
               gap: '8px',
@@ -1388,7 +1393,7 @@ const VinylScout = () => {
         const stats = calculateStats();
         
         return (
-          <div>
+          <div style={styles.tabContent}>
             <h2 style={{ marginBottom: '24px' }}>Collection Statistics</h2>
             
             {stats ? (
@@ -1525,7 +1530,7 @@ const VinylScout = () => {
 
       case 'settings':
         return (
-          <div>
+          <div style={styles.tabContent}>
             <h2 style={{ marginBottom: '24px' }}>Settings</h2>
             
             <div style={{ marginBottom: '24px' }}>
@@ -1757,21 +1762,45 @@ const VinylScout = () => {
         {collection.length === 0 && (
           <button
             onClick={() => {
-              console.log('=== Manual Restore Triggered ===');
-              const data = localStorage.getItem('vinylCollection');
-              console.log('Raw data:', data ? data.substring(0, 100) + '...' : 'null');
-              if (data) {
-                try {
-                  const parsed = JSON.parse(data);
-                  console.log('Parsed successfully:', parsed.length, 'albums');
-                  setCollection(parsed);
-                  alert(`✅ Restored ${parsed.length} albums!`);
-                } catch (e) {
-                  console.error('Parse error:', e);
-                  alert('❌ Data corrupted: ' + e.message);
+              console.log('=== EMERGENCY RESTORE ===');
+              
+              // Check all possible localStorage keys
+              const allKeys = Object.keys(localStorage);
+              console.log('All localStorage keys:', allKeys);
+              
+              // Try multiple possible keys
+              const possibleKeys = ['vinylCollection', 'collection', 'albums', 'records'];
+              let restored = false;
+              
+              for (const key of possibleKeys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                  console.log(`Found data in key "${key}":`, data.substring(0, 100));
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      console.log(`✅ Valid array found: ${parsed.length} items`);
+                      setCollection(parsed);
+                      localStorage.setItem('vinylCollection', JSON.stringify(parsed));
+                      alert(`✅ Restored ${parsed.length} albums from "${key}"!`);
+                      restored = true;
+                      window.location.reload(); // Force reload to update UI
+                      break;
+                    }
+                  } catch (e) {
+                    console.error(`Failed to parse ${key}:`, e);
+                  }
                 }
-              } else {
-                alert('❌ No collection data found in localStorage');
+              }
+              
+              if (!restored) {
+                // Dump all localStorage for debugging
+                console.log('=== Full localStorage dump ===');
+                allKeys.forEach(key => {
+                  const value = localStorage.getItem(key);
+                  console.log(`${key}:`, value ? value.substring(0, 200) : 'null');
+                });
+                alert('❌ No collection data found anywhere in localStorage.\n\nPlease import a backup file from Settings tab.');
               }
             }}
             style={{
