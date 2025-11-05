@@ -84,8 +84,15 @@ const VinylScout = () => {
 
   // Load saved data
   useEffect(() => {
+    console.log('=== VinylScout Loading ===');
     try {
+      // Check what's in localStorage
+      const storageKeys = Object.keys(localStorage);
+      console.log('LocalStorage keys:', storageKeys);
+      
       const savedSettings = localStorage.getItem('vinylScoutSettings');
+      console.log('Saved settings:', savedSettings ? 'Found' : 'Not found');
+      
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         setDiscogsToken(settings.discogsToken || '');
@@ -94,6 +101,7 @@ const VinylScout = () => {
         
         // Load theme
         const themeName = settings.selectedTheme || 'classic';
+        console.log('Loading theme:', themeName);
         setSelectedTheme(themeName);
         
         if (themeName !== 'custom') {
@@ -109,36 +117,48 @@ const VinylScout = () => {
         }
       } else {
         // No saved settings - apply default classic theme
+        console.log('No settings found, using classic theme');
         setPrimaryColor(themes.classic.primary);
         setSecondaryColor(themes.classic.secondary);
         setAccentColor(themes.classic.accent);
       }
 
       const savedCollection = localStorage.getItem('vinylCollection');
+      console.log('Saved collection:', savedCollection ? 'Found' : 'Not found');
+      
       if (savedCollection) {
-        const parsedCollection = JSON.parse(savedCollection);
-        console.log('Loading collection:', parsedCollection.length, 'albums');
-        // Ensure all albums have proper price format
-        const collectionWithPrices = parsedCollection.map(album => ({
-          ...album,
-          // Preserve existing price and priceNumeric
-          price: album.price || 'Price unavailable',
-          priceNumeric: album.priceNumeric !== undefined ? album.priceNumeric : null,
-          lastUpdated: album.lastUpdated || new Date().toISOString(),
-          isFavorite: album.isFavorite || false
-        }));
-        setCollection(collectionWithPrices);
-        console.log('Collection loaded successfully');
+        try {
+          const parsedCollection = JSON.parse(savedCollection);
+          console.log('Collection parsed:', parsedCollection.length, 'albums');
+          
+          // Ensure all albums have proper price format
+          const collectionWithPrices = parsedCollection.map(album => ({
+            ...album,
+            price: album.price || 'Price unavailable',
+            priceNumeric: album.priceNumeric !== undefined ? album.priceNumeric : null,
+            lastUpdated: album.lastUpdated || new Date().toISOString(),
+            isFavorite: album.isFavorite || false
+          }));
+          
+          setCollection(collectionWithPrices);
+          console.log('✅ Collection loaded successfully:', collectionWithPrices.length, 'albums');
+        } catch (parseError) {
+          console.error('❌ Failed to parse collection:', parseError);
+          alert('Collection data corrupted. Please import a backup.');
+        }
       } else {
-        console.log('No saved collection found');
+        console.log('⚠️ No saved collection found in localStorage');
       }
 
       const savedPriceChanges = localStorage.getItem('vinylPriceChanges');
       if (savedPriceChanges) {
         setPriceChanges(JSON.parse(savedPriceChanges));
       }
+      
+      console.log('=== Loading Complete ===');
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
+      alert('Error loading data: ' + error.message);
     }
   }, []); // Run only once on mount
 
@@ -670,7 +690,10 @@ const VinylScout = () => {
     main: {
       flex: 1,
       overflow: 'auto',
-      padding: '16px'
+      padding: '16px',
+      backgroundColor: primaryColor,
+      WebkitOverflowScrolling: 'touch',
+      position: 'relative'
     },
     navigation: {
       display: 'flex',
@@ -1706,6 +1729,24 @@ const VinylScout = () => {
         .spin {
           animation: spin 1s linear infinite;
         }
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          position: fixed;
+          width: 100%;
+          height: 100%;
+        }
+        * {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        input, textarea {
+          -webkit-user-select: text;
+          user-select: text;
+        }
       `}</style>
 
       <div style={styles.header}>
@@ -1713,6 +1754,40 @@ const VinylScout = () => {
           <Music size={28} />
           VinylScout
         </div>
+        {collection.length === 0 && (
+          <button
+            onClick={() => {
+              console.log('=== Manual Restore Triggered ===');
+              const data = localStorage.getItem('vinylCollection');
+              console.log('Raw data:', data ? data.substring(0, 100) + '...' : 'null');
+              if (data) {
+                try {
+                  const parsed = JSON.parse(data);
+                  console.log('Parsed successfully:', parsed.length, 'albums');
+                  setCollection(parsed);
+                  alert(`✅ Restored ${parsed.length} albums!`);
+                } catch (e) {
+                  console.error('Parse error:', e);
+                  alert('❌ Data corrupted: ' + e.message);
+                }
+              } else {
+                alert('❌ No collection data found in localStorage');
+              }
+            }}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#ff4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            RESTORE
+          </button>
+        )}
       </div>
 
       <div style={styles.main}>
