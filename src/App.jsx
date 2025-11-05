@@ -662,182 +662,13 @@ const VinylScout = () => {
     );
   };
 
-  // Styles
-  const styles = {
-    container: {
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: primaryColor,
-      color: '#fff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    },
-    header: {
-      padding: '16px',
-      borderBottom: `1px solid ${secondaryColor}`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between'
-    },
-    title: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      color: accentColor,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    },
-    main: {
-      flex: 1,
-      overflow: 'auto',
-      padding: '16px',
-      backgroundColor: primaryColor,
-      WebkitOverflowScrolling: 'touch',
-      position: 'relative'
-    },
-    navigation: {
-      display: 'flex',
-      borderTop: `1px solid ${secondaryColor}`,
-      backgroundColor: secondaryColor
-    },
-    navButton: {
-      flex: 1,
-      padding: '12px',
-      border: 'none',
-      background: 'transparent',
-      color: '#999',
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '4px',
-      fontSize: '12px'
-    },
-    navButtonActive: {
-      color: accentColor
-    },
-    searchContainer: {
-      marginBottom: '20px'
-    },
-    searchBox: {
-      width: '100%',
-      padding: '12px',
-      border: `1px solid ${secondaryColor}`,
-      borderRadius: '8px',
-      fontSize: '16px',
-      backgroundColor: secondaryColor,
-      color: '#fff'
-    },
-    button: {
-      padding: '12px 24px',
-      border: 'none',
-      borderRadius: '8px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      backgroundColor: accentColor,
-      color: '#000'
-    },
-    buttonSecondary: {
-      padding: '8px 16px',
-      border: `1px solid ${accentColor}`,
-      borderRadius: '8px',
-      fontSize: '14px',
-      cursor: 'pointer',
-      backgroundColor: 'transparent',
-      color: accentColor
-    },
-    resultCard: {
-      backgroundColor: secondaryColor,
-      borderRadius: '8px',
-      padding: '12px',
-      marginBottom: '12px',
-      display: 'flex',
-      gap: '12px',
-      cursor: 'pointer'
-    },
-    albumImage: {
-      width: '80px',
-      height: '80px',
-      borderRadius: '4px',
-      objectFit: 'cover',
-      backgroundColor: '#333'
-    },
-    modal: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      zIndex: 1000,
-      overflow: 'auto',
-      padding: '20px'
-    },
-    modalContent: {
-      maxWidth: '600px',
-      margin: '0 auto',
-      backgroundColor: secondaryColor,
-      borderRadius: '12px',
-      padding: '24px'
-    },
-    input: {
-      width: '100%',
-      padding: '10px',
-      border: `1px solid ${secondaryColor}`,
-      borderRadius: '6px',
-      fontSize: '14px',
-      backgroundColor: primaryColor,
-      color: '#fff',
-      marginBottom: '12px'
-    },
-    galleryGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: '16px'
-    },
-    galleryCard: {
-      backgroundColor: secondaryColor,
-      borderRadius: '8px',
-      overflow: 'hidden',
-      cursor: 'pointer',
-      position: 'relative'
-    },
-    galleryImage: {
-      width: '100%',
-      aspectRatio: '1',
-      objectFit: 'cover',
-      backgroundColor: '#333'
-    },
-    listItem: {
-      backgroundColor: secondaryColor,
-      borderRadius: '8px',
-      padding: '12px',
-      marginBottom: '12px',
-      display: 'flex',
-      gap: '12px',
-      alignItems: 'center'
-    },
-    listImage: {
-      width: '60px',
-      height: '60px',
-      borderRadius: '4px',
-      objectFit: 'cover',
-      backgroundColor: '#333'
-    },
-    tabContent: {
-      minHeight: '100%',
-      backgroundColor: primaryColor
-    }
-  };
-
   // Render content based on active tab
   const renderContent = () => {
     switch (activeTab) {
       case 'search':
         return (
-          <div style={styles.tabContent}>
-            <div style={styles.searchContainer}>
+          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
+            <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <input
                   type="text"
@@ -845,9 +676,29 @@ const VinylScout = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
-                  style={styles.searchBox}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: `1px solid ${secondaryColor}`,
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    backgroundColor: secondaryColor,
+                    color: '#fff'
+                  }}
                 />
-                <button onClick={() => searchDiscogs()} style={styles.button}>
+                <button 
+                  onClick={() => searchDiscogs()} 
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    backgroundColor: accentColor,
+                    color: '#000'
+                  }}
+                >
                   <Search size={20} />
                 </button>
               </div>
@@ -855,7 +706,15 @@ const VinylScout = () => {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                  style={styles.buttonSecondary}
+                  style={{
+                    padding: '8px 16px',
+                    border: `1px solid ${accentColor}`,
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    color: accentColor
+                  }}
                 >
                   Advanced Search
                 </button>
@@ -874,44 +733,110 @@ const VinylScout = () => {
                     placeholder="Artist"
                     value={advancedFilters.artist}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, artist: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Album"
                     value={advancedFilters.album}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, album: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Year"
                     value={advancedFilters.year}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, year: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Label"
                     value={advancedFilters.label}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, label: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Catalog Number"
                     value={advancedFilters.catno}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, catno: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Barcode"
                     value={advancedFilters.barcode}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, barcode: e.target.value })}
-                    style={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: `1px solid ${secondaryColor}`,
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: primaryColor,
+                      color: '#fff',
+                      marginBottom: '12px'
+                    }}
                   />
-                  <button onClick={advancedSearch} style={styles.button}>
+                  <button 
+                    onClick={advancedSearch} 
+                    style={{
+                      padding: '12px 24px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: accentColor,
+                      color: '#000'
+                    }}
+                  >
                     Search
                   </button>
                 </div>
@@ -926,13 +851,27 @@ const VinylScout = () => {
                   {searchResults.map(result => (
                     <div
                       key={result.id}
-                      style={styles.resultCard}
+                      style={{
+                        backgroundColor: secondaryColor,
+                        borderRadius: '8px',
+                        padding: '12px',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        gap: '12px',
+                        cursor: 'pointer'
+                      }}
                       onClick={() => setSelectedResult(result)}
                     >
                       <img
                         src={result.thumb || result.cover_image}
                         alt={result.title}
-                        style={styles.albumImage}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '4px',
+                          objectFit: 'cover',
+                          backgroundColor: '#333'
+                        }}
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
@@ -955,9 +894,14 @@ const VinylScout = () => {
                       onClick={() => searchDiscogs(currentPage - 1)}
                       disabled={currentPage === 1}
                       style={{
-                        ...styles.buttonSecondary,
-                        opacity: currentPage === 1 ? 0.5 : 1,
-                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                        padding: '8px 16px',
+                        border: `1px solid ${accentColor}`,
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        backgroundColor: 'transparent',
+                        color: accentColor,
+                        opacity: currentPage === 1 ? 0.5 : 1
                       }}
                     >
                       Previous
@@ -969,9 +913,14 @@ const VinylScout = () => {
                       onClick={() => searchDiscogs(currentPage + 1)}
                       disabled={currentPage === totalPages}
                       style={{
-                        ...styles.buttonSecondary,
-                        opacity: currentPage === totalPages ? 0.5 : 1,
-                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                        padding: '8px 16px',
+                        border: `1px solid ${accentColor}`,
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        backgroundColor: 'transparent',
+                        color: accentColor,
+                        opacity: currentPage === totalPages ? 0.5 : 1
                       }}
                     >
                       Next
@@ -982,13 +931,43 @@ const VinylScout = () => {
             )}
 
             {selectedResult && (
-              <div style={styles.modal} onClick={() => setSelectedResult(null)}>
-                <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.9)',
+                  zIndex: 1000,
+                  overflow: 'auto',
+                  padding: '20px'
+                }} 
+                onClick={() => setSelectedResult(null)}
+              >
+                <div 
+                  style={{
+                    maxWidth: '600px',
+                    margin: '0 auto',
+                    backgroundColor: secondaryColor,
+                    borderRadius: '12px',
+                    padding: '24px'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <h2>Album Details</h2>
                     <button
                       onClick={() => setSelectedResult(null)}
-                      style={{ ...styles.buttonSecondary, padding: '4px 8px' }}
+                      style={{
+                        padding: '4px 8px',
+                        border: `1px solid ${accentColor}`,
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        color: accentColor
+                      }}
                     >
                       <X size={20} />
                     </button>
@@ -1010,7 +989,17 @@ const VinylScout = () => {
                       addToCollection(selectedResult);
                       setSelectedResult(null);
                     }}
-                    style={{ ...styles.button, width: '100%' }}
+                    style={{
+                      padding: '12px 24px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: accentColor,
+                      color: '#000',
+                      width: '100%'
+                    }}
                   >
                     Add to Collection
                   </button>
@@ -1022,8 +1011,7 @@ const VinylScout = () => {
 
       case 'camera':
         return (
-          <div style={styles.tabContent}>
-            <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', minHeight: '100%', backgroundColor: primaryColor }}>
             {!showCamera ? (
               <div>
                 <div style={{
@@ -1042,7 +1030,19 @@ const VinylScout = () => {
                 <p style={{ color: '#999', marginBottom: '24px' }}>
                   Take a photo of your vinyl record and let AI identify it
                 </p>
-                <button onClick={startCamera} style={styles.button}>
+                <button 
+                  onClick={startCamera}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    backgroundColor: accentColor,
+                    color: '#000'
+                  }}
+                >
                   Start Camera
                 </button>
               </div>
@@ -1061,10 +1061,33 @@ const VinylScout = () => {
                 />
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <button onClick={captureImage} style={styles.button}>
+                  <button 
+                    onClick={captureImage}
+                    style={{
+                      padding: '12px 24px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      backgroundColor: accentColor,
+                      color: '#000'
+                    }}
+                  >
                     Capture & Analyze
                   </button>
-                  <button onClick={stopCamera} style={styles.buttonSecondary}>
+                  <button 
+                    onClick={stopCamera}
+                    style={{
+                      padding: '8px 16px',
+                      border: `1px solid ${accentColor}`,
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      backgroundColor: 'transparent',
+                      color: accentColor
+                    }}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -1077,7 +1100,7 @@ const VinylScout = () => {
         const sortedCollection = getSortedCollection();
         
         return (
-          <div style={styles.tabContent}>
+          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
             <div style={{
               display: 'flex',
               gap: '8px',
@@ -1089,8 +1112,13 @@ const VinylScout = () => {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 style={{
-                  ...styles.input,
                   width: 'auto',
+                  padding: '10px',
+                  border: `1px solid ${secondaryColor}`,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: primaryColor,
+                  color: '#fff',
                   marginBottom: 0
                 }}
               >
@@ -1103,7 +1131,15 @@ const VinylScout = () => {
 
               <button
                 onClick={() => setCollectionView(collectionView === 'gallery' ? 'list' : 'gallery')}
-                style={styles.buttonSecondary}
+                style={{
+                  padding: '8px 16px',
+                  border: `1px solid ${accentColor}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  backgroundColor: 'transparent',
+                  color: accentColor
+                }}
               >
                 {collectionView === 'gallery' ? <List size={16} /> : <Grid size={16} />}
               </button>
@@ -1111,7 +1147,11 @@ const VinylScout = () => {
               <button
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                 style={{
-                  ...styles.buttonSecondary,
+                  padding: '8px 16px',
+                  border: `1px solid ${accentColor}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
                   backgroundColor: showFavoritesOnly ? accentColor : 'transparent',
                   color: showFavoritesOnly ? '#000' : accentColor
                 }}
@@ -1123,7 +1163,13 @@ const VinylScout = () => {
                 onClick={rescanAllPrices}
                 disabled={isRescanning}
                 style={{
-                  ...styles.buttonSecondary,
+                  padding: '8px 16px',
+                  border: `1px solid ${accentColor}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  backgroundColor: 'transparent',
+                  color: accentColor,
                   opacity: isRescanning ? 0.5 : 1
                 }}
               >
@@ -1137,17 +1183,32 @@ const VinylScout = () => {
                 {showFavoritesOnly ? 'No favorites yet' : 'No albums in collection'}
               </div>
             ) : collectionView === 'gallery' ? (
-              <div style={styles.galleryGrid}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '16px'
+              }}>
                 {sortedCollection.map(album => (
                   <div
                     key={album.id}
-                    style={styles.galleryCard}
+                    style={{
+                      backgroundColor: secondaryColor,
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
                     onClick={() => setSelectedResult(album)}
                   >
                     <img
                       src={album.image}
                       alt={album.title}
-                      style={styles.galleryImage}
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        objectFit: 'cover',
+                        backgroundColor: '#333'
+                      }}
                     />
                     {album.isFavorite && (
                       <div style={{
@@ -1198,11 +1259,28 @@ const VinylScout = () => {
             ) : (
               <div>
                 {sortedCollection.map(album => (
-                  <div key={album.id} style={styles.listItem}>
+                  <div 
+                    key={album.id}
+                    style={{
+                      backgroundColor: secondaryColor,
+                      borderRadius: '8px',
+                      padding: '12px',
+                      marginBottom: '12px',
+                      display: 'flex',
+                      gap: '12px',
+                      alignItems: 'center'
+                    }}
+                  >
                     <img
                       src={album.image}
                       alt={album.title}
-                      style={styles.listImage}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '4px',
+                        objectFit: 'cover',
+                        backgroundColor: '#333'
+                      }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
@@ -1223,8 +1301,13 @@ const VinylScout = () => {
                           toggleFavorite(album.id);
                         }}
                         style={{
-                          ...styles.buttonSecondary,
-                          padding: '8px'
+                          padding: '8px',
+                          border: `1px solid ${accentColor}`,
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                          color: accentColor
                         }}
                       >
                         <Heart
@@ -1240,8 +1323,13 @@ const VinylScout = () => {
                         }}
                         disabled={refreshingPrices[album.id]}
                         style={{
-                          ...styles.buttonSecondary,
-                          padding: '8px'
+                          padding: '8px',
+                          border: `1px solid ${accentColor}`,
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                          color: accentColor
                         }}
                       >
                         <RefreshCw
@@ -1255,8 +1343,13 @@ const VinylScout = () => {
                           setSelectedResult(album);
                         }}
                         style={{
-                          ...styles.buttonSecondary,
-                          padding: '8px'
+                          padding: '8px',
+                          border: `1px solid ${accentColor}`,
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                          color: accentColor
                         }}
                       >
                         View
@@ -1266,126 +1359,6 @@ const VinylScout = () => {
                 ))}
               </div>
             )}
-
-            {selectedResult && (
-              <div style={styles.modal} onClick={() => setSelectedResult(null)}>
-                <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <h2>Album Details</h2>
-                    <button
-                      onClick={() => setSelectedResult(null)}
-                      style={{ ...styles.buttonSecondary, padding: '4px 8px' }}
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <img
-                    src={selectedResult.image || selectedResult.thumb}
-                    alt={selectedResult.title}
-                    style={{ width: '100%', borderRadius: '8px', marginBottom: '16px' }}
-                  />
-                  
-                  <h3 style={{ marginBottom: '8px' }}>{selectedResult.title}</h3>
-                  <p style={{ color: '#999', marginBottom: '8px' }}>
-                    <strong>Artist:</strong> {selectedResult.artists}
-                  </p>
-                  <p style={{ color: '#999', marginBottom: '8px' }}>
-                    <strong>Year:</strong> {selectedResult.year}
-                  </p>
-                  <p style={{ color: '#999', marginBottom: '8px' }}>
-                    <strong>Label:</strong> {selectedResult.label}
-                  </p>
-                  
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '16px'
-                  }}>
-                    <p style={{ color: accentColor, fontSize: '20px', fontWeight: 'bold' }}>
-                      {selectedResult.price}
-                    </p>
-                    <PriceChangeIndicator albumId={selectedResult.id} />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        refreshAlbumPrice(selectedResult);
-                      }}
-                      disabled={refreshingPrices[selectedResult.id]}
-                      style={{
-                        ...styles.buttonSecondary,
-                        padding: '6px 12px',
-                        marginLeft: 'auto'
-                      }}
-                    >
-                      <RefreshCw
-                        size={16}
-                        className={refreshingPrices[selectedResult.id] ? 'spin' : ''}
-                      />
-                    </button>
-                  </div>
-
-                  {selectedResult.tracklist && selectedResult.tracklist.length > 0 && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <h4 style={{ marginBottom: '8px' }}>Tracklist:</h4>
-                      <div style={{ maxHeight: '200px', overflow: 'auto' }}>
-                        {selectedResult.tracklist.map((track, idx) => (
-                          <div key={idx} style={{ padding: '4px 0', fontSize: '14px', color: '#999' }}>
-                            {track.position}. {track.title} {track.duration && `(${track.duration})`}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {collection.find(item => item.id === selectedResult.id) ? (
-                      <>
-                        <button
-                          onClick={() => {
-                            toggleFavorite(selectedResult.id);
-                            setSelectedResult(prev => ({
-                              ...prev,
-                              isFavorite: !prev.isFavorite
-                            }));
-                          }}
-                          style={{
-                            ...styles.button,
-                            flex: 1,
-                            backgroundColor: selectedResult.isFavorite ? secondaryColor : accentColor,
-                            color: selectedResult.isFavorite ? accentColor : '#000',
-                            border: selectedResult.isFavorite ? `1px solid ${accentColor}` : 'none'
-                          }}
-                        >
-                          <Heart fill={selectedResult.isFavorite ? accentColor : 'none'} size={16} />
-                          {selectedResult.isFavorite ? ' Remove Favorite' : ' Add Favorite'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            removeFromCollection(selectedResult.id);
-                            setSelectedResult(null);
-                          }}
-                          style={{ ...styles.buttonSecondary, flex: 1 }}
-                        >
-                          Remove from Collection
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          addToCollection(selectedResult);
-                          setSelectedResult(null);
-                        }}
-                        style={{ ...styles.button, width: '100%' }}
-                      >
-                        Add to Collection
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         );
 
@@ -1393,7 +1366,7 @@ const VinylScout = () => {
         const stats = calculateStats();
         
         return (
-          <div style={styles.tabContent}>
+          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
             <h2 style={{ marginBottom: '24px' }}>Collection Statistics</h2>
             
             {stats ? (
@@ -1530,7 +1503,7 @@ const VinylScout = () => {
 
       case 'settings':
         return (
-          <div style={styles.tabContent}>
+          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
             <h2 style={{ marginBottom: '24px' }}>Settings</h2>
             
             <div style={{ marginBottom: '24px' }}>
@@ -1540,14 +1513,32 @@ const VinylScout = () => {
                 placeholder="Discogs Token"
                 value={discogsToken}
                 onChange={(e) => setDiscogsToken(e.target.value)}
-                style={styles.input}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: `1px solid ${secondaryColor}`,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: primaryColor,
+                  color: '#fff',
+                  marginBottom: '12px'
+                }}
               />
               <input
                 type="password"
                 placeholder="Anthropic API Key"
                 value={anthropicToken}
                 onChange={(e) => setAnthropicToken(e.target.value)}
-                style={styles.input}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: `1px solid ${secondaryColor}`,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: primaryColor,
+                  color: '#fff',
+                  marginBottom: '12px'
+                }}
               />
             </div>
 
@@ -1561,11 +1552,20 @@ const VinylScout = () => {
                       const parsed = JSON.parse(data);
                       alert(`Found ${parsed.length} albums in storage. Reloading...`);
                       setCollection(parsed);
+                      window.location.reload();
                     } else {
                       alert('No collection data found in storage');
                     }
                   }}
-                  style={styles.buttonSecondary}
+                  style={{
+                    padding: '8px 16px',
+                    border: `1px solid ${accentColor}`,
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    color: accentColor
+                  }}
                 >
                   Check Storage
                 </button>
@@ -1579,7 +1579,15 @@ const VinylScout = () => {
                     link.download = 'vinylscout-backup.json';
                     link.click();
                   }}
-                  style={styles.buttonSecondary}
+                  style={{
+                    padding: '8px 16px',
+                    border: `1px solid ${accentColor}`,
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    color: accentColor
+                  }}
                 >
                   Export Collection
                 </button>
@@ -1596,6 +1604,7 @@ const VinylScout = () => {
                           setCollection(imported);
                           localStorage.setItem('vinylCollection', JSON.stringify(imported));
                           alert(`Imported ${imported.length} albums!`);
+                          window.location.reload();
                         } catch (error) {
                           alert('Failed to import: ' + error.message);
                         }
@@ -1608,7 +1617,15 @@ const VinylScout = () => {
                 />
                 <button
                   onClick={() => document.getElementById('importFile').click()}
-                  style={styles.buttonSecondary}
+                  style={{
+                    padding: '8px 16px',
+                    border: `1px solid ${accentColor}`,
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    color: accentColor
+                  }}
                 >
                   Import Collection
                 </button>
@@ -1713,7 +1730,20 @@ const VinylScout = () => {
               </div>
             )}
 
-            <button onClick={saveSettings} style={{ ...styles.button, width: '100%' }}>
+            <button 
+              onClick={saveSettings}
+              style={{
+                padding: '12px 24px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                backgroundColor: accentColor,
+                color: '#000',
+                width: '100%'
+              }}
+            >
               Save Settings
             </button>
           </div>
@@ -1725,7 +1755,14 @@ const VinylScout = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: primaryColor,
+      color: '#fff',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
@@ -1754,8 +1791,22 @@ const VinylScout = () => {
         }
       `}</style>
 
-      <div style={styles.header}>
-        <div style={styles.title}>
+      <div style={{
+        padding: '16px',
+        borderBottom: `1px solid ${secondaryColor}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: primaryColor
+      }}>
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          color: accentColor,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
           <Music size={28} />
           VinylScout
         </div>
@@ -1819,15 +1870,35 @@ const VinylScout = () => {
         )}
       </div>
 
-      <div style={styles.main}>
+      <div style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '16px',
+        backgroundColor: primaryColor,
+        WebkitOverflowScrolling: 'touch',
+        position: 'relative'
+      }}>
         {renderContent()}
       </div>
 
-      <div style={styles.navigation}>
+      <div style={{
+        display: 'flex',
+        borderTop: `1px solid ${secondaryColor}`,
+        backgroundColor: secondaryColor
+      }}>
         <button
           style={{
-            ...styles.navButton,
-            ...(activeTab === 'search' ? styles.navButtonActive : {})
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'search' ? accentColor : '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px'
           }}
           onClick={() => setActiveTab('search')}
         >
@@ -1836,8 +1907,17 @@ const VinylScout = () => {
         </button>
         <button
           style={{
-            ...styles.navButton,
-            ...(activeTab === 'camera' ? styles.navButtonActive : {})
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'camera' ? accentColor : '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px'
           }}
           onClick={() => setActiveTab('camera')}
         >
@@ -1846,8 +1926,17 @@ const VinylScout = () => {
         </button>
         <button
           style={{
-            ...styles.navButton,
-            ...(activeTab === 'collection' ? styles.navButtonActive : {})
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'collection' ? accentColor : '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px'
           }}
           onClick={() => setActiveTab('collection')}
         >
@@ -1856,8 +1945,17 @@ const VinylScout = () => {
         </button>
         <button
           style={{
-            ...styles.navButton,
-            ...(activeTab === 'profile' ? styles.navButtonActive : {})
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'profile' ? accentColor : '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px'
           }}
           onClick={() => setActiveTab('profile')}
         >
@@ -1866,8 +1964,17 @@ const VinylScout = () => {
         </button>
         <button
           style={{
-            ...styles.navButton,
-            ...(activeTab === 'settings' ? styles.navButtonActive : {})
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: activeTab === 'settings' ? accentColor : '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px'
           }}
           onClick={() => setActiveTab('settings')}
         >
