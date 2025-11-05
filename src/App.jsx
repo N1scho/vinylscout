@@ -106,6 +106,7 @@ const VinylScout = () => {
         
         if (themeName !== 'custom') {
           // Apply pre-defined theme
+          console.log('Applying theme colors:', themes[themeName]);
           setPrimaryColor(themes[themeName].primary);
           setSecondaryColor(themes[themeName].secondary);
           setAccentColor(themes[themeName].accent);
@@ -117,7 +118,7 @@ const VinylScout = () => {
         }
       } else {
         // No saved settings - apply default classic theme
-        console.log('No settings found, using classic theme');
+        console.log('No settings found, applying classic theme');
         setPrimaryColor(themes.classic.primary);
         setSecondaryColor(themes.classic.secondary);
         setAccentColor(themes.classic.accent);
@@ -1557,6 +1558,26 @@ const VinylScout = () => {
             <div style={{ marginBottom: '24px' }}>
               <h3 style={{ marginBottom: '12px' }}>Collection Data</h3>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    if (confirm('This will clear ALL app data including settings, themes, and your collection. Are you sure?')) {
+                      localStorage.clear();
+                      alert('All data cleared! Reloading...');
+                      window.location.reload();
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #ff4444',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    color: '#ff4444'
+                  }}
+                >
+                  ⚠️ Clear All Data
+                </button>
                 <button
                   onClick={() => {
                     const data = localStorage.getItem('vinylCollection');
