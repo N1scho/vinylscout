@@ -6,35 +6,42 @@ const VinylScout = () => {
   const getInitialColors = () => {
     try {
       const savedSettings = localStorage.getItem('vinylScoutSettings');
+      console.log('🎨 getInitialColors - savedSettings:', savedSettings);
+      
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         const themeName = settings.selectedTheme || 'classic';
+        console.log('🎨 Theme name:', themeName);
         
         const themes = {
-          classic: { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' },
+          classic: { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' },
           blue: { primary: '#0a1929', secondary: '#1e3a5f', accent: '#4fc3f7' },
           purple: { primary: '#1a0033', secondary: '#2d1b4e', accent: '#b794f6' },
           green: { primary: '#0d1f1a', secondary: '#1a3a2e', accent: '#4ade80' },
           red: { primary: '#1a0505', secondary: '#330a0a', accent: '#ef4444' },
-          custom: { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' }
+          custom: { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' }
         };
         
         if (themeName !== 'custom' && themes[themeName]) {
+          console.log('🎨 Using pre-defined theme:', themes[themeName]);
           return themes[themeName];
         } else {
-          return {
-            primary: settings.primaryColor || '#000000',
-            secondary: settings.secondaryColor || '#1a1a1a',
+          const customColors = {
+            primary: settings.primaryColor || '#1a1a1a',
+            secondary: settings.secondaryColor || '#2a2a2a',
             accent: settings.accentColor || '#ffb700'
           };
+          console.log('🎨 Using custom colors:', customColors);
+          return customColors;
         }
       }
     } catch (error) {
       console.error('Error reading initial colors:', error);
     }
     
-    // Default to classic theme
-    return { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' };
+    // Default to classic theme with dark gray
+    console.log('🎨 No settings found, using default');
+    return { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' };
   };
   
   const initialColors = getInitialColors();
@@ -83,8 +90,8 @@ const VinylScout = () => {
   const themes = {
     classic: {
       name: 'Classic Vinyl',
-      primary: '#000000',
-      secondary: '#1a1a1a',
+      primary: '#1a1a1a',
+      secondary: '#2a2a2a',
       accent: '#ffb700'
     },
     blue: {
@@ -113,8 +120,8 @@ const VinylScout = () => {
     },
     custom: {
       name: 'Custom',
-      primary: '#000000',
-      secondary: '#1a1a1a',
+      primary: '#1a1a1a',
+      secondary: '#2a2a2a',
       accent: '#ffb700'
     }
   };
@@ -500,15 +507,25 @@ const VinylScout = () => {
   const calculateStats = () => {
     if (collection.length === 0) return null;
 
-    const withPrices = collection.filter(item => item.priceNumeric !== null);
-    const totalValue = withPrices.reduce((sum, item) => sum + item.priceNumeric, 0);
+    const withPrices = collection.filter(item => 
+      item.priceNumeric !== null && 
+      item.priceNumeric !== undefined && 
+      typeof item.priceNumeric === 'number' && 
+      !isNaN(item.priceNumeric)
+    );
+    
+    const totalValue = withPrices.reduce((sum, item) => sum + (item.priceNumeric || 0), 0);
     
     const mostExpensive = withPrices.length > 0
-      ? withPrices.reduce((max, item) => item.priceNumeric > max.priceNumeric ? item : max)
+      ? withPrices.reduce((max, item) => 
+          (item.priceNumeric || 0) > (max.priceNumeric || 0) ? item : max
+        )
       : null;
     
     const leastExpensive = withPrices.length > 0
-      ? withPrices.reduce((min, item) => item.priceNumeric < min.priceNumeric ? item : min)
+      ? withPrices.reduce((min, item) => 
+          (item.priceNumeric || 0) < (min.priceNumeric || 0) ? item : min
+        )
       : null;
     
     return {
