@@ -36,11 +36,12 @@ const VinylScout = () => {
   const [discogsToken, setDiscogsToken] = useState('');
   const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-  const [primaryColor, setPrimaryColor] = useState('#000000');
+  const [primaryColor, setPrimaryColor] = useState('#000000'); // Will be set immediately by useEffect
   const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
   const [accentColor, setAccentColor] = useState('#ffb700');
   const [showValueModal, setShowValueModal] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('classic');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Pre-defined themes (static - don't reference state)
   const themes = {
@@ -156,11 +157,25 @@ const VinylScout = () => {
       }
       
       console.log('=== Loading Complete ===');
+      console.log('Final colors:', { primaryColor, secondaryColor, accentColor });
+      console.log('Collection count:', collection.length);
+      
+      setIsInitialized(true);
     } catch (error) {
       console.error('❌ Error loading data:', error);
       alert('Error loading data: ' + error.message);
     }
   }, []); // Run only once on mount
+  
+  // Log when colors change
+  useEffect(() => {
+    console.log('🎨 Colors updated:', { primaryColor, secondaryColor, accentColor });
+  }, [primaryColor, secondaryColor, accentColor]);
+  
+  // Log when collection changes
+  useEffect(() => {
+    console.log('📀 Collection updated:', collection.length, 'albums');
+  }, [collection]);
 
   // Save collection
   useEffect(() => {
@@ -1791,14 +1806,29 @@ const VinylScout = () => {
         }
       `}</style>
 
-      <div style={{
-        padding: '16px',
-        borderBottom: `1px solid ${secondaryColor}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: primaryColor
-      }}>
+      {!isInitialized ? (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000000'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <Music size={64} color="#ffb700" />
+            <div style={{ marginTop: '16px', color: '#ffb700' }}>Loading VinylScout...</div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{
+            padding: '16px',
+            borderBottom: `1px solid ${secondaryColor}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: primaryColor
+          }}>
         <div style={{
           fontSize: '24px',
           fontWeight: 'bold',
@@ -1982,6 +2012,9 @@ const VinylScout = () => {
           <span>Settings</span>
         </button>
       </div>
+    </div>
+      </>
+      )}
     </div>
   );
 };
