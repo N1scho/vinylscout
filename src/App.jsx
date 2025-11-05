@@ -40,9 +40,9 @@ const VinylScout = () => {
   const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
   const [accentColor, setAccentColor] = useState('#ffb700');
   const [showValueModal, setShowValueModal] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState('custom');
+  const [selectedTheme, setSelectedTheme] = useState('classic');
 
-  // Pre-defined themes
+  // Pre-defined themes (static - don't reference state)
   const themes = {
     classic: {
       name: 'Classic Vinyl',
@@ -76,9 +76,9 @@ const VinylScout = () => {
     },
     custom: {
       name: 'Custom',
-      primary: primaryColor,
-      secondary: secondaryColor,
-      accent: accentColor
+      primary: '#000000',
+      secondary: '#1a1a1a',
+      accent: '#ffb700'
     }
   };
 
@@ -93,27 +93,31 @@ const VinylScout = () => {
         setSelectedShops(settings.selectedShops || ['discogs', 'hhv', 'ebay']);
         
         // Load theme
-        if (settings.selectedTheme) {
-          setSelectedTheme(settings.selectedTheme);
-          if (settings.selectedTheme !== 'custom' && themes[settings.selectedTheme]) {
-            setPrimaryColor(themes[settings.selectedTheme].primary);
-            setSecondaryColor(themes[settings.selectedTheme].secondary);
-            setAccentColor(themes[settings.selectedTheme].accent);
-          } else {
-            setPrimaryColor(settings.primaryColor || '#000000');
-            setSecondaryColor(settings.secondaryColor || '#1a1a1a');
-            setAccentColor(settings.accentColor || '#ffb700');
-          }
+        const themeName = settings.selectedTheme || 'classic';
+        setSelectedTheme(themeName);
+        
+        if (themeName !== 'custom') {
+          // Apply pre-defined theme
+          setPrimaryColor(themes[themeName].primary);
+          setSecondaryColor(themes[themeName].secondary);
+          setAccentColor(themes[themeName].accent);
         } else {
+          // Apply custom colors
           setPrimaryColor(settings.primaryColor || '#000000');
           setSecondaryColor(settings.secondaryColor || '#1a1a1a');
           setAccentColor(settings.accentColor || '#ffb700');
         }
+      } else {
+        // No saved settings - apply default classic theme
+        setPrimaryColor(themes.classic.primary);
+        setSecondaryColor(themes.classic.secondary);
+        setAccentColor(themes.classic.accent);
       }
 
       const savedCollection = localStorage.getItem('vinylCollection');
       if (savedCollection) {
         const parsedCollection = JSON.parse(savedCollection);
+        console.log('Loading collection:', parsedCollection.length, 'albums');
         // Ensure all albums have proper price format
         const collectionWithPrices = parsedCollection.map(album => ({
           ...album,
@@ -124,6 +128,9 @@ const VinylScout = () => {
           isFavorite: album.isFavorite || false
         }));
         setCollection(collectionWithPrices);
+        console.log('Collection loaded successfully');
+      } else {
+        console.log('No saved collection found');
       }
 
       const savedPriceChanges = localStorage.getItem('vinylPriceChanges');
@@ -133,7 +140,7 @@ const VinylScout = () => {
     } catch (error) {
       console.error('Error loading data:', error);
     }
-  }, []);
+  }, []); // Run only once on mount
 
   // Save collection
   useEffect(() => {
@@ -1514,6 +1521,73 @@ const VinylScout = () => {
                 onChange={(e) => setAnthropicToken(e.target.value)}
                 style={styles.input}
               />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ marginBottom: '12px' }}>Collection Data</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    const data = localStorage.getItem('vinylCollection');
+                    if (data) {
+                      const parsed = JSON.parse(data);
+                      alert(`Found ${parsed.length} albums in storage. Reloading...`);
+                      setCollection(parsed);
+                    } else {
+                      alert('No collection data found in storage');
+                    }
+                  }}
+                  style={styles.buttonSecondary}
+                >
+                  Check Storage
+                </button>
+                <button
+                  onClick={() => {
+                    const dataStr = JSON.stringify(collection, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'vinylscout-backup.json';
+                    link.click();
+                  }}
+                  style={styles.buttonSecondary}
+                >
+                  Export Collection
+                </button>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        try {
+                          const imported = JSON.parse(event.target.result);
+                          setCollection(imported);
+                          localStorage.setItem('vinylCollection', JSON.stringify(imported));
+                          alert(`Imported ${imported.length} albums!`);
+                        } catch (error) {
+                          alert('Failed to import: ' + error.message);
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                  id="importFile"
+                />
+                <button
+                  onClick={() => document.getElementById('importFile').click()}
+                  style={styles.buttonSecondary}
+                >
+                  Import Collection
+                </button>
+              </div>
+              <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                Current collection: {collection.length} albums
+              </div>
             </div>
 
             <div style={{ marginBottom: '24px' }}>
