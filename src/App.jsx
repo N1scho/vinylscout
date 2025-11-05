@@ -2,6 +2,43 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, User, Settings, X, RefreshCw, Heart, Grid, List, DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const VinylScout = () => {
+  // Read colors from localStorage BEFORE any state initialization
+  const getInitialColors = () => {
+    try {
+      const savedSettings = localStorage.getItem('vinylScoutSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        const themeName = settings.selectedTheme || 'classic';
+        
+        const themes = {
+          classic: { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' },
+          blue: { primary: '#0a1929', secondary: '#1e3a5f', accent: '#4fc3f7' },
+          purple: { primary: '#1a0033', secondary: '#2d1b4e', accent: '#b794f6' },
+          green: { primary: '#0d1f1a', secondary: '#1a3a2e', accent: '#4ade80' },
+          red: { primary: '#1a0505', secondary: '#330a0a', accent: '#ef4444' },
+          custom: { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' }
+        };
+        
+        if (themeName !== 'custom' && themes[themeName]) {
+          return themes[themeName];
+        } else {
+          return {
+            primary: settings.primaryColor || '#000000',
+            secondary: settings.secondaryColor || '#1a1a1a',
+            accent: settings.accentColor || '#ffb700'
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error reading initial colors:', error);
+    }
+    
+    // Default to classic theme
+    return { primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' };
+  };
+  
+  const initialColors = getInitialColors();
+  
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -36,9 +73,9 @@ const VinylScout = () => {
   const [discogsToken, setDiscogsToken] = useState('');
   const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-  const [primaryColor, setPrimaryColor] = useState('#000000');
-  const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
-  const [accentColor, setAccentColor] = useState('#ffb700');
+  const [primaryColor, setPrimaryColor] = useState(initialColors.primary);
+  const [secondaryColor, setSecondaryColor] = useState(initialColors.secondary);
+  const [accentColor, setAccentColor] = useState(initialColors.accent);
   const [showValueModal, setShowValueModal] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('classic');
 
