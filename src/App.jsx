@@ -1,350 +1,162 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, Music, User, Settings, X, RefreshCw, Heart, Grid, List, DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Search, Camera, Music, Heart, User, Settings, X, ExternalLink, RefreshCw } from 'lucide-react';
 
 const VinylScout = () => {
-  // Read colors from localStorage BEFORE any state initialization
-  const getInitialColors = () => {
-    try {
-      const savedSettings = localStorage.getItem('vinylScoutSettings');
-      console.log('🎨 getInitialColors - savedSettings:', savedSettings);
-      
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        const themeName = settings.selectedTheme || 'classic';
-        console.log('🎨 Theme name:', themeName);
-        
-        const themes = {
-          classic: { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' },
-          blue: { primary: '#0a1929', secondary: '#1e3a5f', accent: '#4fc3f7' },
-          purple: { primary: '#1a0033', secondary: '#2d1b4e', accent: '#b794f6' },
-          green: { primary: '#0d1f1a', secondary: '#1a3a2e', accent: '#4ade80' },
-          red: { primary: '#1a0505', secondary: '#330a0a', accent: '#ef4444' },
-          custom: { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' }
-        };
-        
-        if (themeName !== 'custom' && themes[themeName]) {
-          console.log('🎨 Using pre-defined theme:', themes[themeName]);
-          return themes[themeName];
-        } else {
-          const customColors = {
-            primary: settings.primaryColor || '#1a1a1a',
-            secondary: settings.secondaryColor || '#2a2a2a',
-            accent: settings.accentColor || '#ffb700'
-          };
-          console.log('🎨 Using custom colors:', customColors);
-          return customColors;
-        }
-      }
-    } catch (error) {
-      console.error('Error reading initial colors:', error);
-    }
-    
-    // Default to classic theme with dark gray
-    console.log('🎨 No settings found, using default');
-    return { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ffb700' };
-  };
-  
-  const initialColors = getInitialColors();
-  
+  // All state declarations
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedResult, setSelectedResult] = useState(null);
-  const [collection, setCollection] = useState([]);
-  const [sortBy, setSortBy] = useState('artist');
-  const [collectionView, setCollectionView] = useState('gallery');
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-  const [isRescanning, setIsRescanning] = useState(false);
-  const [rescanProgress, setRescanProgress] = useState({ current: 0, total: 0 });
+  const [advancedSearch, setAdvancedSearch] = useState({
+    artist: '', album: '', year: '', label: '', genre: ''
+  });
+  const [searchResults, setSearchResults] = useState([]);
+  const [resultPrices, setResultPrices] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const [refreshingPrices, setRefreshingPrices] = useState({});
   const [priceChanges, setPriceChanges] = useState({});
-  
-  const [advancedFilters, setAdvancedFilters] = useState({
-    artist: '',
-    album: '',
-    year: '',
-    label: '',
-    catno: '',
-    barcode: ''
-  });
-  
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  
+  const [selectedResult, setSelectedResult] = useState(null);
+  const [collection, setCollection] = useState([]);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [statsModalType, setStatsModalType] = useState('all');
+  const [showValueModal, setShowValueModal] = useState(false);
+  const [collectionView, setCollectionView] = useState('grid');
+  const [collectionSort, setCollectionSort] = useState('artist-asc');
+  const [collectionFilter, setCollectionFilter] = useState('all');
   const [discogsToken, setDiscogsToken] = useState('');
   const [anthropicToken, setAnthropicToken] = useState('');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-  const [primaryColor, setPrimaryColor] = useState(initialColors.primary);
-  const [secondaryColor, setSecondaryColor] = useState(initialColors.secondary);
-  const [accentColor, setAccentColor] = useState(initialColors.accent);
-  const [showValueModal, setShowValueModal] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState('classic');
+  const [selectedTheme, setSelectedTheme] = useState('custom');
+  const [primaryColor, setPrimaryColor] = useState('#000000');
+  const [secondaryColor, setSecondaryColor] = useState('#1a1a1a');
+  const [accentColor, setAccentColor] = useState('#ffb700');
+  const videoRef = useRef(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // Pre-defined themes (static - don't reference state)
-  const themes = {
-    classic: {
-      name: 'Classic Vinyl',
-      primary: '#1a1a1a',
-      secondary: '#2a2a2a',
-      accent: '#ffb700'
-    },
-    blue: {
-      name: 'Blue Note',
-      primary: '#0a1929',
-      secondary: '#1e3a5f',
-      accent: '#4fc3f7'
-    },
-    purple: {
-      name: 'Purple Rain',
-      primary: '#1a0033',
-      secondary: '#2d1b4e',
-      accent: '#b794f6'
-    },
-    green: {
-      name: 'Mint Condition',
-      primary: '#0d1f1a',
-      secondary: '#1a3a2e',
-      accent: '#4ade80'
-    },
-    red: {
-      name: 'Red Hot',
-      primary: '#1a0505',
-      secondary: '#330a0a',
-      accent: '#ef4444'
-    },
-    custom: {
-      name: 'Custom',
-      primary: '#1a1a1a',
-      secondary: '#2a2a2a',
-      accent: '#ffb700'
+  const themePresets = [
+    { id: 'custom', name: 'Custom', primary: primaryColor, secondary: secondaryColor, accent: accentColor },
+    { id: 'dark', name: 'Dark Mode', primary: '#000000', secondary: '#1a1a1a', accent: '#ffb700' },
+    { id: 'midnight', name: 'Midnight Blue', primary: '#0a1929', secondary: '#1e3a5f', accent: '#00d4ff' },
+    { id: 'forest', name: 'Forest Green', primary: '#0d1f15', secondary: '#1a3a25', accent: '#4ade80' },
+    { id: 'sunset', name: 'Sunset Orange', primary: '#1a0f0a', secondary: '#2d1a10', accent: '#ff6b35' },
+    { id: 'purple', name: 'Purple Haze', primary: '#1a0a2e', secondary: '#2d1a4d', accent: '#c77dff' },
+    { id: 'retro', name: 'Retro Cream', primary: '#2d1b00', secondary: '#4a3000', accent: '#ffd700' },
+    { id: 'ocean', name: 'Deep Ocean', primary: '#001a33', secondary: '#003366', accent: '#00d9ff' },
+    { id: 'berry', name: 'Berry Pink', primary: '#1a0614', secondary: '#2d0f23', accent: '#ff006e' }
+  ];
+
+  useEffect(() => {
+    const saved = {
+      token: localStorage.getItem('discogsToken'),
+      anthropic: localStorage.getItem('anthropicToken'),
+      shops: localStorage.getItem('selectedShops'),
+      theme: localStorage.getItem('selectedTheme'),
+      primary: localStorage.getItem('primaryColor'),
+      secondary: localStorage.getItem('secondaryColor'),
+      accent: localStorage.getItem('accentColor'),
+      collection: localStorage.getItem('collection')
+    };
+    
+    if (saved.token) setDiscogsToken(saved.token);
+    
+    // Load Anthropic API key from localStorage
+    if (saved.anthropic) {
+      setAnthropicToken(saved.anthropic);
+    }
+    
+    if (saved.shops) setSelectedShops(JSON.parse(saved.shops));
+    if (saved.theme) setSelectedTheme(saved.theme);
+    if (saved.primary) setPrimaryColor(saved.primary);
+    if (saved.secondary) setSecondaryColor(saved.secondary);
+    if (saved.accent) setAccentColor(saved.accent);
+    if (saved.collection) setCollection(JSON.parse(saved.collection));
+  }, []);
+
+  const applyTheme = (themeId) => {
+    setSelectedTheme(themeId);
+    if (themeId !== 'custom') {
+      const theme = themePresets.find(t => t.id === themeId);
+      if (theme) {
+        setPrimaryColor(theme.primary);
+        setSecondaryColor(theme.secondary);
+        setAccentColor(theme.accent);
+      }
     }
   };
 
-  // Load saved data
-  useEffect(() => {
-    console.log('=== VinylScout Loading ===');
-    try {
-      // Check what's in localStorage
-      const storageKeys = Object.keys(localStorage);
-      console.log('LocalStorage keys:', storageKeys);
-      
-      const savedSettings = localStorage.getItem('vinylScoutSettings');
-      console.log('Saved settings:', savedSettings ? 'Found' : 'Not found');
-      
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setDiscogsToken(settings.discogsToken || '');
-        setAnthropicToken(settings.anthropicToken || '');
-        setSelectedShops(settings.selectedShops || ['discogs', 'hhv', 'ebay']);
-        
-        // Load theme
-        const themeName = settings.selectedTheme || 'classic';
-        console.log('Loading theme:', themeName);
-        setSelectedTheme(themeName);
-        
-        if (themeName !== 'custom') {
-          // Apply pre-defined theme
-          console.log('Applying theme colors:', themes[themeName]);
-          setPrimaryColor(themes[themeName].primary);
-          setSecondaryColor(themes[themeName].secondary);
-          setAccentColor(themes[themeName].accent);
-        } else {
-          // Apply custom colors
-          setPrimaryColor(settings.primaryColor || '#000000');
-          setSecondaryColor(settings.secondaryColor || '#1a1a1a');
-          setAccentColor(settings.accentColor || '#ffb700');
-        }
-      } else {
-        // No saved settings - apply default classic theme
-        console.log('No settings found, applying classic theme');
-        setPrimaryColor(themes.classic.primary);
-        setSecondaryColor(themes.classic.secondary);
-        setAccentColor(themes.classic.accent);
-      }
-
-      const savedCollection = localStorage.getItem('vinylCollection');
-      console.log('Saved collection:', savedCollection ? 'Found' : 'Not found');
-      
-      if (savedCollection) {
-        try {
-          const parsedCollection = JSON.parse(savedCollection);
-          console.log('Collection parsed:', parsedCollection.length, 'albums');
-          
-          // Ensure all albums have proper price format
-          const collectionWithPrices = parsedCollection.map(album => ({
-            ...album,
-            price: album.price || 'Price unavailable',
-            priceNumeric: album.priceNumeric !== undefined ? album.priceNumeric : null,
-            lastUpdated: album.lastUpdated || new Date().toISOString(),
-            isFavorite: album.isFavorite || false
-          }));
-          
-          setCollection(collectionWithPrices);
-          console.log('✅ Collection loaded successfully:', collectionWithPrices.length, 'albums');
-        } catch (parseError) {
-          console.error('❌ Failed to parse collection:', parseError);
-          alert('Collection data corrupted. Please import a backup.');
-        }
-      } else {
-        console.log('⚠️ No saved collection found in localStorage');
-      }
-
-      const savedPriceChanges = localStorage.getItem('vinylPriceChanges');
-      if (savedPriceChanges) {
-        setPriceChanges(JSON.parse(savedPriceChanges));
-      }
-      
-      console.log('=== Loading Complete ===');
-      console.log('Final colors:', { primaryColor, secondaryColor, accentColor });
-      console.log('Collection count:', collection.length);
-    } catch (error) {
-      console.error('❌ Error loading data:', error);
-      alert('Error loading data: ' + error.message);
-    }
-  }, []); // Run only once on mount
-  
-  // Log when colors change
-  useEffect(() => {
-    console.log('🎨 Colors updated:', { primaryColor, secondaryColor, accentColor });
-  }, [primaryColor, secondaryColor, accentColor]);
-  
-  // Log when collection changes
-  useEffect(() => {
-    console.log('📀 Collection updated:', collection.length, 'albums');
-  }, [collection]);
-
-  // Save collection
-  useEffect(() => {
-    if (collection.length > 0) {
-      localStorage.setItem('vinylCollection', JSON.stringify(collection));
-    }
-  }, [collection]);
-
-  // Save price changes
-  useEffect(() => {
-    if (Object.keys(priceChanges).length > 0) {
-      localStorage.setItem('vinylPriceChanges', JSON.stringify(priceChanges));
-    }
-  }, [priceChanges]);
-
-  // Save settings
   const saveSettings = () => {
-    const settings = {
-      discogsToken,
-      anthropicToken,
-      selectedShops,
-      primaryColor,
-      secondaryColor,
-      accentColor,
-      selectedTheme
-    };
-    localStorage.setItem('vinylScoutSettings', JSON.stringify(settings));
+    localStorage.setItem('discogsToken', discogsToken);
+    localStorage.setItem('anthropicToken', anthropicToken);
+    localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
+    localStorage.setItem('selectedTheme', selectedTheme);
+    localStorage.setItem('primaryColor', primaryColor);
+    localStorage.setItem('secondaryColor', secondaryColor);
+    localStorage.setItem('accentColor', accentColor);
     alert('Settings saved!');
   };
 
-  // Apply theme
-  const applyTheme = (themeName) => {
-    setSelectedTheme(themeName);
-    if (themeName !== 'custom') {
-      setPrimaryColor(themes[themeName].primary);
-      setSecondaryColor(themes[themeName].secondary);
-      setAccentColor(themes[themeName].accent);
-    }
-  };
-
-  // Search Discogs
-  const searchDiscogs = async (page = 1) => {
+  const searchDiscogs = async (isAdvanced = false, queryOverride = null) => {
     if (!discogsToken) {
-      alert('Please add your Discogs token in Settings');
+      alert('Please add your Discogs API token in Settings');
       return;
     }
-
-    if (!searchQuery.trim()) return;
-
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://api.discogs.com/database/search?q=${encodeURIComponent(searchQuery)}&type=release&per_page=20&page=${page}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
+      let searchUrl = 'https://api.discogs.com/database/search?';
+      if (isAdvanced) {
+        const params = [];
+        if (advancedSearch.artist) params.push(`artist=${encodeURIComponent(advancedSearch.artist)}`);
+        if (advancedSearch.album) params.push(`release_title=${encodeURIComponent(advancedSearch.album)}`);
+        if (advancedSearch.year) params.push(`year=${encodeURIComponent(advancedSearch.year)}`);
+        if (advancedSearch.label) params.push(`label=${encodeURIComponent(advancedSearch.label)}`);
+        if (advancedSearch.genre) params.push(`genre=${encodeURIComponent(advancedSearch.genre)}`);
+        if (params.length === 0) {
+          alert('Please fill in at least one field');
+          setIsLoading(false);
+          return;
         }
-      );
-
-      if (!response.ok) throw new Error('Search failed');
-
+        searchUrl += params.join('&') + '&per_page=10&type=release';
+      } else {
+        const query = queryOverride || searchQuery;
+        if (!query.trim()) {
+          setIsLoading(false);
+          return;
+        }
+        searchUrl += `q=${encodeURIComponent(query)}&per_page=10&type=release`;
+      }
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'Authorization': `Discogs token=${discogsToken}`,
+          'User-Agent': 'VinylScout/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        alert(`Search failed: ${response.status}`);
+        setIsLoading(false);
+        return;
+      }
+      
       const data = await response.json();
-      setSearchResults(data.results || []);
-      setCurrentPage(data.pagination?.page || 1);
-      setTotalPages(data.pagination?.pages || 1);
+      if (data.results && data.results.length > 0) {
+        setSearchResults(data.results);
+        fetchAllPrices(data.results);
+      } else {
+        setSearchResults([]);
+        setResultPrices({});
+        alert('No results found');
+      }
     } catch (error) {
-      console.error('Search error:', error);
-      alert('Search failed. Check your token and try again.');
-    } finally {
-      setIsLoading(false);
+      alert(`Error: ${error.message}`);
     }
+    setIsLoading(false);
   };
 
-  // Advanced Search
-  const advancedSearch = async () => {
-    if (!discogsToken) {
-      alert('Please add your Discogs token in Settings');
-      return;
-    }
-
-    const params = new URLSearchParams();
-    if (advancedFilters.artist) params.append('artist', advancedFilters.artist);
-    if (advancedFilters.album) params.append('release_title', advancedFilters.album);
-    if (advancedFilters.year) params.append('year', advancedFilters.year);
-    if (advancedFilters.label) params.append('label', advancedFilters.label);
-    if (advancedFilters.catno) params.append('catno', advancedFilters.catno);
-    if (advancedFilters.barcode) params.append('barcode', advancedFilters.barcode);
-    
-    params.append('type', 'release');
-    params.append('per_page', '20');
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.discogs.com/database/search?${params.toString()}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
-        }
-      );
-
-      if (!response.ok) throw new Error('Search failed');
-
-      const data = await response.json();
-      setSearchResults(data.results || []);
-      setCurrentPage(data.pagination?.page || 1);
-      setTotalPages(data.pagination?.pages || 1);
-    } catch (error) {
-      console.error('Search error:', error);
-      alert('Search failed. Check your token and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Get album details with price
-  const getAlbumDetails = async (id) => {
+  const fetchPriceInfo = async (releaseId) => {
     if (!discogsToken) return null;
-
     try {
-      // Get release details
-      const releaseResponse = await fetch(
-        `https://api.discogs.com/releases/${id}`,
+      const response = await fetch(
+        `https://api.discogs.com/marketplace/stats/${releaseId}`,
         {
           headers: {
             'Authorization': `Discogs token=${discogsToken}`,
@@ -352,308 +164,197 @@ const VinylScout = () => {
           }
         }
       );
-
-      if (!releaseResponse.ok) throw new Error('Failed to fetch details');
-      const releaseData = await releaseResponse.json();
-
-      // Get lowest price
-      const priceResponse = await fetch(
-        `https://api.discogs.com/marketplace/stats/${id}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
-        }
-      );
-
-      let price = 'Price unavailable';
-      if (priceResponse.ok) {
-        const priceData = await priceResponse.json();
-        if (priceData.lowest_price) {
-          price = `EUR ${priceData.lowest_price.value.toFixed(2)}`;
+      if (response.ok) {
+        const data = await response.json();
+        if (data.lowest_price && data.num_for_sale > 0) {
+          return {
+            value: data.lowest_price.value,
+            currency: data.lowest_price.currency,
+            num_for_sale: data.num_for_sale,
+            stats: data
+          };
         }
       }
-
-      return {
-        id: releaseData.id,
-        title: releaseData.title,
-        artists: releaseData.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
-        year: releaseData.year || 'Unknown',
-        genres: releaseData.genres || [],
-        styles: releaseData.styles || [],
-        label: releaseData.labels?.[0]?.name || 'Unknown Label',
-        catno: releaseData.labels?.[0]?.catno || '',
-        image: releaseData.images?.[0]?.uri || releaseData.thumb || '',
-        tracklist: releaseData.tracklist || [],
-        price: price,
-        priceNumeric: price !== 'Price unavailable' ? parseFloat(price.replace('EUR ', '')) : null,
-        lastUpdated: new Date().toISOString(),
-        isFavorite: false
-      };
     } catch (error) {
-      console.error('Error fetching album details:', error);
-      return null;
+      console.error('Price error:', error);
     }
+    return null;
   };
 
-  // Refresh single album price
-  const refreshAlbumPrice = async (album) => {
-    if (!discogsToken) return;
+  const fetchAllPrices = async (results) => {
+    const prices = {};
+    for (const result of results.slice(0, 10)) {
+      const priceData = await fetchPriceInfo(result.id);
+      if (priceData) prices[result.id] = priceData;
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+    setResultPrices(prices);
+  };
 
-    setRefreshingPrices(prev => ({ ...prev, [album.id]: true }));
-
+  const refreshPrice = async (itemId, isCollectionItem = false) => {
+    if (!discogsToken) {
+      alert('Please add your Discogs API token in Settings');
+      return;
+    }
+    
+    // Get old price before refreshing
+    let oldPrice = null;
+    if (resultPrices[itemId]) {
+      oldPrice = resultPrices[itemId].value;
+    } else if (isCollectionItem) {
+      const item = collection.find(i => i.id === itemId);
+      if (item && item.price) {
+        oldPrice = item.price.value;
+      }
+    }
+    
+    setRefreshingPrices(prev => ({ ...prev, [itemId]: true }));
+    
     try {
-      const priceResponse = await fetch(
-        `https://api.discogs.com/marketplace/stats/${album.id}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/1.0'
-          }
-        }
-      );
-
-      if (priceResponse.ok) {
-        const priceData = await priceResponse.json();
-        if (priceData.lowest_price) {
-          const newPrice = `EUR ${priceData.lowest_price.value.toFixed(2)}`;
-          const oldPriceNumeric = album.priceNumeric;
-          const newPriceNumeric = priceData.lowest_price.value;
-
-          // Calculate price change
-          let change = 'same';
-          if (oldPriceNumeric !== null && oldPriceNumeric !== newPriceNumeric) {
-            change = newPriceNumeric > oldPriceNumeric ? 'up' : 'down';
-          }
-
-          // Update price changes
+      const priceData = await fetchPriceInfo(itemId);
+      
+      if (priceData) {
+        // Calculate price change
+        if (oldPrice !== null) {
+          const change = priceData.value - oldPrice;
           setPriceChanges(prev => ({
             ...prev,
-            [album.id]: {
-              change,
-              oldPrice: album.price,
-              newPrice: newPrice,
-              timestamp: new Date().toISOString()
+            [itemId]: {
+              amount: change,
+              currency: priceData.currency
             }
           }));
-
-          // Update collection
-          setCollection(prev => prev.map(item =>
-            item.id === album.id
-              ? { ...item, price: newPrice, priceNumeric: newPriceNumeric, lastUpdated: new Date().toISOString() }
-              : item
-          ));
+          
+          // Clear price change after 5 seconds
+          setTimeout(() => {
+            setPriceChanges(prev => {
+              const newChanges = { ...prev };
+              delete newChanges[itemId];
+              return newChanges;
+            });
+          }, 5000);
         }
+        
+        // Update search results prices
+        setResultPrices(prev => ({
+          ...prev,
+          [itemId]: priceData
+        }));
+        
+        // Update collection item price if it's a collection item
+        if (isCollectionItem) {
+          const newCollection = collection.map(item => {
+            if (item.id === itemId) {
+              return {
+                ...item,
+                price: { value: priceData.value, currency: priceData.currency }
+              };
+            }
+            return item;
+          });
+          setCollection(newCollection);
+          localStorage.setItem('collection', JSON.stringify(newCollection));
+        }
+        
+        // Update selected result if it's open
+        if (selectedResult && selectedResult.id === itemId) {
+          setResultPrices(prev => ({
+            ...prev,
+            [itemId]: priceData
+          }));
+        }
+      } else {
+        alert('No price data available');
       }
     } catch (error) {
-      console.error('Error refreshing price:', error);
-    } finally {
-      setRefreshingPrices(prev => ({ ...prev, [album.id]: false }));
-    }
-  };
-
-  // Rescan all prices
-  const rescanAllPrices = async () => {
-    if (!discogsToken) {
-      alert('Please add your Discogs token in Settings');
-      return;
-    }
-
-    if (collection.length === 0) {
-      alert('No albums in collection to rescan');
-      return;
-    }
-
-    setIsRescanning(true);
-    setRescanProgress({ current: 0, total: collection.length });
-
-    for (let i = 0; i < collection.length; i++) {
-      await refreshAlbumPrice(collection[i]);
-      setRescanProgress({ current: i + 1, total: collection.length });
-      
-      // Rate limiting: wait 1 second between requests
-      if (i < collection.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-
-    setIsRescanning(false);
-    alert('Price rescan complete!');
-  };
-
-  // Add to collection
-  const addToCollection = async (result) => {
-    const details = await getAlbumDetails(result.id);
-    if (details) {
-      setCollection(prev => [...prev, details]);
-      alert('Added to collection!');
-    }
-  };
-
-  // Remove from collection
-  const removeFromCollection = (id) => {
-    setCollection(prev => prev.filter(item => item.id !== id));
-  };
-
-  // Toggle favorite
-  const toggleFavorite = (id) => {
-    setCollection(prev => prev.map(item =>
-      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
-    ));
-  };
-
-  // Calculate statistics
-  const calculateStats = () => {
-    if (collection.length === 0) return null;
-
-    const withPrices = collection.filter(item => 
-      item.priceNumeric !== null && 
-      item.priceNumeric !== undefined && 
-      typeof item.priceNumeric === 'number' && 
-      !isNaN(item.priceNumeric)
-    );
-    
-    const totalValue = withPrices.reduce((sum, item) => sum + (item.priceNumeric || 0), 0);
-    
-    const mostExpensive = withPrices.length > 0
-      ? withPrices.reduce((max, item) => 
-          (item.priceNumeric || 0) > (max.priceNumeric || 0) ? item : max
-        )
-      : null;
-    
-    const leastExpensive = withPrices.length > 0
-      ? withPrices.reduce((min, item) => 
-          (item.priceNumeric || 0) < (min.priceNumeric || 0) ? item : min
-        )
-      : null;
-    
-    return {
-      totalAlbums: collection.length,
-      totalValue: totalValue.toFixed(2),
-      withPrices: withPrices.length,
-      favorites: collection.filter(item => item.isFavorite).length,
-      mostExpensive,
-      leastExpensive
-    };
-  };
-
-  // Get sorted collection
-  const getSortedCollection = () => {
-    let filtered = showFavoritesOnly 
-      ? collection.filter(item => item.isFavorite)
-      : collection;
-
-    let sorted = [...filtered];
-    
-    switch (sortBy) {
-      case 'artist':
-        sorted.sort((a, b) => {
-          const artistA = a.artists || '';
-          const artistB = b.artists || '';
-          return artistA.localeCompare(artistB);
-        });
-        break;
-      case 'title':
-        sorted.sort((a, b) => {
-          const titleA = a.title || '';
-          const titleB = b.title || '';
-          return titleA.localeCompare(titleB);
-        });
-        break;
-      case 'year':
-        sorted.sort((a, b) => {
-          const yearA = parseInt(a.year) || 0;
-          const yearB = parseInt(b.year) || 0;
-          return yearB - yearA;
-        });
-        break;
-      case 'price':
-        sorted.sort((a, b) => {
-          const priceA = a.priceNumeric || 0;
-          const priceB = b.priceNumeric || 0;
-          return priceB - priceA;
-        });
-        break;
-      case 'dateAdded':
-        sorted.sort((a, b) => {
-          const dateA = new Date(a.lastUpdated || 0);
-          const dateB = new Date(b.lastUpdated || 0);
-          return dateB - dateA;
-        });
-        break;
+      alert(`Error refreshing price: ${error.message}`);
     }
     
-    return sorted;
+    setRefreshingPrices(prev => ({ ...prev, [itemId]: false }));
   };
 
-  // Camera functions
+  const calculateDisplayPrice = (priceData) => {
+    if (!priceData) return null;
+    if (selectedShops.includes('discogs') && priceData.value) {
+      return {
+        value: priceData.value.toFixed(2),
+        currency: priceData.currency,
+        type: 'discogs',
+        label: 'from'
+      };
+    }
+    return null;
+  };
+
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
       });
-      setCameraStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
       }
-      setShowCamera(true);
     } catch (error) {
-      console.error('Camera error:', error);
       alert('Could not access camera');
     }
   };
 
   const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      setIsCameraActive(false);
     }
-    setShowCamera(false);
   };
 
-  const captureImage = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0);
-
-    canvas.toBlob(async (blob) => {
-      await analyzeVinylImage(blob);
-    }, 'image/jpeg', 0.95);
-  };
-
-  const analyzeVinylImage = async (imageBlob) => {
-    if (!anthropicToken) {
-      alert('Please add your Anthropic API key in Settings');
-      stopCamera();
+  const capturePhoto = () => {
+    if (!videoRef.current) {
+      alert('Camera not ready. Please wait a moment.');
       return;
     }
-
-    setIsLoading(true);
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    
+    if (canvas.width === 0 || canvas.height === 0) {
+      alert('Camera not ready. Please wait for the video to load.');
+      return;
+    }
+    
+    canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    if (anthropicToken) {
+      identifyAlbumWithAI(imageData);
+    } else {
+      alert('Please add Anthropic API token in Settings to use AI camera search');
+    }
+    
     stopCamera();
+  };
 
+  const identifyAlbumWithAI = async (imageBase64) => {
+    if (!anthropicToken) {
+      alert('Anthropic API token not configured. Please add it in Settings.');
+      return;
+    }
+    
+    setIsLoading(true);
     try {
-      const base64Image = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(imageBlob);
-      });
-
+      console.log('Starting AI identification...');
+      console.log('Using API key:', anthropicToken.substring(0, 20) + '...');
+      
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': anthropicToken,
-          'anthropic-version': '2023-06-01'
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250929',
           max_tokens: 1024,
           messages: [{
             role: 'user',
@@ -663,1113 +364,611 @@ const VinylScout = () => {
                 source: {
                   type: 'base64',
                   media_type: 'image/jpeg',
-                  data: base64Image
+                  data: imageBase64.split(',')[1]
                 }
               },
               {
                 type: 'text',
-                text: 'Analyze this vinyl record image. Extract: artist name, album title, year (if visible), label, catalog number. Format as JSON: {"artist":"","album":"","year":"","label":"","catno":""}'
+                text: 'This is a vinyl record album cover. Identify the artist and album title. Respond ONLY with: "Artist - Album Title". Be precise and accurate.'
               }
             ]
           }]
         })
       });
-
-      if (!response.ok) throw new Error('Analysis failed');
-
-      const data = await response.json();
-      const analysisText = data.content[0].text;
       
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const vinylData = JSON.parse(jsonMatch[0]);
-        
-        setAdvancedFilters({
-          artist: vinylData.artist || '',
-          album: vinylData.album || '',
-          year: vinylData.year || '',
-          label: vinylData.label || '',
-          catno: vinylData.catno || '',
-          barcode: ''
-        });
-        
-        setShowAdvancedSearch(true);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        let errorMessage = `API Error ${response.status}`;
+        try {
+          const errorData = await response.json();
+          console.error('Anthropic API error:', errorData);
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response');
+        }
+        alert(`AI identification failed: ${errorMessage}\n\nPlease check your API key in Settings.`);
+        setIsLoading(false);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('AI Response:', data);
+      
+      if (data.content && data.content[0] && data.content[0].text) {
+        const albumInfo = data.content[0].text.trim();
+        console.log('AI identified:', albumInfo);
+        setSearchQuery(albumInfo);
+        await searchDiscogs(false, albumInfo);
         setActiveTab('search');
-        
-        advancedSearch();
+      } else {
+        alert('Could not identify album from image. Please try again with a clearer photo.');
       }
     } catch (error) {
-      console.error('Analysis error:', error);
-      alert('Failed to analyze image');
-    } finally {
-      setIsLoading(false);
+      console.error('Error identifying album:', error);
+      if (error.message.includes('Failed to fetch')) {
+        alert('Network error: Could not connect to AI service. Please check your internet connection.');
+      } else {
+        alert(`Error identifying album: ${error.message}`);
+      }
     }
+    setIsLoading(false);
   };
 
-  // Price change indicator
-  const PriceChangeIndicator = ({ albumId }) => {
-    const change = priceChanges[albumId];
-    if (!change || change.change === 'same') return null;
+  useEffect(() => {
+    if (activeTab === 'camera' && !isCameraActive) {
+      startCamera();
+    } else if (activeTab !== 'camera' && isCameraActive) {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [activeTab]);
 
-    return (
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '2px 6px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        backgroundColor: change.change === 'up' ? '#fee' : '#efe',
-        color: change.change === 'up' ? '#c00' : '#0a0',
-        marginLeft: '8px'
-      }}>
-        {change.change === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-        {change.change === 'up' ? '↑' : '↓'}
-      </div>
+  const addToCollection = (item) => {
+    const priceData = resultPrices[item.id];
+    const itemWithPrice = {
+      ...item,
+      price: priceData ? { value: priceData.value, currency: priceData.currency } : null,
+      addedAt: new Date().toISOString(),
+      isFavorite: false
+    };
+    const newCollection = [...collection, itemWithPrice];
+    setCollection(newCollection);
+    localStorage.setItem('collection', JSON.stringify(newCollection));
+  };
+
+  const toggleFavoriteInCollection = (itemId) => {
+    const newCollection = collection.map(item => 
+      item.id === itemId ? { ...item, isFavorite: !item.isFavorite } : item
+    );
+    setCollection(newCollection);
+    localStorage.setItem('collection', JSON.stringify(newCollection));
+  };
+
+  const toggleShop = (shop) => {
+    setSelectedShops(prev => 
+      prev.includes(shop) ? prev.filter(s => s !== shop) : [...prev, shop]
     );
   };
 
-  // Render content based on active tab
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'search':
-        return (
-          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  placeholder="Search for vinyl records..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchDiscogs()}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `1px solid ${secondaryColor}`,
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    backgroundColor: secondaryColor,
-                    color: '#fff'
-                  }}
-                />
-                <button 
-                  onClick={() => searchDiscogs()} 
-                  style={{
-                    padding: '12px 24px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    backgroundColor: accentColor,
-                    color: '#000'
-                  }}
-                >
-                  <Search size={20} />
-                </button>
-              </div>
+  const sortCollection = (items, sortBy) => {
+    const sorted = [...items];
+    switch(sortBy) {
+      case 'artist-asc':
+        return sorted.sort((a, b) => {
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return aArtist.localeCompare(bArtist);
+        });
+      case 'artist-desc':
+        return sorted.sort((a, b) => {
+          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
+          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
+          return bArtist.localeCompare(aArtist);
+        });
+      case 'album-asc':
+        return sorted.sort((a, b) => {
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return aAlbum.localeCompare(bAlbum);
+        });
+      case 'album-desc':
+        return sorted.sort((a, b) => {
+          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
+          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
+          return bAlbum.localeCompare(aAlbum);
+        });
+      case 'price-asc':
+        return sorted.sort((a, b) => (a.price?.value || 0) - (b.price?.value || 0));
+      case 'price-desc':
+        return sorted.sort((a, b) => (b.price?.value || 0) - (a.price?.value || 0));
+      default:
+        return sorted;
+    }
+  };
 
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                  style={{
-                    padding: '8px 16px',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'transparent',
-                    color: accentColor
-                  }}
-                >
-                  Advanced Search
-                </button>
-              </div>
+  const filterCollection = (items, filter) => {
+    return filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
+  };
 
-              {showAdvancedSearch && (
-                <div style={{
-                  marginTop: '16px',
-                  padding: '16px',
-                  backgroundColor: secondaryColor,
-                  borderRadius: '8px'
+  const calculateCollectionValue = () => {
+    let total = 0, count = 0, currency = 'EUR';
+    collection.forEach(item => {
+      if (item.price && item.price.value && typeof item.price.value === 'number') {
+        total += item.price.value;
+        count++;
+        if (item.price.currency) currency = item.price.currency;
+      }
+    });
+    return { value: total.toFixed(2), currency, count };
+  };
+
+  return (
+    <div 
+      style={{ 
+        backgroundColor: primaryColor,
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      {/* Header */}
+      <div className="px-4 py-4" style={{ backgroundColor: primaryColor, flexShrink: 0 }}>
+        <h1 className="text-2xl font-bold" style={{ color: accentColor }}>VinylScout</h1>
+      </div>
+
+      {/* Content */}
+      <div className="px-4" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
+        
+        {/* SEARCH TAB */}
+        {activeTab === 'search' && (
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchDiscogs(false)}
+              placeholder="Quick search..."
+              className="rounded-lg text-white placeholder-white/50 border-2 border-white/20"
+              style={{ backgroundColor: secondaryColor, width: '100%', height: '48px', padding: '0 16px' }}
+            />
+            
+            <button
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              className="w-full py-2 text-sm"
+              style={{ color: accentColor }}
+            >
+              {showAdvancedSearch ? '▲' : '▼'} Advanced Search
+            </button>
+
+            {showAdvancedSearch && (
+              <div className="space-y-3 rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                {['artist', 'album', 'year', 'label', 'genre'].map(field => (
+                  <input
+                    key={field}
+                    type="text"
+                    value={advancedSearch[field]}
+                    onChange={(e) => setAdvancedSearch({...advancedSearch, [field]: e.target.value})}
+                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                    className="w-full rounded-lg text-white placeholder-white/40 border border-white/20"
+                    style={{ backgroundColor: primaryColor, height: '48px', padding: '0 16px' }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {searchResults.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-white font-semibold">Results ({searchResults.length})</h3>
+                {searchResults.map((result) => {
+                  const price = calculateDisplayPrice(resultPrices[result.id]);
+                  return (
+                    <div
+                      key={result.id}
+                      onClick={() => setSelectedResult(result)}
+                      className="rounded-lg p-3 cursor-pointer border border-white/10"
+                      style={{ backgroundColor: secondaryColor }}
+                    >
+                      <div className="flex gap-3">
+                        {result.cover_image ? (
+                          <img src={result.cover_image} alt={result.title} className="w-24 h-24 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-24 h-24 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
+                            <Music size={40} style={{ color: accentColor, opacity: 0.5 }} />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-white font-bold text-base mb-1">
+                            {result.title?.split(' - ')[0] || 'Unknown Artist'}
+                          </h3>
+                          <p className="text-white/80 text-sm mb-2">
+                            {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
+                          </p>
+                          
+                          {price && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-lg font-bold" style={{ color: accentColor }}>
+                                {price.currency} {price.value}
+                              </p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  refreshPrice(result.id, false);
+                                }}
+                                disabled={refreshingPrices[result.id]}
+                                className="flex items-center gap-1 px-2 py-1 rounded text-xs"
+                                style={{
+                                  backgroundColor: primaryColor,
+                                  border: `1px solid ${accentColor}`,
+                                  cursor: refreshingPrices[result.id] ? 'wait' : 'pointer',
+                                  opacity: refreshingPrices[result.id] ? 0.5 : 1,
+                                  color: accentColor
+                                }}
+                              >
+                                <RefreshCw 
+                                  size={12} 
+                                  style={{ color: accentColor }}
+                                  className={refreshingPrices[result.id] ? 'animate-spin' : ''}
+                                />
+                                <span>Refresh Price</span>
+                              </button>
+                              {priceChanges[result.id] && (
+                                <div 
+                                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold"
+                                  style={{
+                                    backgroundColor: priceChanges[result.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                                    color: priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e',
+                                    border: `1px solid ${priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e'}`
+                                  }}
+                                >
+                                  {priceChanges[result.id].amount > 0 ? '↑' : '↓'}
+                                  <span>
+                                    {priceChanges[result.id].amount > 0 ? '+' : ''}
+                                    {priceChanges[result.id].amount.toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <button
+              onClick={() => showAdvancedSearch ? searchDiscogs(true) : searchDiscogs(false)}
+              disabled={isLoading}
+              className="rounded-lg font-semibold"
+              style={{ 
+                backgroundColor: accentColor, 
+                color: primaryColor,
+                width: '100%',
+                height: '48px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {isLoading ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+        )}
+
+        {/* CAMERA TAB */}
+        {activeTab === 'camera' && (
+          <div className="space-y-4">
+            <div className="relative rounded-lg overflow-hidden bg-black" style={{ height: '60vh', position: 'relative' }}>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }} 
+              />
+              {!isCameraActive && (
+                <div style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backgroundColor: 'black',
+                  zIndex: 5
                 }}>
-                  <h3 style={{ marginBottom: '12px' }}>Advanced Search</h3>
-                  <input
-                    type="text"
-                    placeholder="Artist"
-                    value={advancedFilters.artist}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, artist: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Album"
-                    value={advancedFilters.album}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, album: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Year"
-                    value={advancedFilters.year}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, year: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Label"
-                    value={advancedFilters.label}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, label: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Catalog Number"
-                    value={advancedFilters.catno}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, catno: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Barcode"
-                    value={advancedFilters.barcode}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, barcode: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: `1px solid ${secondaryColor}`,
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      backgroundColor: primaryColor,
-                      color: '#fff',
-                      marginBottom: '12px'
-                    }}
-                  />
-                  <button 
-                    onClick={advancedSearch} 
-                    style={{
-                      padding: '12px 24px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      backgroundColor: accentColor,
-                      color: '#000'
-                    }}
-                  >
-                    Search
-                  </button>
+                  <p className="text-white/60">Starting camera...</p>
+                </div>
+              )}
+              {isCameraActive && (
+                <button
+                  onClick={capturePhoto}
+                  style={{ 
+                    position: 'absolute',
+                    bottom: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    border: `4px solid ${accentColor}`,
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                    zIndex: 10
+                  }}
+                >
+                  <Camera size={36} style={{ color: primaryColor }} />
+                </button>
+              )}
+            </div>
+            
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <h3 className="text-white font-semibold mb-2">📸 AI Camera Search</h3>
+              <p className="text-white/60 text-sm mb-2">Tap the button at bottom to capture album cover</p>
+              {anthropicToken ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
+                  <p className="text-xs" style={{ color: '#22c55e' }}>AI Ready - Camera enabled</p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
+                  <p className="text-xs" style={{ color: '#ef4444' }}>Add Anthropic token in Settings</p>
                 </div>
               )}
             </div>
-
-            {isLoading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>}
-
-            {searchResults.length > 0 && (
-              <>
-                <div style={{ marginBottom: '16px' }}>
-                  {searchResults.map(result => (
-                    <div
-                      key={result.id}
-                      style={{
-                        backgroundColor: secondaryColor,
-                        borderRadius: '8px',
-                        padding: '12px',
-                        marginBottom: '12px',
-                        display: 'flex',
-                        gap: '12px',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => setSelectedResult(result)}
-                    >
-                      <img
-                        src={result.thumb || result.cover_image}
-                        alt={result.title}
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '4px',
-                          objectFit: 'cover',
-                          backgroundColor: '#333'
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                          {result.title}
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#999' }}>
-                          {result.year || 'Year unknown'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          {result.label?.join(', ')}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {totalPages > 1 && (
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '16px' }}>
-                    <button
-                      onClick={() => searchDiscogs(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      style={{
-                        padding: '8px 16px',
-                        border: `1px solid ${accentColor}`,
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                        backgroundColor: 'transparent',
-                        color: accentColor,
-                        opacity: currentPage === 1 ? 0.5 : 1
-                      }}
-                    >
-                      Previous
-                    </button>
-                    <span style={{ padding: '8px 16px' }}>
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => searchDiscogs(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      style={{
-                        padding: '8px 16px',
-                        border: `1px solid ${accentColor}`,
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                        backgroundColor: 'transparent',
-                        color: accentColor,
-                        opacity: currentPage === totalPages ? 0.5 : 1
-                      }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {selectedResult && (
-              <div 
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.9)',
-                  zIndex: 1000,
-                  overflow: 'auto',
-                  padding: '20px'
-                }} 
-                onClick={() => setSelectedResult(null)}
-              >
-                <div 
-                  style={{
-                    maxWidth: '600px',
-                    margin: '0 auto',
-                    backgroundColor: secondaryColor,
-                    borderRadius: '12px',
-                    padding: '24px'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <h2>Album Details</h2>
-                    <button
-                      onClick={() => setSelectedResult(null)}
-                      style={{
-                        padding: '4px 8px',
-                        border: `1px solid ${accentColor}`,
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        backgroundColor: 'transparent',
-                        color: accentColor
-                      }}
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <img
-                    src={selectedResult.thumb || selectedResult.cover_image}
-                    alt={selectedResult.title}
-                    style={{ width: '100%', borderRadius: '8px', marginBottom: '16px' }}
-                  />
-                  
-                  <h3 style={{ marginBottom: '8px' }}>{selectedResult.title}</h3>
-                  <p style={{ color: '#999', marginBottom: '16px' }}>
-                    {selectedResult.year || 'Year unknown'}
-                  </p>
-                  
-                  <button
-                    onClick={() => {
-                      addToCollection(selectedResult);
-                      setSelectedResult(null);
-                    }}
-                    style={{
-                      padding: '12px 24px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      backgroundColor: accentColor,
-                      color: '#000',
-                      width: '100%'
-                    }}
-                  >
-                    Add to Collection
-                  </button>
-                </div>
+            
+            {isLoading && (
+              <div className="rounded-lg p-4 border border-white/10 text-center" style={{ backgroundColor: secondaryColor }}>
+                <p className="text-white font-semibold mb-2">🔍 Identifying album...</p>
+                <p className="text-white/60 text-sm">Please wait while AI analyzes the cover</p>
               </div>
             )}
           </div>
-        );
+        )}
 
-      case 'camera':
-        return (
-          <div style={{ textAlign: 'center', minHeight: '100%', backgroundColor: primaryColor }}>
-            {!showCamera ? (
-              <div>
-                <div style={{
-                  width: '200px',
-                  height: '200px',
-                  margin: '40px auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: `2px dashed ${accentColor}`,
-                  borderRadius: '12px'
-                }}>
-                  <Camera size={64} color={accentColor} />
-                </div>
-                <h2 style={{ marginBottom: '16px' }}>AI Vinyl Recognition</h2>
-                <p style={{ color: '#999', marginBottom: '24px' }}>
-                  Take a photo of your vinyl record and let AI identify it
-                </p>
-                <button 
-                  onClick={startCamera}
-                  style={{
-                    padding: '12px 24px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    backgroundColor: accentColor,
-                    color: '#000'
-                  }}
+        {/* COLLECTION TAB - WITH REFRESH BUTTON */}
+        {activeTab === 'collection' && (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">Collection</h2>
+              <div className="flex gap-2">
+                <select
+                  value={collectionFilter}
+                  onChange={(e) => setCollectionFilter(e.target.value)}
+                  className="px-3 py-2 rounded text-white text-xs"
+                  style={{ backgroundColor: secondaryColor }}
                 >
-                  Start Camera
-                </button>
+                  <option value="all">All ({collection.length})</option>
+                  <option value="favorites">Favorites ({collection.filter(i => i.isFavorite).length})</option>
+                </select>
+                <select
+                  value={collectionSort}
+                  onChange={(e) => setCollectionSort(e.target.value)}
+                  className="px-3 py-2 rounded text-white text-xs"
+                  style={{ backgroundColor: secondaryColor }}
+                >
+                  <option value="artist-asc">Artist A-Z</option>
+                  <option value="artist-desc">Artist Z-A</option>
+                  <option value="album-asc">Album A-Z</option>
+                  <option value="album-desc">Album Z-A</option>
+                  <option value="price-asc">Price ↑</option>
+                  <option value="price-desc">Price ↓</option>
+                </select>
+                <select
+                  value={collectionView}
+                  onChange={(e) => setCollectionView(e.target.value)}
+                  className="px-3 py-2 rounded text-white text-xs"
+                  style={{ backgroundColor: secondaryColor }}
+                >
+                  <option value="grid">Grid</option>
+                  <option value="list">List</option>
+                </select>
               </div>
-            ) : (
-              <div>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  style={{
-                    width: '100%',
-                    maxWidth: '500px',
-                    borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}
-                />
-                <canvas ref={canvasRef} style={{ display: 'none' }} />
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <button 
-                    onClick={captureImage}
-                    style={{
-                      padding: '12px 24px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      backgroundColor: accentColor,
-                      color: '#000'
-                    }}
-                  >
-                    Capture & Analyze
-                  </button>
-                  <button 
-                    onClick={stopCamera}
-                    style={{
-                      padding: '8px 16px',
-                      border: `1px solid ${accentColor}`,
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      backgroundColor: 'transparent',
-                      color: accentColor
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'collection':
-        const sortedCollection = getSortedCollection();
-        
-        return (
-          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              alignItems: 'center'
-            }}>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  width: 'auto',
-                  padding: '10px',
-                  border: `1px solid ${secondaryColor}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: primaryColor,
-                  color: '#fff',
-                  marginBottom: 0
-                }}
-              >
-                <option value="artist">Sort by Artist</option>
-                <option value="title">Sort by Title</option>
-                <option value="year">Sort by Year</option>
-                <option value="price">Sort by Price</option>
-                <option value="dateAdded">Sort by Date Added</option>
-              </select>
-
-              <button
-                onClick={() => setCollectionView(collectionView === 'gallery' ? 'list' : 'gallery')}
-                style={{
-                  padding: '8px 16px',
-                  border: `1px solid ${accentColor}`,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                  color: accentColor
-                }}
-              >
-                {collectionView === 'gallery' ? <List size={16} /> : <Grid size={16} />}
-              </button>
-
-              <button
-                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                style={{
-                  padding: '8px 16px',
-                  border: `1px solid ${accentColor}`,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  backgroundColor: showFavoritesOnly ? accentColor : 'transparent',
-                  color: showFavoritesOnly ? '#000' : accentColor
-                }}
-              >
-                <Heart size={16} fill={showFavoritesOnly ? '#000' : 'none'} />
-              </button>
-
-              <button
-                onClick={rescanAllPrices}
-                disabled={isRescanning}
-                style={{
-                  padding: '8px 16px',
-                  border: `1px solid ${accentColor}`,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                  color: accentColor,
-                  opacity: isRescanning ? 0.5 : 1
-                }}
-              >
-                <RefreshCw size={16} className={isRescanning ? 'spin' : ''} />
-                {isRescanning ? ` ${rescanProgress.current}/${rescanProgress.total}` : ' Rescan All'}
-              </button>
             </div>
 
-            {sortedCollection.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                {showFavoritesOnly ? 'No favorites yet' : 'No albums in collection'}
-              </div>
-            ) : collectionView === 'gallery' ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                gap: '16px'
-              }}>
-                {sortedCollection.map(album => (
-                  <div
-                    key={album.id}
-                    style={{
-                      backgroundColor: secondaryColor,
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                    onClick={() => setSelectedResult(album)}
-                  >
-                    <img
-                      src={album.image}
-                      alt={album.title}
-                      style={{
-                        width: '100%',
-                        aspectRatio: '1',
-                        objectFit: 'cover',
-                        backgroundColor: '#333'
-                      }}
-                    />
-                    {album.isFavorite && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        backgroundColor: 'rgba(0,0,0,0.7)',
-                        borderRadius: '50%',
-                        padding: '4px'
-                      }}>
-                        <Heart size={16} fill={accentColor} color={accentColor} />
+            {collection.length === 0 ? (
+              <p className="text-white/60 text-center py-8">No records yet</p>
+            ) : (
+              <div className={collectionView === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>
+                {sortCollection(filterCollection(collection, collectionFilter), collectionSort).map((item, idx) => (
+                  <div key={idx} className="rounded-lg p-2 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                    <div style={{ position: 'relative', width: '100%', paddingTop: '100%', borderRadius: '8px', overflow: 'hidden', backgroundColor: primaryColor, marginBottom: '12px', cursor: 'pointer' }} onClick={() => setSelectedResult(item)}>
+                      {item.cover_image ? (
+                        <img src={item.cover_image} alt={item.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavoriteInCollection(item.id); }}
+                        style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: '8px', border: 'none', cursor: 'pointer' }}
+                      >
+                        <Heart size={18} style={{ color: accentColor }} fill={item.isFavorite ? accentColor : 'none'} />
+                      </button>
+                    </div>
+                    
+                    {/* Artist and Album - inline format */}
+                    <p className="text-white text-xs mb-1">
+                      <span className="text-white/60">Artist: </span>
+                      {item.title?.split(' - ')[0] || 'Unknown'}
+                    </p>
+                    <p className="text-white text-xs mb-3">
+                      <span className="text-white/60">Album: </span>
+                      {item.title?.split(' - ')[1] || item.title}
+                    </p>
+                    
+                    {/* First row - 3 columns */}
+                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
+                      <p className="text-white">
+                        <span className="text-white/60">Year: </span>
+                        {item.year || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Format: </span>
+                        {item.format?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Country: </span>
+                        {item.country || '-'}
+                      </p>
+                    </div>
+                    
+                    {/* Second row - 3 columns */}
+                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
+                      <p className="text-white">
+                        <span className="text-white/60">Label: </span>
+                        {item.label?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Genre: </span>
+                        {item.genre?.[0] || '-'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Catalog: </span>
+                        {item.catno || '-'}
+                      </p>
+                    </div>
+                    
+                    {item.price && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <p className="text-sm font-bold" style={{ color: accentColor }}>
+                          {item.price.currency} {Number(item.price.value).toFixed(2)}
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            refreshPrice(item.id, true);
+                          }}
+                          disabled={refreshingPrices[item.id]}
+                          className="flex items-center gap-1 px-1 py-0.5 rounded"
+                          style={{
+                            backgroundColor: primaryColor,
+                            border: `1px solid ${accentColor}`,
+                            cursor: refreshingPrices[item.id] ? 'wait' : 'pointer',
+                            opacity: refreshingPrices[item.id] ? 0.5 : 1,
+                            fontSize: '9px',
+                            color: accentColor
+                          }}
+                        >
+                          <RefreshCw 
+                            size={10} 
+                            style={{ color: accentColor }}
+                            className={refreshingPrices[item.id] ? 'animate-spin' : ''}
+                          />
+                          <span>Refresh</span>
+                        </button>
+                        {priceChanges[item.id] && (
+                          <div 
+                            className="flex items-center gap-0.5 px-1 py-0.5 rounded font-bold"
+                            style={{
+                              backgroundColor: priceChanges[item.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                              color: priceChanges[item.id].amount > 0 ? '#ef4444' : '#22c55e',
+                              border: `1px solid ${priceChanges[item.id].amount > 0 ? '#ef4444' : '#22c55e'}`,
+                              fontSize: '9px'
+                            }}
+                          >
+                            {priceChanges[item.id].amount > 0 ? '↑' : '↓'}
+                            <span>
+                              {priceChanges[item.id].amount > 0 ? '+' : ''}
+                              {priceChanges[item.id].amount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
-                    <div style={{ padding: '8px' }}>
-                      <div style={{
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        marginBottom: '2px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {album.artists}
-                      </div>
-                      <div style={{
-                        fontSize: '11px',
-                        color: '#999',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {album.title}
-                      </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: accentColor,
-                        marginTop: '4px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
-                        {album.price}
-                        <PriceChangeIndicator albumId={album.id} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div>
-                {sortedCollection.map(album => (
-                  <div 
-                    key={album.id}
-                    style={{
-                      backgroundColor: secondaryColor,
-                      borderRadius: '8px',
-                      padding: '12px',
-                      marginBottom: '12px',
-                      display: 'flex',
-                      gap: '12px',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <img
-                      src={album.image}
-                      alt={album.title}
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '4px',
-                        objectFit: 'cover',
-                        backgroundColor: '#333'
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-                        {album.artists}
-                      </div>
-                      <div style={{ fontSize: '14px', color: '#999', marginBottom: '4px' }}>
-                        {album.title}
-                      </div>
-                      <div style={{ fontSize: '14px', color: accentColor, display: 'flex', alignItems: 'center' }}>
-                        {album.price}
-                        <PriceChangeIndicator albumId={album.id} />
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(album.id);
-                        }}
-                        style={{
-                          padding: '8px',
-                          border: `1px solid ${accentColor}`,
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          backgroundColor: 'transparent',
-                          color: accentColor
-                        }}
-                      >
-                        <Heart
-                          size={16}
-                          fill={album.isFavorite ? accentColor : 'none'}
-                          color={accentColor}
-                        />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          refreshAlbumPrice(album);
-                        }}
-                        disabled={refreshingPrices[album.id]}
-                        style={{
-                          padding: '8px',
-                          border: `1px solid ${accentColor}`,
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          backgroundColor: 'transparent',
-                          color: accentColor
-                        }}
-                      >
-                        <RefreshCw
-                          size={16}
-                          className={refreshingPrices[album.id] ? 'spin' : ''}
-                        />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedResult(album);
-                        }}
-                        style={{
-                          padding: '8px',
-                          border: `1px solid ${accentColor}`,
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          backgroundColor: 'transparent',
-                          color: accentColor
-                        }}
-                      >
-                        View
-                      </button>
-                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        );
+        )}
 
-      case 'profile':
-        const stats = calculateStats();
-        
-        return (
-          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
-            <h2 style={{ marginBottom: '24px' }}>Collection Statistics</h2>
+        {/* PROFILE TAB */}
+        {activeTab === 'profile' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">Profile</h2>
             
-            {stats ? (
-              <div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                  gap: '16px',
-                  marginBottom: '24px'
-                }}>
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: 'bold', color: accentColor }}>
-                      {stats.totalAlbums}
-                    </div>
-                    <div style={{ color: '#999', marginTop: '8px' }}>Total Albums</div>
-                  </div>
-
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: 'bold', color: accentColor }}>
-                      €{stats.totalValue}
-                    </div>
-                    <div style={{ color: '#999', marginTop: '8px' }}>Total Value</div>
-                  </div>
-
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: 'bold', color: accentColor }}>
-                      {stats.favorites}
-                    </div>
-                    <div style={{ color: '#999', marginTop: '8px' }}>Favorites</div>
-                  </div>
-
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: 'bold', color: accentColor }}>
-                      {stats.withPrices}
-                    </div>
-                    <div style={{ color: '#999', marginTop: '8px' }}>Priced Items</div>
-                  </div>
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor }}>
+                  <User size={32} style={{ color: primaryColor }} />
                 </div>
-
-                {stats.mostExpensive && (
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}>
-                    <h3 style={{ marginBottom: '12px' }}>Most Expensive</h3>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <img
-                        src={stats.mostExpensive.image}
-                        alt={stats.mostExpensive.title}
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '4px',
-                          objectFit: 'cover'
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                          {stats.mostExpensive.artists}
-                        </div>
-                        <div style={{ color: '#999', fontSize: '14px', marginBottom: '4px' }}>
-                          {stats.mostExpensive.title}
-                        </div>
-                        <div style={{ color: accentColor, fontSize: '18px', fontWeight: 'bold' }}>
-                          {stats.mostExpensive.price}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {stats.leastExpensive && (
-                  <div style={{
-                    backgroundColor: secondaryColor,
-                    padding: '20px',
-                    borderRadius: '8px'
-                  }}>
-                    <h3 style={{ marginBottom: '12px' }}>Least Expensive</h3>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <img
-                        src={stats.leastExpensive.image}
-                        alt={stats.leastExpensive.title}
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '4px',
-                          objectFit: 'cover'
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                          {stats.leastExpensive.artists}
-                        </div>
-                        <div style={{ color: '#999', fontSize: '14px', marginBottom: '4px' }}>
-                          {stats.leastExpensive.title}
-                        </div>
-                        <div style={{ color: accentColor, fontSize: '18px', fontWeight: 'bold' }}>
-                          {stats.leastExpensive.price}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <h3 className="text-white font-semibold">Vinyl Collector</h3>
+                  <p className="text-white/60 text-sm">{collection.length} records</p>
+                </div>
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                No albums in collection yet
-              </div>
-            )}
-          </div>
-        );
-
-      case 'settings':
-        return (
-          <div style={{ minHeight: '100%', backgroundColor: primaryColor }}>
-            <h2 style={{ marginBottom: '24px' }}>Settings</h2>
+            </div>
             
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ marginBottom: '12px' }}>API Tokens</h3>
-              <input
-                type="password"
-                placeholder="Discogs Token"
-                value={discogsToken}
-                onChange={(e) => setDiscogsToken(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: `1px solid ${secondaryColor}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: primaryColor,
-                  color: '#fff',
-                  marginBottom: '12px'
-                }}
-              />
-              <input
-                type="password"
-                placeholder="Anthropic API Key"
-                value={anthropicToken}
-                onChange={(e) => setAnthropicToken(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: `1px solid ${secondaryColor}`,
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: primaryColor,
-                  color: '#fff',
-                  marginBottom: '12px'
-                }}
-              />
+            <div className="rounded-lg p-4 border border-white/10 cursor-pointer" style={{ backgroundColor: secondaryColor }} onClick={() => setShowValueModal(true)}>
+              <h3 className="text-white font-semibold mb-3">Collection Value</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-white/60">Total:</span>
+                <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                  {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                </span>
+              </div>
+              <p className="text-white/40 text-xs mt-2">
+                Based on {calculateCollectionValue().count} of {collection.length} records
+              </p>
+              <p className="text-white/60 text-xs mt-2 text-center">👆 Tap for details</p>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Collection Data</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => {
-                    if (confirm('This will clear ALL app data including settings, themes, and your collection. Are you sure?')) {
-                      localStorage.clear();
-                      alert('All data cleared! Reloading...');
-                      window.location.reload();
-                    }
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    border: '1px solid #ff4444',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'transparent',
-                    color: '#ff4444'
-                  }}
-                >
-                  ⚠️ Clear All Data
-                </button>
-                <button
-                  onClick={() => {
-                    const data = localStorage.getItem('vinylCollection');
-                    if (data) {
-                      const parsed = JSON.parse(data);
-                      alert(`Found ${parsed.length} albums in storage. Reloading...`);
-                      setCollection(parsed);
-                      window.location.reload();
-                    } else {
-                      alert('No collection data found in storage');
-                    }
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'transparent',
-                    color: accentColor
-                  }}
-                >
-                  Check Storage
-                </button>
-                <button
-                  onClick={() => {
-                    const dataStr = JSON.stringify(collection, null, 2);
-                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(dataBlob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = 'vinylscout-backup.json';
-                    link.click();
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'transparent',
-                    color: accentColor
-                  }}
-                >
-                  Export Collection
-                </button>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        try {
-                          const imported = JSON.parse(event.target.result);
-                          setCollection(imported);
-                          localStorage.setItem('vinylCollection', JSON.stringify(imported));
-                          alert(`Imported ${imported.length} albums!`);
-                          window.location.reload();
-                        } catch (error) {
-                          alert('Failed to import: ' + error.message);
-                        }
-                      };
-                      reader.readAsText(file);
-                    }
-                  }}
-                  style={{ display: 'none' }}
-                  id="importFile"
-                />
-                <button
-                  onClick={() => document.getElementById('importFile').click()}
-                  style={{
-                    padding: '8px 16px',
-                    border: `1px solid ${accentColor}`,
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    backgroundColor: 'transparent',
-                    color: accentColor
-                  }}
-                >
-                  Import Collection
-                </button>
-              </div>
-              <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
-                Current collection: {collection.length} albums
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <h3 className="text-white font-semibold mb-3">Statistics</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">Total Records</span>
+                  <span className="text-white font-semibold">{collection.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">Favorites</span>
+                  <span className="text-white font-semibold">{collection.filter(i => i.isFavorite).length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">With Prices</span>
+                  <span className="text-white font-semibold">{collection.filter(i => i.price).length}</span>
+                </div>
               </div>
             </div>
+          </div>
+        )}
 
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Theme</h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '12px',
-                marginBottom: '16px'
-              }}>
-                {Object.entries(themes).map(([key, theme]) => (
+        {/* SETTINGS TAB */}
+        {activeTab === 'settings' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">Settings</h2>
+
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-3 font-semibold">Theme</label>
+              <div className="grid grid-cols-2 gap-2">
+                {themePresets.map(theme => (
                   <button
-                    key={key}
-                    onClick={() => applyTheme(key)}
+                    key={theme.id}
+                    onClick={() => applyTheme(theme.id)}
+                    className="px-3 py-2 rounded text-sm border-2"
                     style={{
-                      padding: '16px',
-                      borderRadius: '8px',
-                      border: selectedTheme === key ? `2px solid ${accentColor}` : '1px solid #333',
-                      backgroundColor: theme.secondary,
-                      color: '#fff',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      position: 'relative'
+                      backgroundColor: theme.id === selectedTheme ? `${accentColor}20` : primaryColor,
+                      borderColor: theme.id === selectedTheme ? accentColor : 'rgba(255,255,255,0.2)',
+                      color: theme.id === selectedTheme ? accentColor : 'white'
                     }}
                   >
-                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                    <div className="flex items-center gap-2">
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: theme.accent, border: '2px solid rgba(255,255,255,0.3)' }} />
                       {theme.name}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '4px' }}>
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        backgroundColor: theme.primary,
-                        border: '1px solid #666'
-                      }} />
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        backgroundColor: theme.secondary,
-                        border: '1px solid #666'
-                      }} />
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        backgroundColor: theme.accent,
-                        border: '1px solid #666'
-                      }} />
                     </div>
                   </button>
                 ))}
@@ -1777,298 +976,352 @@ const VinylScout = () => {
             </div>
 
             {selectedTheme === 'custom' && (
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ marginBottom: '12px' }}>Custom Colors</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                      Primary Color
-                    </label>
-                    <input
-                      type="color"
-                      value={primaryColor}
-                      onChange={(e) => setPrimaryColor(e.target.value)}
-                      style={{ width: '100%', height: '40px', border: 'none', borderRadius: '4px' }}
-                    />
+              <div className="rounded-lg p-4 border border-white/10 space-y-4" style={{ backgroundColor: secondaryColor }}>
+                <h3 className="text-white font-semibold">Custom Colors</h3>
+                {[
+                  { label: 'Primary', value: primaryColor, setter: setPrimaryColor },
+                  { label: 'Secondary', value: secondaryColor, setter: setSecondaryColor },
+                  { label: 'Accent', value: accentColor, setter: setAccentColor }
+                ].map(({ label, value, setter }) => (
+                  <div key={label}>
+                    <label className="block text-white/80 text-sm mb-2">{label} Color</label>
+                    <div className="flex gap-2">
+                      <input type="color" value={value} onChange={(e) => setter(e.target.value)} className="w-12 h-10 rounded" />
+                      <input type="text" value={value} onChange={(e) => setter(e.target.value)} className="flex-1 px-4 py-2 rounded text-white border border-white/20" style={{ backgroundColor: primaryColor }} />
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                      Secondary Color
-                    </label>
-                    <input
-                      type="color"
-                      value={secondaryColor}
-                      onChange={(e) => setSecondaryColor(e.target.value)}
-                      style={{ width: '100%', height: '40px', border: 'none', borderRadius: '4px' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
-                      Accent Color
-                    </label>
-                    <input
-                      type="color"
-                      value={accentColor}
-                      onChange={(e) => setAccentColor(e.target.value)}
-                      style={{ width: '100%', height: '40px', border: 'none', borderRadius: '4px' }}
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
             )}
 
-            <button 
-              onClick={saveSettings}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                backgroundColor: accentColor,
-                color: '#000',
-                width: '100%'
-              }}
-            >
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">Discogs API Token</label>
+              <input
+                type="text"
+                value={discogsToken}
+                onChange={(e) => setDiscogsToken(e.target.value)}
+                placeholder="Enter token"
+                className="w-full px-4 py-2 rounded text-white border border-white/20"
+                style={{ backgroundColor: primaryColor }}
+              />
+              <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-xs mt-2 flex items-center gap-1" style={{ color: accentColor }}>
+                Get token <ExternalLink size={12} />
+              </a>
+            </div>
+
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">Anthropic API Token</label>
+              <input
+                type="password"
+                value={anthropicToken}
+                onChange={(e) => setAnthropicToken(e.target.value)}
+                placeholder="Enter key"
+                className="w-full px-4 py-2 rounded text-white border border-white/20"
+                style={{ backgroundColor: primaryColor }}
+              />
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-xs mt-2 flex items-center gap-1" style={{ color: accentColor }}>
+                Get key <ExternalLink size={12} />
+              </a>
+            </div>
+
+            <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <label className="block text-white/80 text-sm mb-2">Price Sources</label>
+              <div className="space-y-2">
+                {[
+                  { id: 'discogs', name: 'Discogs', note: 'API available' },
+                  { id: 'hhv', name: 'HHV Store', note: 'Manual' },
+                  { id: 'ebay', name: 'eBay', note: 'Manual' }
+                ].map(shop => (
+                  <label key={shop.id} className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={selectedShops.includes(shop.id)} onChange={() => toggleShop(shop.id)} className="w-5 h-5" style={{ accentColor }} />
+                    <span className="text-white flex-1">{shop.name}</span>
+                    <span className="text-white/40 text-xs">{shop.note}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={saveSettings} className="w-full py-3 rounded-lg font-semibold" style={{ backgroundColor: accentColor, color: primaryColor }}>
               Save Settings
             </button>
           </div>
-        );
+        )}
+      </div>
 
-      default:
-        return null;
-    }
-  };
+      {/* Bottom Nav */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: primaryColor, borderTop: '1px solid rgba(255, 255, 255, 0.1)', zIndex: 1000, display: 'flex', justifyContent: 'space-around', padding: '12px 8px' }}>
+        {[
+          { id: 'search', icon: Search, label: 'Search' },
+          { id: 'camera', icon: Camera, label: 'Camera' },
+          { id: 'collection', icon: Music, label: 'Collection' },
+          { id: 'profile', icon: User, label: 'Profile' },
+          { id: 'settings', icon: Settings, label: 'Settings' }
+        ].map(({ id, icon: Icon, label }) => (
+          <button key={id} onClick={() => setActiveTab(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, border: 'none', background: 'none', cursor: 'pointer' }}>
+            <Icon size={22} style={{ color: activeTab === id ? accentColor : 'rgba(255,255,255,0.5)' }} />
+            <span style={{ fontSize: '10px', color: activeTab === id ? accentColor : 'rgba(255,255,255,0.5)' }}>{label}</span>
+          </button>
+        ))}
+      </div>
 
-  return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: primaryColor,
-      color: '#fff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
+      {/* Result Modal - WITH REFRESH BUTTON */}
+      {selectedResult && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-bold text-white">Album Details</h2>
+              <button onClick={() => setSelectedResult(null)}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+            
+            {/* Album Cover */}
+            <div className="flex justify-center mb-4">
+              {selectedResult.cover_image ? (
+                <img 
+                  src={selectedResult.cover_image} 
+                  alt={selectedResult.title} 
+                  style={{ 
+                    width: '200px', 
+                    height: '200px', 
+                    borderRadius: '8px', 
+                    objectFit: 'cover' 
+                  }} 
+                />
+              ) : (
+                <div style={{ width: '200px', height: '200px', borderRadius: '8px', backgroundColor: secondaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Music size={80} style={{ color: accentColor, opacity: 0.5 }} />
+                </div>
+              )}
+            </div>
+            
+            {/* Artist and Album - inline format */}
+            <div className="mb-4 rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+              <p className="text-white text-sm mb-2">
+                <span className="text-white/60">Artist: </span>
+                {selectedResult.title?.split(' - ')[0] || 'Unknown'}
+              </p>
+              <p className="text-white text-sm">
+                <span className="text-white/60">Album: </span>
+                {selectedResult.title?.split(' - ')[1] || selectedResult.title}
+              </p>
+            </div>
+            
+            {/* Details in 2 rows x 3 columns */}
+            <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
+              <h3 className="text-white font-semibold mb-3">Details</h3>
+              
+              {/* First row */}
+              <div className="grid grid-cols-3 gap-x-3 mb-3 text-xs">
+                <p className="text-white">
+                  <span className="text-white/60">Year: </span>
+                  {selectedResult.year || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Format: </span>
+                  {selectedResult.format?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Country: </span>
+                  {selectedResult.country || '-'}
+                </p>
+              </div>
+              
+              {/* Second row */}
+              <div className="grid grid-cols-3 gap-x-3 text-xs">
+                <p className="text-white">
+                  <span className="text-white/60">Label: </span>
+                  {selectedResult.label?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Genre: </span>
+                  {selectedResult.genre?.[0] || '-'}
+                </p>
+                <p className="text-white">
+                  <span className="text-white/60">Catalog: </span>
+                  {selectedResult.catno || '-'}
+                </p>
+              </div>
+            </div>
+            
+            {/* PRICE WITH REFRESH BUTTON */}
+            {resultPrices[selectedResult.id] && (
+              <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-white font-semibold">Price</h3>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      refreshPrice(selectedResult.id, collection.some(item => item.id === selectedResult.id));
+                    }}
+                    disabled={refreshingPrices[selectedResult.id]}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded"
+                    style={{
+                      backgroundColor: primaryColor,
+                      border: `1px solid ${accentColor}`,
+                      cursor: refreshingPrices[selectedResult.id] ? 'wait' : 'pointer',
+                      opacity: refreshingPrices[selectedResult.id] ? 0.5 : 1,
+                      color: accentColor,
+                      fontSize: '12px'
+                    }}
+                  >
+                    <RefreshCw 
+                      size={14} 
+                      style={{ color: accentColor }}
+                      className={refreshingPrices[selectedResult.id] ? 'animate-spin' : ''}
+                    />
+                    <span>Refresh Price</span>
+                  </button>
+                </div>
+                <p className="text-3xl font-bold mb-2" style={{ color: accentColor }}>
+                  {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
+                </p>
+                {priceChanges[selectedResult.id] && (
+                  <div 
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded text-sm font-bold mb-2"
+                    style={{
+                      backgroundColor: priceChanges[selectedResult.id].amount > 0 ? '#ef444420' : '#22c55e20',
+                      color: priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e',
+                      border: `1px solid ${priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e'}`
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>
+                      {priceChanges[selectedResult.id].amount > 0 ? '↑' : '↓'}
+                    </span>
+                    <span>
+                      {priceChanges[selectedResult.id].amount > 0 ? '+' : ''}
+                      {priceChanges[selectedResult.id].amount.toFixed(2)} EUR
+                    </span>
+                  </div>
+                )}
+                <p className="text-white/60 text-sm mt-1">{resultPrices[selectedResult.id].num_for_sale} listings available</p>
+              </div>
+            )}
+            
+            <button onClick={() => { addToCollection(selectedResult); setSelectedResult(null); }} className="w-full py-3 rounded-lg font-semibold" style={{ backgroundColor: accentColor, color: primaryColor }}>
+              Add to Collection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Value Modal */}
+      {showValueModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 2000, overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Collection Value</h2>
+              <button onClick={() => setShowValueModal(false)}>
+                <X size={24} style={{ color: accentColor }} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-lg p-4 border-2 text-center" style={{ backgroundColor: secondaryColor, borderColor: accentColor }}>
+                <p className="text-white/60 text-sm mb-2">Total Value</p>
+                <p className="text-4xl font-bold mb-2" style={{ color: accentColor }}>
+                  {calculateCollectionValue().currency} {calculateCollectionValue().value}
+                </p>
+                <p className="text-white/60 text-xs">Based on {calculateCollectionValue().count} of {collection.length} records</p>
+              </div>
+              
+              {collection.filter(item => item.price && item.price.value).length > 0 && (
+                <>
+                  <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                    <h3 className="text-white font-semibold mb-3">💎 Most Expensive</h3>
+                    {(() => {
+                      const mostExpensive = collection.filter(item => item.price && item.price.value).sort((a, b) => b.price.value - a.price.value)[0];
+                      return (
+                        <div className="flex gap-3 items-start">
+                          <img 
+                            src={mostExpensive.cover_image} 
+                            alt="" 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-semibold text-sm mb-1">{mostExpensive.title?.split(' - ')[1] || mostExpensive.title}</p>
+                            <p className="text-white/60 text-xs mb-2">{mostExpensive.title?.split(' - ')[0]}</p>
+                            <p className="text-xl font-bold" style={{ color: accentColor }}>{mostExpensive.price.currency} {mostExpensive.price.value.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                  <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                    <h3 className="text-white font-semibold mb-3">💰 Cheapest</h3>
+                    {(() => {
+                      const cheapest = collection.filter(item => item.price && item.price.value).sort((a, b) => a.price.value - b.price.value)[0];
+                      return (
+                        <div className="flex gap-3 items-start">
+                          <img 
+                            src={cheapest.cover_image} 
+                            alt="" 
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-semibold text-sm mb-1">{cheapest.title?.split(' - ')[1] || cheapest.title}</p>
+                            <p className="text-white/60 text-xs mb-2">{cheapest.title?.split(' - ')[0]}</p>
+                            <p className="text-xl font-bold" style={{ color: accentColor }}>{cheapest.price.currency} {cheapest.price.value.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                  <div className="rounded-lg p-4 border border-white/10" style={{ backgroundColor: secondaryColor }}>
+                    <h3 className="text-white font-semibold mb-3">📊 Statistics</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Average:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const withPrices = collection.filter(item => item.price && item.price.value);
+                            const avg = withPrices.reduce((sum, item) => sum + item.price.value, 0) / withPrices.length;
+                            return `${withPrices[0].price.currency} ${avg.toFixed(2)}`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Range:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const withPrices = collection.filter(item => item.price && item.price.value);
+                            const min = Math.min(...withPrices.map(item => item.price.value));
+                            const max = Math.max(...withPrices.map(item => item.price.value));
+                            return `${withPrices[0].price.currency} ${min.toFixed(2)} - ${max.toFixed(2)}`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        .spin {
+        .animate-spin {
           animation: spin 1s linear infinite;
         }
-        body {
-          margin: 0;
-          padding: 0;
-          overflow: hidden;
-          position: fixed;
-          width: 100%;
-          height: 100%;
-        }
-        * {
-          -webkit-tap-highlight-color: transparent;
-          -webkit-touch-callout: none;
-          -webkit-user-select: none;
-          user-select: none;
-        }
-        input, textarea {
-          -webkit-user-select: text;
-          user-select: text;
-        }
       `}</style>
-
-      <div style={{
-        padding: '16px',
-        borderBottom: `1px solid ${secondaryColor}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: primaryColor
-      }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          color: accentColor,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <Music size={28} />
-          VinylScout
-        </div>
-        {collection.length === 0 && (
-          <button
-            onClick={() => {
-              console.log('=== EMERGENCY RESTORE ===');
-              
-              // Check all possible localStorage keys
-              const allKeys = Object.keys(localStorage);
-              console.log('All localStorage keys:', allKeys);
-              
-              // Try multiple possible keys
-              const possibleKeys = ['vinylCollection', 'collection', 'albums', 'records'];
-              let restored = false;
-              
-              for (const key of possibleKeys) {
-                const data = localStorage.getItem(key);
-                if (data) {
-                  console.log(`Found data in key "${key}":`, data.substring(0, 100));
-                  try {
-                    const parsed = JSON.parse(data);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                      console.log(`✅ Valid array found: ${parsed.length} items`);
-                      setCollection(parsed);
-                      localStorage.setItem('vinylCollection', JSON.stringify(parsed));
-                      alert(`✅ Restored ${parsed.length} albums from "${key}"!`);
-                      restored = true;
-                      window.location.reload(); // Force reload to update UI
-                      break;
-                    }
-                  } catch (e) {
-                    console.error(`Failed to parse ${key}:`, e);
-                  }
-                }
-              }
-              
-              if (!restored) {
-                // Dump all localStorage for debugging
-                console.log('=== Full localStorage dump ===');
-                allKeys.forEach(key => {
-                  const value = localStorage.getItem(key);
-                  console.log(`${key}:`, value ? value.substring(0, 200) : 'null');
-                });
-                alert('❌ No collection data found anywhere in localStorage.\n\nPlease import a backup file from Settings tab.');
-              }
-            }}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#ff4444',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            RESTORE
-          </button>
-        )}
-      </div>
-
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '16px',
-        backgroundColor: primaryColor,
-        WebkitOverflowScrolling: 'touch',
-        position: 'relative'
-      }}>
-        {renderContent()}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        borderTop: `1px solid ${secondaryColor}`,
-        backgroundColor: secondaryColor
-      }}>
-        <button
-          style={{
-            flex: 1,
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: activeTab === 'search' ? accentColor : '#999',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px'
-          }}
-          onClick={() => setActiveTab('search')}
-        >
-          <Search size={24} />
-          <span>Search</span>
-        </button>
-        <button
-          style={{
-            flex: 1,
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: activeTab === 'camera' ? accentColor : '#999',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px'
-          }}
-          onClick={() => setActiveTab('camera')}
-        >
-          <Camera size={24} />
-          <span>Camera</span>
-        </button>
-        <button
-          style={{
-            flex: 1,
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: activeTab === 'collection' ? accentColor : '#999',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px'
-          }}
-          onClick={() => setActiveTab('collection')}
-        >
-          <Music size={24} />
-          <span>Collection</span>
-        </button>
-        <button
-          style={{
-            flex: 1,
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: activeTab === 'profile' ? accentColor : '#999',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px'
-          }}
-          onClick={() => setActiveTab('profile')}
-        >
-          <DollarSign size={24} />
-          <span>Stats</span>
-        </button>
-        <button
-          style={{
-            flex: 1,
-            padding: '12px',
-            border: 'none',
-            background: 'transparent',
-            color: activeTab === 'settings' ? accentColor : '#999',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px'
-          }}
-          onClick={() => setActiveTab('settings')}
-        >
-          <Settings size={24} />
-          <span>Settings</span>
-        </button>
-      </div>
     </div>
   );
 };
