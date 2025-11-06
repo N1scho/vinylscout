@@ -572,10 +572,10 @@ const VinylScout = () => {
                     >
                       <div className="flex gap-3">
                         {result.cover_image ? (
-                          <img src={result.cover_image} alt={result.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                          <img src={result.cover_image} alt={result.title} className="w-10 h-10 rounded object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
-                            <Music size={20} style={{ color: accentColor, opacity: 0.5 }} />
+                          <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
+                            <Music size={18} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
