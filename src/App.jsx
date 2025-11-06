@@ -572,23 +572,23 @@ const VinylScout = () => {
                     >
                       <div className="flex gap-3">
                         {result.cover_image ? (
-                          <img src={result.cover_image} alt={result.title} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                          <img src={result.cover_image} alt={result.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
-                            <Music size={18} style={{ color: accentColor, opacity: 0.5 }} />
+                          <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
+                            <Music size={20} style={{ color: accentColor, opacity: 0.5 }} />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-white font-bold" style={{ fontSize: '11px', marginBottom: '2px' }}>
-                            {result.title?.split(' - ')[0] || 'Unknown Artist'}
+                          <h3 className="text-white font-bold text-sm mb-1">
+                            {result.title?.split(' - ')[0]?.replace(/\s*\(\d+\)\s*$/, '') || 'Unknown Artist'}
                           </h3>
-                          <p className="text-white/80" style={{ fontSize: '10px', marginBottom: '4px' }}>
+                          <p className="text-white/80 text-xs mb-2">
                             {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
                           </p>
                           
                           {priceData && priceData.value ? (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-bold" style={{ color: accentColor, fontSize: '11px' }}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-bold text-sm" style={{ color: accentColor }}>
                                 {priceData.currency} {priceData.value.toFixed(2)}
                               </p>
                               <button
@@ -604,25 +604,24 @@ const VinylScout = () => {
                                   cursor: refreshingPrices[result.id] ? 'wait' : 'pointer',
                                   opacity: refreshingPrices[result.id] ? 0.5 : 1,
                                   color: accentColor,
-                                  width: '20px',
-                                  height: '20px',
+                                  width: '24px',
+                                  height: '24px',
                                   padding: '0'
                                 }}
                               >
                                 <RefreshCw 
-                                  size={10} 
+                                  size={12} 
                                   style={{ color: accentColor }}
                                   className={refreshingPrices[result.id] ? 'animate-spin' : ''}
                                 />
                               </button>
                               {priceChanges[result.id] && (
                                 <div 
-                                  className="flex items-center gap-1 px-1 py-0.5 rounded font-bold"
+                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded font-bold text-xs"
                                   style={{
                                     backgroundColor: priceChanges[result.id].amount > 0 ? '#ef444420' : '#22c55e20',
                                     color: priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e',
-                                    border: `1px solid ${priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e'}`,
-                                    fontSize: '9px'
+                                    border: `1px solid ${priceChanges[result.id].amount > 0 ? '#ef4444' : '#22c55e'}`
                                   }}
                                 >
                                   {priceChanges[result.id].amount > 0 ? '↑' : '↓'}
@@ -634,7 +633,7 @@ const VinylScout = () => {
                               )}
                             </div>
                           ) : (
-                            <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>Loading price...</p>
+                            <p className="text-xs text-white/40">Loading price...</p>
                           )}
                         </div>
                       </div>
@@ -1076,7 +1075,7 @@ const VinylScout = () => {
           <div style={{ width: '100%', maxWidth: '448px', backgroundColor: primaryColor, border: `1px solid ${accentColor}`, borderRadius: '8px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-lg font-bold text-white" style={{ lineHeight: '1.3', maxWidth: '85%' }}>
-                {selectedResult.title?.split(' - ')[0] || 'Unknown Artist'} - {selectedResult.title?.split(' - ')[1] || selectedResult.title || 'Unknown Album'}
+                {(selectedResult.title?.split(' - ')[0]?.replace(/\s*\(\d+\)\s*$/, '') || 'Unknown Artist')} - {selectedResult.title?.split(' - ')[1] || selectedResult.title || 'Unknown Album'}
               </h2>
               <button onClick={() => setSelectedResult(null)}>
                 <X size={24} style={{ color: accentColor }} />
