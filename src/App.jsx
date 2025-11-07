@@ -571,13 +571,17 @@ const VinylScout = () => {
                       style={{ backgroundColor: secondaryColor }}
                     >
                       <div className="flex gap-3">
-                        {result.cover_image ? (
-                          <img src={result.cover_image} alt={result.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
-                        ) : (
-                          <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: primaryColor }}>
-                            <Music size={20} style={{ color: accentColor, opacity: 0.5 }} />
+                        <div style={{ position: 'relative', width: '80px', flexShrink: 0 }}>
+                          <div style={{ paddingTop: '100%', position: 'relative' }}>
+                            {result.cover_image ? (
+                              <img src={result.cover_image} alt={result.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                            ) : (
+                              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: primaryColor, borderRadius: '8px' }}>
+                                <Music size={32} style={{ color: accentColor, opacity: 0.5 }} />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-white font-bold text-sm mb-1">
                             {result.title?.split(' - ')[0]?.replace(/\s*\(\d+\)\s*$/, '') || 'Unknown Artist'}
