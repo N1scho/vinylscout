@@ -1115,93 +1115,118 @@ const VinylScout = () => {
               </p>
             </div>
             
-            {/* Details in 2 rows x 3 columns */}
+            {/* Details with Icons - 2 column layout */}
             <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
-              <h3 className="text-white font-semibold mb-3">Details</h3>
-              
-              {/* First row */}
-              <div className="grid grid-cols-3 gap-x-3 mb-3 text-xs">
-                <p className="text-white">
-                  <span className="text-white/60">Year: </span>
-                  {selectedResult.year || '-'}
-                </p>
-                <p className="text-white">
-                  <span className="text-white/60">Format: </span>
-                  {selectedResult.format?.[0] || '-'}
-                </p>
-                <p className="text-white">
-                  <span className="text-white/60">Country: </span>
-                  {selectedResult.country || '-'}
-                </p>
-              </div>
-              
-              {/* Second row */}
-              <div className="grid grid-cols-3 gap-x-3 text-xs">
-                <p className="text-white">
-                  <span className="text-white/60">Label: </span>
-                  {selectedResult.label?.[0] || '-'}
-                </p>
-                <p className="text-white">
-                  <span className="text-white/60">Genre: </span>
-                  {selectedResult.genre?.[0] || '-'}
-                </p>
-                <p className="text-white">
-                  <span className="text-white/60">Catalog: </span>
-                  {selectedResult.catno || '-'}
-                </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px' }}>
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>💿</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Format</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px' }}>{selectedResult.format?.[0] || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>📅</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Year</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px' }}>{selectedResult.year || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>📍</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Country</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px' }}>{selectedResult.country || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>🏷️</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Label</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedResult.label?.[0] || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>🎵</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Genre</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px' }}>{selectedResult.genre?.[0] || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '20px' }}>#</span>
+                  <div>
+                    <p className="text-white/60" style={{ fontSize: '11px', marginBottom: '2px' }}>Catalog</p>
+                    <p className="text-white font-semibold" style={{ fontSize: '14px' }}>{selectedResult.catno || '-'}</p>
+                  </div>
+                </div>
               </div>
             </div>
             
             {/* PRICE WITH REFRESH BUTTON */}
             {resultPrices[selectedResult.id] && (
               <div className="rounded-lg p-4 border border-white/10 mb-4" style={{ backgroundColor: secondaryColor }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-white font-semibold">Price Information</h3>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      refreshPrice(selectedResult.id, collection.some(item => item.id === selectedResult.id));
-                    }}
-                    disabled={refreshingPrices[selectedResult.id]}
-                    className="flex items-center justify-center rounded"
-                    style={{
-                      backgroundColor: primaryColor,
-                      border: `1px solid ${accentColor}`,
-                      cursor: refreshingPrices[selectedResult.id] ? 'wait' : 'pointer',
-                      opacity: refreshingPrices[selectedResult.id] ? 0.5 : 1,
-                      color: accentColor,
-                      width: '32px',
-                      height: '32px',
-                      padding: '0'
-                    }}
-                  >
-                    <RefreshCw 
-                      size={16} 
-                      style={{ color: accentColor }}
-                      className={refreshingPrices[selectedResult.id] ? 'animate-spin' : ''}
-                    />
-                  </button>
-                </div>
+                <h3 className="text-white font-semibold mb-3">Price Information</h3>
                 
                 <div className="mb-3">
-                  <p className="text-white/60 text-xs mb-1">Lowest Price (Discogs)</p>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-white/60 text-xs mb-2">Lowest Price (Discogs)</p>
+                  <div className="flex items-center gap-3 flex-wrap mb-3">
                     <p className="text-4xl font-bold" style={{ color: accentColor }}>
                       {resultPrices[selectedResult.id].currency} {resultPrices[selectedResult.id].value.toFixed(2)}
                     </p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        refreshPrice(selectedResult.id, collection.some(item => item.id === selectedResult.id));
+                      }}
+                      disabled={refreshingPrices[selectedResult.id]}
+                      className="flex items-center justify-center rounded"
+                      style={{
+                        backgroundColor: primaryColor,
+                        border: `1px solid ${accentColor}`,
+                        cursor: refreshingPrices[selectedResult.id] ? 'wait' : 'pointer',
+                        opacity: refreshingPrices[selectedResult.id] ? 0.5 : 1,
+                        color: accentColor,
+                        width: '48px',
+                        height: '48px',
+                        padding: '0'
+                      }}
+                    >
+                      <RefreshCw 
+                        size={20} 
+                        style={{ color: accentColor }}
+                        className={refreshingPrices[selectedResult.id] ? 'animate-spin' : ''}
+                      />
+                    </button>
                     {priceChanges[selectedResult.id] && (
                       <div 
-                        className="flex items-center gap-2 px-3 py-2 rounded text-sm font-bold"
+                        className="flex items-center gap-2 rounded font-bold"
                         style={{
                           backgroundColor: priceChanges[selectedResult.id].amount > 0 ? '#ef444420' : '#22c55e20',
                           color: priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e',
-                          border: `1px solid ${priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e'}`
+                          border: `1px solid ${priceChanges[selectedResult.id].amount > 0 ? '#ef4444' : '#22c55e'}`,
+                          padding: '10px 16px',
+                          fontSize: '16px',
+                          minWidth: '100px',
+                          justifyContent: 'center'
                         }}
                       >
-                        <span style={{ fontSize: '18px' }}>
+                        <span style={{ fontSize: '20px' }}>
                           {priceChanges[selectedResult.id].amount > 0 ? '↑' : '↓'}
                         </span>
                         <span>
+                          {priceChanges[selectedResult.id].amount > 0 ? '+' : ''}
+                          {priceChanges[selectedResult.id].amount.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                           {priceChanges[selectedResult.id].amount > 0 ? '+' : ''}
                           {priceChanges[selectedResult.id].amount.toFixed(2)}
                         </span>
