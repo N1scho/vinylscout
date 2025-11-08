@@ -809,12 +809,12 @@ const VinylScout = () => {
                     </div>
                     
                     {/* 2-column grid layout for all details */}
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mb-2">
-                      <p className="text-white">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '12px', marginBottom: '8px' }}>
+                      <p className="text-white" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         <span className="text-white/60">Artist: </span>
                         {item.title?.split(' - ')[0] || 'Unknown'}
                       </p>
-                      <p className="text-white">
+                      <p className="text-white" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         <span className="text-white/60">Album: </span>
                         {item.title?.split(' - ')[1] || item.title}
                       </p>
