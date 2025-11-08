@@ -1227,13 +1227,6 @@ const VinylScout = () => {
                     )}
                   </div>
                 </div>
-                          {priceChanges[selectedResult.id].amount > 0 ? '+' : ''}
-                          {priceChanges[selectedResult.id].amount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
                 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
