@@ -571,7 +571,7 @@ const VinylScout = () => {
                       style={{ backgroundColor: secondaryColor }}
                     >
                       <div className="flex gap-3">
-                        <div style={{ position: 'relative', width: '80px', flexShrink: 0 }}>
+                        <div style={{ position: 'relative', width: '100%', flexShrink: 0 }}>
                           <div style={{ paddingTop: '100%', position: 'relative' }}>
                             {result.cover_image ? (
                               <img src={result.cover_image} alt={result.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
