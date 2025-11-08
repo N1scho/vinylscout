@@ -56,8 +56,8 @@ const VinylScout = () => {
       primaryHover: '#000000',
       secondary: '#8b0000',
       background: '#f5f5dc',
-      surface: '#ffffff',
-      surfaceVariant: '#fffaf0',
+      surface: '#fffaf0',
+      surfaceVariant: '#f5e6d3',
       text: '#1a1a1a',
       textSecondary: '#666666',
       border: '#d4c5a9',
@@ -1439,17 +1439,20 @@ const VinylScout = () => {
                 key={key}
                 onClick={() => setCurrentTheme(key)}
                 style={{
-                  ...styles.card,
+                  backgroundColor: theme.surface,
                   padding: '16px',
                   cursor: 'pointer',
                   border: currentTheme === key ? `2px solid ${theme.primary}` : `1px solid ${theme.border}`,
+                  borderRadius: '16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px'
+                  gap: '12px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: theme.shadow
                 }}
               >
-                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: t.gradient }} />
-                <span style={{ fontSize: '14px', fontWeight: '600' }}>{t.name}</span>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: t.gradient, flexShrink: 0 }} />
+                <span style={{ fontSize: '14px', fontWeight: '600', color: theme.text, textAlign: 'left' }}>{t.name}</span>
               </button>
             ))}
           </div>
