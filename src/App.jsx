@@ -808,18 +808,17 @@ const VinylScout = () => {
                       </button>
                     </div>
                     
-                    {/* Artist and Album - inline format */}
-                    <p className="text-white text-xs mb-1">
-                      <span className="text-white/60">Artist: </span>
-                      {item.title?.split(' - ')[0] || 'Unknown'}
-                    </p>
-                    <p className="text-white text-xs mb-3">
-                      <span className="text-white/60">Album: </span>
-                      {item.title?.split(' - ')[1] || item.title}
-                    </p>
-                    
-                    {/* First row - 3 columns */}
-                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
+                    {/* 2-column grid layout for all details */}
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs mb-2">
+                      <p className="text-white">
+                        <span className="text-white/60">Artist: </span>
+                        {item.title?.split(' - ')[0] || 'Unknown'}
+                      </p>
+                      <p className="text-white">
+                        <span className="text-white/60">Album: </span>
+                        {item.title?.split(' - ')[1] || item.title}
+                      </p>
+                      
                       <p className="text-white">
                         <span className="text-white/60">Year: </span>
                         {item.year || '-'}
@@ -828,18 +827,16 @@ const VinylScout = () => {
                         <span className="text-white/60">Format: </span>
                         {item.format?.[0] || '-'}
                       </p>
+                      
                       <p className="text-white">
                         <span className="text-white/60">Country: </span>
                         {item.country || '-'}
                       </p>
-                    </div>
-                    
-                    {/* Second row - 3 columns */}
-                    <div className="grid grid-cols-3 gap-x-2 mb-2 text-xs">
                       <p className="text-white">
                         <span className="text-white/60">Label: </span>
                         {item.label?.[0] || '-'}
                       </p>
+                      
                       <p className="text-white">
                         <span className="text-white/60">Genre: </span>
                         {item.genre?.[0] || '-'}
@@ -940,15 +937,15 @@ const VinylScout = () => {
               <h3 className="text-white font-semibold mb-3">Statistics</h3>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Total Records</span>
+                  <span className="text-white/60" style={{ paddingRight: '16px' }}>Total Records</span>
                   <span className="text-white font-semibold">{collection.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Favorites</span>
+                  <span className="text-white/60" style={{ paddingRight: '16px' }}>Favorites</span>
                   <span className="text-white font-semibold">{collection.filter(i => i.isFavorite).length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">With Prices</span>
+                  <span className="text-white/60" style={{ paddingRight: '16px' }}>With Prices</span>
                   <span className="text-white font-semibold">{collection.filter(i => i.price).length}</span>
                 </div>
               </div>
@@ -1316,8 +1313,23 @@ const VinylScout = () => {
                         <span className="text-white font-bold">
                           {(() => {
                             const withPrices = collection.filter(item => item.price && item.price.value);
+                            if (withPrices.length === 0) return 'N/A';
                             const avg = withPrices.reduce((sum, item) => sum + item.price.value, 0) / withPrices.length;
                             return `${withPrices[0].price.currency} ${avg.toFixed(2)}`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Median:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const withPrices = collection.filter(item => item.price && item.price.value).sort((a, b) => a.price.value - b.price.value);
+                            if (withPrices.length === 0) return 'N/A';
+                            const mid = Math.floor(withPrices.length / 2);
+                            const median = withPrices.length % 2 === 0 
+                              ? (withPrices[mid - 1].price.value + withPrices[mid].price.value) / 2 
+                              : withPrices[mid].price.value;
+                            return `${withPrices[0].price.currency} ${median.toFixed(2)}`;
                           })()}
                         </span>
                       </div>
@@ -1326,9 +1338,65 @@ const VinylScout = () => {
                         <span className="text-white font-bold">
                           {(() => {
                             const withPrices = collection.filter(item => item.price && item.price.value);
+                            if (withPrices.length === 0) return 'N/A';
                             const min = Math.min(...withPrices.map(item => item.price.value));
                             const max = Math.max(...withPrices.map(item => item.price.value));
                             return `${withPrices[0].price.currency} ${min.toFixed(2)} - ${max.toFixed(2)}`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Total Records:</span>
+                        <span className="text-white font-bold">{collection.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">With Prices:</span>
+                        <span className="text-white font-bold">{collection.filter(item => item.price && item.price.value).length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Without Prices:</span>
+                        <span className="text-white font-bold">{collection.filter(item => !item.price || !item.price.value).length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Favorites:</span>
+                        <span className="text-white font-bold">{collection.filter(item => item.isFavorite).length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Most Common Format:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const formats = collection.map(item => item.format?.[0]).filter(Boolean);
+                            if (formats.length === 0) return 'N/A';
+                            const counts = {};
+                            formats.forEach(f => counts[f] = (counts[f] || 0) + 1);
+                            const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                            return `${mostCommon[0]} (${mostCommon[1]})`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Most Common Genre:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const genres = collection.map(item => item.genre?.[0]).filter(Boolean);
+                            if (genres.length === 0) return 'N/A';
+                            const counts = {};
+                            genres.forEach(g => counts[g] = (counts[g] || 0) + 1);
+                            const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                            return `${mostCommon[0]} (${mostCommon[1]})`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Most Common Country:</span>
+                        <span className="text-white font-bold">
+                          {(() => {
+                            const countries = collection.map(item => item.country).filter(Boolean);
+                            if (countries.length === 0) return 'N/A';
+                            const counts = {};
+                            countries.forEach(c => counts[c] = (counts[c] || 0) + 1);
+                            const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                            return `${mostCommon[0]} (${mostCommon[1]})`;
                           })()}
                         </span>
                       </div>
