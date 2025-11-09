@@ -1200,20 +1200,25 @@ const VinylScout = () => {
                           position: 'absolute',
                           top: '8px',
                           right: '8px',
-                          backgroundColor: 'rgba(255,255,255,0.95)',
-                          border: 'none',
+                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
+                          border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
                           borderRadius: '50%',
-                          width: '36px',
-                          height: '36px',
+                          width: '40px',
+                          height: '40px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                          transition: 'transform 0.2s ease'
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <Heart size={18} fill={item.isFavorite ? '#ff006e' : 'none'} color={item.isFavorite ? '#ff006e' : '#1a1a1a'} strokeWidth={2} />
+                        <Heart 
+                          size={20} 
+                          fill={item.isFavorite ? '#ffffff' : 'none'} 
+                          color="#ffffff" 
+                          strokeWidth={2.5} 
+                        />
                       </button>
                     </div>
                     
@@ -1302,19 +1307,25 @@ const VinylScout = () => {
                           toggleFavorite(item.id);
                         }}
                         style={{ 
-                          backgroundColor: 'rgba(255,255,255,0.95)', 
-                          border: 'none', 
+                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
+                          border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
                           borderRadius: '50%',
-                          width: '36px',
-                          height: '36px',
+                          width: '40px',
+                          height: '40px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <Heart size={18} fill={item.isFavorite ? '#ff006e' : 'none'} color={item.isFavorite ? '#ff006e' : '#1a1a1a'} strokeWidth={2} />
+                        <Heart 
+                          size={20} 
+                          fill={item.isFavorite ? '#ffffff' : 'none'} 
+                          color="#ffffff" 
+                          strokeWidth={2.5} 
+                        />
                       </button>
                     </div>
                   </>
