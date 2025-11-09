@@ -2,6 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Music, User, Settings, X, RefreshCw, Heart, Grid, List, DollarSign, TrendingUp, TrendingDown, Minus, Plus, ChevronLeft, ChevronRight, Info, ExternalLink } from 'lucide-react';
 
 const VinylScout = () => {
+  // Logo Configuration - Vite serves files from /public at the root
+  const LOGO_PATH = "/VinylScoutLogo.png";
+
+  // Add Google Fonts Inter
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
   // Core State
   const [activeTab, setActiveTab] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -672,38 +684,71 @@ const VinylScout = () => {
     );
   };
 
-  // Styles
+  // Styles with Inter Font
   const styles = {
     container: {
       minHeight: '100vh',
       backgroundColor: theme.background,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       paddingBottom: '80px',
       color: theme.text
     },
     header: {
       background: theme.gradient,
       color: 'white',
-      padding: '20px 20px 24px',
+      padding: '24px 20px 28px',
       boxShadow: theme.shadowLg,
       position: 'sticky',
       top: 0,
-      zIndex: 50
+      zIndex: 50,
+      position: 'relative',
+      overflow: 'hidden'
     },
-    headerTitle: {
-      fontSize: '28px',
-      fontWeight: '700',
-      margin: 0,
+    headerPattern: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      opacity: 0.08,
+      backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)',
+      pointerEvents: 'none'
+    },
+    headerContent: {
+      maxWidth: '1200px',
+      margin: '0 auto',
+      position: 'relative',
+      zIndex: 1
+    },
+    logoContainer: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
-      letterSpacing: '-0.5px'
+      gap: '16px',
+      marginBottom: '8px'
+    },
+    logo: {
+      width: '64px',
+      height: '64px',
+      flexShrink: 0,
+      filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))'
+    },
+    headerTitle: {
+      fontSize: '36px',
+      fontWeight: '300',
+      margin: 0,
+      letterSpacing: '-0.03em',
+      textShadow: '0 2px 8px rgba(0,0,0,0.2)',
+      fontFamily: '"Inter", sans-serif'
     },
     headerSubtitle: {
-      fontSize: '14px',
-      opacity: 0.9,
-      marginTop: '4px',
-      fontWeight: '400'
+      fontSize: '15px',
+      opacity: 0.95,
+      marginTop: '2px',
+      fontWeight: '400',
+      textAlign: 'center',
+      letterSpacing: '0.01em',
+      textShadow: '0 1px 4px rgba(0,0,0,0.15)',
+      fontFamily: '"Inter", sans-serif'
     },
     content: {
       padding: '20px',
@@ -725,7 +770,7 @@ const VinylScout = () => {
       border: 'none',
       padding: '12px 24px',
       borderRadius: '12px',
-      fontSize: '16px',
+      fontSize: '15px',
       fontWeight: '600',
       cursor: 'pointer',
       display: 'flex',
@@ -733,7 +778,8 @@ const VinylScout = () => {
       gap: '8px',
       justifyContent: 'center',
       transition: 'all 0.2s ease',
-      boxShadow: theme.shadow
+      boxShadow: theme.shadow,
+      fontFamily: '"Inter", sans-serif'
     },
     buttonSecondary: {
       backgroundColor: theme.surfaceVariant,
@@ -745,11 +791,12 @@ const VinylScout = () => {
       padding: '14px 16px',
       borderRadius: '12px',
       border: `2px solid ${theme.border}`,
-      fontSize: '16px',
+      fontSize: '15px',
       backgroundColor: theme.surface,
       color: theme.text,
       transition: 'all 0.2s ease',
-      outline: 'none'
+      outline: 'none',
+      fontFamily: '"Inter", sans-serif'
     },
     bottomNav: {
       position: 'fixed',
@@ -774,10 +821,11 @@ const VinylScout = () => {
       alignItems: 'center',
       gap: '4px',
       color: theme.textSecondary,
-      fontSize: '12px',
-      fontWeight: '500',
+      fontSize: '11px',
+      fontWeight: '600',
       transition: 'all 0.2s ease',
-      borderRadius: '12px'
+      borderRadius: '12px',
+      fontFamily: '"Inter", sans-serif'
     },
     navButtonActive: {
       color: theme.primary,
@@ -892,10 +940,10 @@ const VinylScout = () => {
                     style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', backgroundColor: theme.surfaceVariant }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: theme.text }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600', color: theme.text }}>
                       {result.title?.split(' - ')[0]?.replace(/\s*\(\d+\)\s*$/, '') || 'Unknown Artist'}
                     </h3>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: theme.textSecondary }}>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: theme.textSecondary }}>
                       {result.title?.split(' - ')[1] || result.title || 'Unknown Album'}
                     </p>
                     
@@ -1055,7 +1103,7 @@ const VinylScout = () => {
       </div>
 
       <div style={{ ...styles.card, marginTop: '16px' }}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Info size={20} />
           AI Camera Search
         </h3>
@@ -1092,7 +1140,7 @@ const VinylScout = () => {
             <select
               value={collectionFilter}
               onChange={(e) => setCollectionFilter(e.target.value)}
-              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '12px' }}
+              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '13px' }}
             >
               <option value="all">All ({collection.length})</option>
               <option value="favorites">Favorites ({collection.filter(i => i.isFavorite).length})</option>
@@ -1101,7 +1149,7 @@ const VinylScout = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '12px' }}
+              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '13px' }}
             >
               <option value="artist-asc">Artist A-Z</option>
               <option value="artist-desc">Artist Z-A</option>
@@ -1114,7 +1162,7 @@ const VinylScout = () => {
             <select
               value={collectionView}
               onChange={(e) => setCollectionView(e.target.value)}
-              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '12px' }}
+              style={{ ...styles.input, width: 'auto', padding: '8px 12px', fontSize: '13px' }}
             >
               <option value="grid">Grid</option>
               <option value="list">List</option>
@@ -1841,11 +1889,18 @@ const VinylScout = () => {
       `}</style>
 
       <header style={styles.header}>
-        <h1 style={styles.headerTitle}>
-          <Music size={32} />
-          VinylScout
-        </h1>
-        <p style={styles.headerSubtitle}>Track your vinyl collection value</p>
+        <div style={styles.headerPattern} />
+        <div style={styles.headerContent}>
+          <div style={styles.logoContainer}>
+            <img 
+              src={LOGO_PATH}
+              alt="VinylScout" 
+              style={styles.logo}
+            />
+            <h1 style={styles.headerTitle}>VinylScout</h1>
+          </div>
+          <p style={styles.headerSubtitle}>Track your vinyl collection value</p>
+        </div>
       </header>
 
       {activeTab === 'search' && renderSearch()}
