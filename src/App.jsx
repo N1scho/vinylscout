@@ -1200,19 +1200,20 @@ const VinylScout = () => {
                           position: 'absolute',
                           top: '8px',
                           right: '8px',
-                          backgroundColor: 'rgba(255,255,255,0.9)',
+                          backgroundColor: 'rgba(255,255,255,0.95)',
                           border: 'none',
                           borderRadius: '50%',
-                          width: '32px',
-                          height: '32px',
+                          width: '36px',
+                          height: '36px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: theme.shadow
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                          transition: 'transform 0.2s ease'
                         }}
                       >
-                        <Heart size={16} fill={item.isFavorite ? theme.error : 'none'} color={item.isFavorite ? theme.error : theme.text} />
+                        <Heart size={18} fill={item.isFavorite ? '#ff006e' : 'none'} color={item.isFavorite ? '#ff006e' : '#1a1a1a'} strokeWidth={2} />
                       </button>
                     </div>
                     
@@ -1300,9 +1301,20 @@ const VinylScout = () => {
                           e.stopPropagation();
                           toggleFavorite(item.id);
                         }}
-                        style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                        style={{ 
+                          backgroundColor: 'rgba(255,255,255,0.95)', 
+                          border: 'none', 
+                          borderRadius: '50%',
+                          width: '36px',
+                          height: '36px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}
                       >
-                        <Heart size={20} fill={item.isFavorite ? theme.error : 'none'} color={item.isFavorite ? theme.error : theme.textSecondary} />
+                        <Heart size={18} fill={item.isFavorite ? '#ff006e' : 'none'} color={item.isFavorite ? '#ff006e' : '#1a1a1a'} strokeWidth={2} />
                       </button>
                     </div>
                   </>
