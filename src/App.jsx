@@ -696,7 +696,7 @@ const VinylScout = () => {
     header: {
       background: theme.gradient,
       color: 'white',
-      padding: '24px 20px 28px',
+      padding: '20px',
       boxShadow: theme.shadowLg,
       position: 'sticky',
       top: 0,
@@ -718,48 +718,28 @@ const VinylScout = () => {
       maxWidth: '1200px',
       margin: '0 auto',
       position: 'relative',
-      zIndex: 1
-    },
-    logoContainer: {
+      zIndex: 1,
       display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      marginBottom: '8px'
+      justifyContent: 'center',
+      alignItems: 'center'
     },
     logo: {
-      width: '64px',
-      height: '64px',
-      flexShrink: 0,
+      maxWidth: '100%',
+      width: 'auto',
+      height: '80px',
+      objectFit: 'contain',
       filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))'
     },
-    headerTitle: {
-      fontSize: '36px',
-      fontWeight: '300',
-      margin: 0,
-      letterSpacing: '-0.03em',
-      textShadow: '0 2px 8px rgba(0,0,0,0.2)',
-      fontFamily: '"Inter", sans-serif'
-    },
-    headerSubtitle: {
-      fontSize: '15px',
-      opacity: 0.95,
-      marginTop: '2px',
-      fontWeight: '400',
-      textAlign: 'center',
-      letterSpacing: '0.01em',
-      textShadow: '0 1px 4px rgba(0,0,0,0.15)',
-      fontFamily: '"Inter", sans-serif'
-    },
     content: {
-      padding: '20px',
+      padding: '12px',
       maxWidth: '1200px',
       margin: '0 auto'
     },
     card: {
       backgroundColor: theme.surface,
       borderRadius: '16px',
-      padding: '20px',
-      marginBottom: '16px',
+      padding: '16px',
+      marginBottom: '12px',
       boxShadow: theme.shadow,
       border: `1px solid ${theme.border}`,
       transition: 'all 0.2s ease'
@@ -1891,15 +1871,11 @@ const VinylScout = () => {
       <header style={styles.header}>
         <div style={styles.headerPattern} />
         <div style={styles.headerContent}>
-          <div style={styles.logoContainer}>
-            <img 
-              src={LOGO_PATH}
-              alt="VinylScout" 
-              style={styles.logo}
-            />
-            <h1 style={styles.headerTitle}>VinylScout</h1>
-          </div>
-          <p style={styles.headerSubtitle}>Track your vinyl collection value</p>
+          <img 
+            src={LOGO_PATH}
+            alt="VinylScout" 
+            style={styles.logo}
+          />
         </div>
       </header>
 
