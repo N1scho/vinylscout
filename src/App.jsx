@@ -1200,24 +1200,26 @@ const VinylScout = () => {
                           position: 'absolute',
                           top: '8px',
                           right: '8px',
-                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
-                          border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
+                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.7)',
+                          border: item.isFavorite ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.6)',
                           borderRadius: '50%',
-                          width: '40px',
-                          height: '40px',
+                          width: '42px',
+                          height: '42px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                          transition: 'all 0.2s ease'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+                          transition: 'all 0.2s ease',
+                          padding: '0'
                         }}
                       >
                         <Heart 
-                          size={20} 
-                          fill={item.isFavorite ? '#ffffff' : 'none'} 
-                          color="#ffffff" 
-                          strokeWidth={2.5} 
+                          size={22}
+                          fill={item.isFavorite ? '#ffffff' : 'none'}
+                          stroke="#ffffff"
+                          strokeWidth={2.5}
+                          style={{ display: 'block', margin: 'auto' }}
                         />
                       </button>
                     </div>
@@ -1307,24 +1309,26 @@ const VinylScout = () => {
                           toggleFavorite(item.id);
                         }}
                         style={{ 
-                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
-                          border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
+                          backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.7)',
+                          border: item.isFavorite ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.6)',
                           borderRadius: '50%',
-                          width: '40px',
-                          height: '40px',
+                          width: '42px',
+                          height: '42px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                          transition: 'all 0.2s ease'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                          transition: 'all 0.2s ease',
+                          padding: '0'
                         }}
                       >
                         <Heart 
-                          size={20} 
-                          fill={item.isFavorite ? '#ffffff' : 'none'} 
-                          color="#ffffff" 
-                          strokeWidth={2.5} 
+                          size={22}
+                          fill={item.isFavorite ? '#ffffff' : 'none'}
+                          stroke="#ffffff"
+                          strokeWidth={2.5}
+                          style={{ display: 'block', margin: 'auto' }}
                         />
                       </button>
                     </div>
@@ -1617,7 +1621,7 @@ const VinylScout = () => {
               alt={item.album || item.title}
               style={{ width: '100%', borderRadius: '20px 20px 0 0', display: 'block' }}
             />
-            {/* Favorite Button - Heart shaped */}
+            {/* Favorite Button - Only show if in collection */}
             {isInCollection && (
               <button
                 onClick={(e) => {
@@ -1628,47 +1632,48 @@ const VinylScout = () => {
                   position: 'absolute',
                   top: '16px',
                   left: '16px',
-                  backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
-                  border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
+                  backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.7)',
+                  border: item.isFavorite ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.6)',
                   borderRadius: '50%',
-                  width: '48px',
-                  height: '48px',
+                  width: '56px',
+                  height: '56px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
                   transition: 'all 0.2s ease'
                 }}
               >
                 <Heart 
-                  size={24} 
-                  fill={item.isFavorite ? '#ffffff' : 'none'} 
-                  color="#ffffff" 
-                  strokeWidth={2.5} 
+                  size={28}
+                  fill={item.isFavorite ? '#ffffff' : 'none'}
+                  stroke="#ffffff"
+                  strokeWidth={2.5}
+                  style={{ display: 'block' }}
                 />
               </button>
             )}
-            {/* Close Button */}
+            {/* Close Button - Top Right */}
             <button
               onClick={() => setSelectedResult(null)}
               style={{
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                background: 'rgba(255,255,255,0.9)',
-                border: 'none',
+                background: 'rgba(0,0,0,0.7)',
+                border: '3px solid rgba(255,255,255,0.6)',
                 borderRadius: '50%',
-                width: '48px',
-                height: '48px',
+                width: '56px',
+                height: '56px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.6)'
               }}
             >
-              <X size={24} />
+              <X size={28} stroke="#ffffff" strokeWidth={2.5} style={{ display: 'block' }} />
             </button>
           </div>
 
