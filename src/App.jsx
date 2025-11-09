@@ -1203,8 +1203,8 @@ const VinylScout = () => {
                           backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.7)',
                           border: item.isFavorite ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.6)',
                           borderRadius: '50%',
-                          width: '42px',
-                          height: '42px',
+                          width: '38px',
+                          height: '38px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1215,7 +1215,7 @@ const VinylScout = () => {
                         }}
                       >
                         <Heart 
-                          size={22}
+                          size={20}
                           fill={item.isFavorite ? '#ffffff' : 'none'}
                           stroke="#ffffff"
                           strokeWidth={2.5}
