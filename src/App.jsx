@@ -1617,6 +1617,39 @@ const VinylScout = () => {
               alt={item.album || item.title}
               style={{ width: '100%', borderRadius: '20px 20px 0 0', display: 'block' }}
             />
+            {/* Favorite Button - Heart shaped */}
+            {isInCollection && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(item.id);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  left: '16px',
+                  backgroundColor: item.isFavorite ? '#ff006e' : 'rgba(0,0,0,0.6)',
+                  border: item.isFavorite ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.5)',
+                  borderRadius: '50%',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Heart 
+                  size={24} 
+                  fill={item.isFavorite ? '#ffffff' : 'none'} 
+                  color="#ffffff" 
+                  strokeWidth={2.5} 
+                />
+              </button>
+            )}
+            {/* Close Button */}
             <button
               onClick={() => setSelectedResult(null)}
               style={{
@@ -1626,16 +1659,16 @@ const VinylScout = () => {
                 background: 'rgba(255,255,255,0.9)',
                 border: 'none',
                 borderRadius: '50%',
-                width: '40px',
-                height: '40px',
+                width: '48px',
+                height: '48px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: theme.shadow
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
               }}
             >
-              <X size={20} />
+              <X size={24} />
             </button>
           </div>
 
