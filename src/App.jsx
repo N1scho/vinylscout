@@ -29,6 +29,8 @@ const VinylScout = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
+  const [detailedRelease, setDetailedRelease] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [collection, setCollection] = useState([]);
   const [sortBy, setSortBy] = useState('artist-asc');
   const [collectionView, setCollectionView] = useState('grid');
@@ -669,14 +671,36 @@ const VinylScout = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'camera' && !isCameraActive && !capturedImage) {
-      startCamera();
-    } else if (activeTab !== 'camera') {
-      stopCamera();
+  const fetchReleaseDetails = async () => {
+    if (selectedResult && discogsToken) {
+      setLoadingDetails(true);
+      try {
+        const response = await fetch(
+          `https://api.discogs.com/releases/${selectedResult.id}`,
+          {
+            headers: {
+              'Authorization': `Discogs token=${discogsToken}`,
+              'User-Agent': 'VinylScout/1.0'
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setDetailedRelease(data);
+        }
+      } catch (error) {
+        console.error('Error fetching release details:', error);
+      } finally {
+        setLoadingDetails(false);
+      }
+    } else if (!selectedResult) {
+      setDetailedRelease(null);
     }
-    
-    return () => stopCamera();
-  }, [activeTab]);
+  };
+
+  fetchReleaseDetails();
+}, [selectedResult, discogsToken]);
 
   const toggleShop = (shop) => {
     setSelectedShops(prev => 
@@ -1725,6 +1749,64 @@ const VinylScout = () => {
                 </div>
               </div>
             )}
+            {/* Tracklist */}
+{loadingDetails && (
+  <div style={{ ...styles.card, marginBottom: '24px', textAlign: 'center' }}>
+    <div style={styles.loadingSpinner} />
+    <p style={{ marginTop: '12px', fontSize: '12px', color: theme.textSecondary }}>Loading tracklist...</p>
+  </div>
+)}
+
+{detailedRelease && detailedRelease.tracklist && detailedRelease.tracklist.length > 0 && (
+  <div style={{ ...styles.card, marginBottom: '24px' }}>
+    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Tracklist</h3>
+    {(() => {
+      // Group tracks by side (A, B, C, D, etc.)
+      const tracksBySide = {};
+      detailedRelease.tracklist.forEach(track => {
+        const side = track.position?.match(/^[A-Z]/)?.[0] || 'Other';
+        if (!tracksBySide[side]) tracksBySide[side] = [];
+        tracksBySide[side].push(track);
+      });
+
+      return Object.entries(tracksBySide).map(([side, tracks]) => (
+        <div key={side} style={{ marginBottom: '20px' }}>
+          <h4 style={{ 
+            margin: '0 0 12px 0', 
+            fontSize: '14px', 
+            fontWeight: '600', 
+            color: theme.primary,
+            borderBottom: `2px solid ${theme.border}`,
+            paddingBottom: '8px'
+          }}>
+            Side {side}
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {tracks.map((track, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: '500', color: theme.text }}>
+                    {track.position}. {track.title}
+                  </p>
+                  {track.artists && track.artists.length > 0 && track.artists[0].name !== item.title?.split(' - ')[0] && (
+                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: theme.textSecondary }}>
+                      {track.artists.map(a => a.name).join(', ')}
+                    </p>
+                  )}
+                </div>
+                {track.duration && (
+                  <span style={{ fontSize: '12px', color: theme.textSecondary, flexShrink: 0 }}>
+                    {track.duration}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    })()}
+  </div>
+)}
 
             {isInCollection ? (
               <div style={{ display: 'flex', gap: '12px' }}>
