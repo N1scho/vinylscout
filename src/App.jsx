@@ -1750,63 +1750,109 @@ const VinylScout = () => {
               </div>
             )}
             {/* Tracklist */}
-{loadingDetails && (
-  <div style={{ ...styles.card, marginBottom: '24px', textAlign: 'center' }}>
-    <div style={styles.loadingSpinner} />
-    <p style={{ marginTop: '12px', fontSize: '12px', color: theme.textSecondary }}>Loading tracklist...</p>
-  </div>
-)}
-
-{detailedRelease && detailedRelease.tracklist && detailedRelease.tracklist.length > 0 && (
-  <div style={{ ...styles.card, marginBottom: '24px' }}>
-    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Tracklist</h3>
-    {(() => {
-      // Group tracks by side (A, B, C, D, etc.)
-      const tracksBySide = {};
-      detailedRelease.tracklist.forEach(track => {
-        const side = track.position?.match(/^[A-Z]/)?.[0] || 'Other';
-        if (!tracksBySide[side]) tracksBySide[side] = [];
-        tracksBySide[side].push(track);
-      });
-
-      return Object.entries(tracksBySide).map(([side, tracks]) => (
-        <div key={side} style={{ marginBottom: '20px' }}>
-          <h4 style={{ 
-            margin: '0 0 12px 0', 
-            fontSize: '14px', 
-            fontWeight: '600', 
-            color: theme.primary,
-            borderBottom: `2px solid ${theme.border}`,
-            paddingBottom: '8px'
-          }}>
-            Side {side}
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {tracks.map((track, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '12px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: '13px', fontWeight: '500', color: theme.text }}>
-                    {track.position}. {track.title}
-                  </p>
-                  {track.artists && track.artists.length > 0 && track.artists[0].name !== item.title?.split(' - ')[0] && (
-                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: theme.textSecondary }}>
-                      {track.artists.map(a => a.name).join(', ')}
-                    </p>
-                  )}
-                </div>
-                {track.duration && (
-                  <span style={{ fontSize: '12px', color: theme.textSecondary, flexShrink: 0 }}>
-                    {track.duration}
-                  </span>
-                )}
+            {loadingDetails && (
+              <div style={{ ...styles.card, marginBottom: '24px', textAlign: 'center' }}>
+                <div style={styles.loadingSpinner} />
+                <p style={{ marginTop: '12px', fontSize: '12px', color: theme.textSecondary }}>Loading tracklist...</p>
               </div>
-            ))}
-          </div>
-        </div>
-      ));
-    })()}
-  </div>
-)}
+            )}
+
+            {detailedRelease && detailedRelease.tracklist && detailedRelease.tracklist.length > 0 && (
+              <div style={{ ...styles.card, marginBottom: '24px' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Music size={20} />
+                  Tracklist
+                </h3>
+                {(() => {
+                  // Group tracks by side (A, B, C, D, etc.)
+                  const tracksBySide = {};
+                  detailedRelease.tracklist.forEach(track => {
+                    const side = track.position?.match(/^[A-Z]/)?.[0] || 'Other';
+                    if (!tracksBySide[side]) tracksBySide[side] = [];
+                    tracksBySide[side].push(track);
+                  });
+
+                  // Map side letters to numbers for display
+                  const sideNames = { 'A': '1', 'B': '2', 'C': '3', 'D': '4' };
+
+                  return Object.entries(tracksBySide)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([side, tracks]) => (
+                      <div key={side} style={{ marginBottom: '24px', '&:last-child': { marginBottom: 0 } }}>
+                        <div style={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          marginBottom: '12px',
+                          paddingBottom: '8px',
+                          borderBottom: `2px solid ${theme.border}`
+                        }}>
+                          <div style={{
+                            backgroundColor: theme.primary,
+                            color: 'white',
+                            borderRadius: '8px',
+                            padding: '4px 12px',
+                            fontSize: '14px',
+                            fontWeight: '700'
+                          }}>
+                            Side {sideNames[side] || side}
+                          </div>
+                          <div style={{ fontSize: '12px', color: theme.textSecondary, fontWeight: '500' }}>
+                            {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {tracks.map((track, idx) => (
+                            <div key={idx} style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'flex-start', 
+                              gap: '12px',
+                              padding: '8px',
+                              borderRadius: '8px',
+                              backgroundColor: idx % 2 === 0 ? theme.surfaceVariant : 'transparent',
+                              transition: 'background-color 0.2s'
+                            }}>
+                              <div style={{ display: 'flex', gap: '12px', flex: 1, minWidth: 0 }}>
+                                <span style={{ 
+                                  fontSize: '13px', 
+                                  fontWeight: '700', 
+                                  color: theme.primary,
+                                  minWidth: '28px',
+                                  flexShrink: 0
+                                }}>
+                                  {track.position}
+                                </span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: theme.text }}>
+                                    {track.title}
+                                  </p>
+                                  {track.artists && track.artists.length > 0 && track.artists[0].name !== item.title?.split(' - ')[0] && (
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: theme.textSecondary, fontStyle: 'italic' }}>
+                                      feat. {track.artists.map(a => a.name).join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              {track.duration && (
+                                <span style={{ 
+                                  fontSize: '13px', 
+                                  color: theme.textSecondary, 
+                                  flexShrink: 0,
+                                  fontWeight: '500',
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {track.duration}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                })()}
+              </div>
+            )}
 
             {isInCollection ? (
               <div style={{ display: 'flex', gap: '12px' }}>
