@@ -576,15 +576,24 @@ const VinylScout = () => {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          setIsCameraActive(true);
+        };
         setCameraStream(stream);
-        setIsCameraActive(true);
       }
     } catch (error) {
-      alert('Could not access camera');
+      console.error('Camera error:', error);
+      alert('Could not access camera. Please check permissions.');
+      setIsCameraActive(false);
     }
   };
 
@@ -669,17 +678,21 @@ const VinylScout = () => {
       setCapturedImage(null);
     }
   };
-  useEffect(() => {
-    if (activeTab === 'camera') {
-      startCamera();
-    } else {
+    useEffect(() => {
+    if (activeTab === 'camera' && !capturedImage) {
+      // Small delay to ensure video ref is ready
+      const timer = setTimeout(() => {
+        startCamera();
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        stopCamera();
+      };
+    } else if (activeTab !== 'camera') {
       stopCamera();
     }
-    
-    return () => {
-      stopCamera();
-    };
-  }, [activeTab]);
+  }, [activeTab, capturedImage]);
 
   useEffect(() => {
   const fetchReleaseDetails = async () => {
