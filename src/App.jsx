@@ -669,6 +669,17 @@ const VinylScout = () => {
       setCapturedImage(null);
     }
   };
+  useEffect(() => {
+    if (activeTab === 'camera') {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    
+    return () => {
+      stopCamera();
+    };
+  }, [activeTab]);
 
   useEffect(() => {
   const fetchReleaseDetails = async () => {
