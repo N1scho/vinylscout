@@ -620,65 +620,75 @@ const VinylScout = () => {
   };
 
   const analyzeImage = async () => {
-    if (!capturedImage) return;
+  if (!capturedImage) return;
 
-    if (!anthropicToken) {
-      alert('Please set your Anthropic API token in Settings');
-      setActiveTab('settings');
+  if (!anthropicToken) {
+    alert('Please set your Anthropic API token in Settings');
+    setActiveTab('settings');
+    return;
+  }
+
+  setIsAnalyzing(true);
+  try {
+    const base64Data = capturedImage.split(',')[1];
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicToken,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Data
+              }
+            },
+            {
+              type: 'text',
+              text: 'Analyze this vinyl record album cover. Provide the artist name and album title in this exact JSON format: {"artist": "Artist Name", "album": "Album Title"}. ONLY return valid JSON, nothing else.'
+            }
+          ]
+        }]
+      })
+    });
+
+    // ✅ NEW: Check if response is ok before parsing
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error:', errorData);
+      alert(`API Error: ${errorData.error?.message || 'Unknown error'}\nStatus: ${response.status}`);
+      setIsAnalyzing(false);
+      setCapturedImage(null);
       return;
     }
 
-    setIsAnalyzing(true);
-    try {
-      const base64Data = capturedImage.split(',')[1];
-      
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicToken,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250929',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: 'image/jpeg',
-                  data: base64Data
-                }
-              },
-              {
-                type: 'text',
-                text: 'Analyze this vinyl record album cover. Provide the artist name and album title in this exact JSON format: {"artist": "Artist Name", "album": "Album Title"}. ONLY return valid JSON, nothing else.'
-              }
-            ]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      let responseText = data.content[0].text;
-      responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      
-      const result = JSON.parse(responseText);
-      setSearchQuery(`${result.artist} ${result.album}`);
-      setActiveTab('search');
-      await searchDiscogs(false, `${result.artist} ${result.album}`);
-      
-    } catch (error) {
-      console.error('Analysis error:', error);
-      alert('Failed to analyze image. Please check your Anthropic API token.');
-    } finally {
-      setIsAnalyzing(false);
-      setCapturedImage(null);
-    }
-  };
+    const data = await response.json();
+    let responseText = data.content[0].text;
+    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const result = JSON.parse(responseText);
+    setSearchQuery(`${result.artist} ${result.album}`);
+    setActiveTab('search');
+    await searchDiscogs(false, `${result.artist} ${result.album}`);
+    
+  } catch (error) {
+    console.error('Analysis error:', error);
+    alert(`Failed to analyze image: ${error.message}\n\nPlease check:\n1. Your Anthropic API token is valid\n2. You have credits remaining\n3. Your internet connection`);
+  } finally {
+    setIsAnalyzing(false);
+    setCapturedImage(null);
+  }
+};
     useEffect(() => {
     if (activeTab === 'camera' && !capturedImage) {
       // Small delay to ensure video ref is ready
