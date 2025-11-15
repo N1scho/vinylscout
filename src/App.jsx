@@ -1513,7 +1513,7 @@ const VinylScout = () => {
             Anthropic API Token
           </label>
           <input
-            type="password"
+            type="text"
             placeholder="Enter your Anthropic API token"
             value={anthropicToken}
             onChange={(e) => {
