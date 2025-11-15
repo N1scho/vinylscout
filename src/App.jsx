@@ -44,6 +44,7 @@ const VinylScout = () => {
   const [anthropicToken, setAnthropicToken] = useState('');
   const [currentTheme, setCurrentTheme] = useState('classicVinyl');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
+  const [showAnthropicToken, setShowAnthropicToken] = useState(false);
   
   // Camera State
   const [cameraStream, setCameraStream] = useState(null);
@@ -1488,16 +1489,23 @@ const VinylScout = () => {
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: theme.text }}>
             Discogs API Token
           </label>
-          <input
-            type="text"
-            placeholder="Enter your Discogs API token"
-            value={discogsToken}
-            onChange={(e) => {
-              setDiscogsToken(e.target.value);
-              localStorage.setItem('discogsToken', e.target.value);
-            }}
-            style={styles.input}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Enter your Discogs API token"
+              value={discogsToken}
+              onChange={(e) => {
+                setDiscogsToken(e.target.value);
+                localStorage.setItem('discogsToken', e.target.value);
+              }}
+              style={{
+                ...styles.input,
+                paddingRight: '50px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}
+            />
+          </div>
           <a 
             href="https://www.discogs.com/settings/developers" 
             target="_blank" 
@@ -1512,16 +1520,42 @@ const VinylScout = () => {
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: theme.text }}>
             Anthropic API Token
           </label>
-          <input
-            type="text"
-            placeholder="Enter your Anthropic API token"
-            value={anthropicToken}
-            onChange={(e) => {
-              setAnthropicToken(e.target.value);
-              localStorage.setItem('anthropicToken', e.target.value);
-            }}
-            style={styles.input}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showAnthropicToken ? 'text' : 'password'}
+              placeholder="Enter your Anthropic API token"
+              value={anthropicToken}
+              onChange={(e) => {
+                setAnthropicToken(e.target.value);
+                localStorage.setItem('anthropicToken', e.target.value);
+              }}
+              style={{
+                ...styles.input,
+                paddingRight: '50px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}
+            />
+            <button
+              onClick={() => setShowAnthropicToken(!showAnthropicToken)}
+              type="button"
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                color: theme.textSecondary,
+                fontSize: '11px',
+                fontWeight: '600'
+              }}
+            >
+              {showAnthropicToken ? 'HIDE' : 'SHOW'}
+            </button>
+          </div>
           <a 
             href="https://console.anthropic.com/settings/keys" 
             target="_blank" 
