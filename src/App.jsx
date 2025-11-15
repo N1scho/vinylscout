@@ -41,10 +41,8 @@ const VinylScout = () => {
   
   // Settings & Theme
   const [discogsToken, setDiscogsToken] = useState('');
-  const [anthropicToken, setAnthropicToken] = useState('');
   const [currentTheme, setCurrentTheme] = useState('classicVinyl');
   const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-  const [showAnthropicToken, setShowAnthropicToken] = useState(false);
   
   // Camera State
   const [cameraStream, setCameraStream] = useState(null);
@@ -251,7 +249,6 @@ const VinylScout = () => {
     
     if (saved.collection) setCollection(JSON.parse(saved.collection));
     if (saved.token) setDiscogsToken(saved.token);
-    if (saved.anthropic) setAnthropicToken(saved.anthropic);
     if (saved.theme) setCurrentTheme(saved.theme);
     if (saved.colors) setCustomColors(JSON.parse(saved.colors));
     if (saved.shops) setSelectedShops(JSON.parse(saved.shops));
@@ -619,71 +616,41 @@ const VinylScout = () => {
     }
   };
 
-  const analyzeImage = async () => {
+const analyzeImage = async () => {
   if (!capturedImage) return;
-
-  if (!anthropicToken) {
-    alert('Please set your Anthropic API token in Settings');
-    setActiveTab('settings');
-    return;
-  }
 
   setIsAnalyzing(true);
   try {
-    const base64Data = capturedImage.split(',')[1];
-    
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // ✅ Call YOUR Vercel serverless function instead of Anthropic directly
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicToken,
-        'anthropic-version': '2023-06-01'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg',
-                data: base64Data
-              }
-            },
-            {
-              type: 'text',
-              text: 'Analyze this vinyl record album cover. Provide the artist name and album title in this exact JSON format: {"artist": "Artist Name", "album": "Album Title"}. ONLY return valid JSON, nothing else.'
-            }
-          ]
-        }]
+        image: capturedImage
       })
     });
 
-    // ✅ NEW: Check if response is ok before parsing
     if (!response.ok) {
       const errorData = await response.json();
       console.error('API Error:', errorData);
-      alert(`API Error: ${errorData.error?.message || 'Unknown error'}\nStatus: ${response.status}`);
+      alert(`API Error: ${errorData.error || 'Unknown error'}\nStatus: ${response.status}`);
       setIsAnalyzing(false);
       setCapturedImage(null);
       return;
     }
 
-    const data = await response.json();
-    let responseText = data.content[0].text;
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const result = await response.json();
     
-    const result = JSON.parse(responseText);
+    // Result is already parsed JSON from the serverless function
     setSearchQuery(`${result.artist} ${result.album}`);
     setActiveTab('search');
     await searchDiscogs(false, `${result.artist} ${result.album}`);
     
   } catch (error) {
     console.error('Analysis error:', error);
-    alert(`Failed to analyze image: ${error.message}\n\nPlease check:\n1. Your Anthropic API token is valid\n2. You have credits remaining\n3. Your internet connection`);
+    alert(`Failed to analyze image: ${error.message}\n\nPlease check your internet connection and try again.`);
   } finally {
     setIsAnalyzing(false);
     setCapturedImage(null);
@@ -1149,17 +1116,10 @@ const VinylScout = () => {
         <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: theme.textSecondary, lineHeight: '1.6' }}>
           Take a photo of any vinyl album cover. Our AI will identify the artist and album, then automatically search for it.
         </p>
-        {anthropicToken ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: theme.success }} />
-            <p style={{ margin: 0, fontSize: '12px', color: theme.success, fontWeight: '600' }}>AI Ready</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: theme.error }} />
-            <p style={{ margin: 0, fontSize: '12px', color: theme.error, fontWeight: '600' }}>Add Anthropic token in Settings</p>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: theme.success }} />
+      <p style={{ margin: 0, fontSize: '12px', color: theme.success, fontWeight: '600' }}>AI Ready</p>
+       </div>
       </div>
     </div>
   );
@@ -1518,56 +1478,6 @@ const VinylScout = () => {
           </div>
           <a 
             href="https://www.discogs.com/settings/developers" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontSize: '12px', color: theme.primary, textDecoration: 'none' }}
-          >
-            Get token <ExternalLink size={12} />
-          </a>
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: theme.text }}>
-            Anthropic API Token
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showAnthropicToken ? 'text' : 'password'}
-              placeholder="Enter your Anthropic API token"
-              value={anthropicToken}
-              onChange={(e) => {
-                setAnthropicToken(e.target.value);
-                localStorage.setItem('anthropicToken', e.target.value);
-              }}
-              style={{
-                ...styles.input,
-                paddingRight: '50px',
-                fontFamily: 'monospace',
-                fontSize: '12px'
-              }}
-            />
-            <button
-              onClick={() => setShowAnthropicToken(!showAnthropicToken)}
-              type="button"
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                color: theme.textSecondary,
-                fontSize: '11px',
-                fontWeight: '600'
-              }}
-            >
-              {showAnthropicToken ? 'HIDE' : 'SHOW'}
-            </button>
-          </div>
-          <a 
-            href="https://console.anthropic.com/settings/keys" 
             target="_blank" 
             rel="noopener noreferrer" 
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontSize: '12px', color: theme.primary, textDecoration: 'none' }}
