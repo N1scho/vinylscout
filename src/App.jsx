@@ -25,6 +25,7 @@ export default function App() {
   const [resultPrices, setResultPrices] = useState({});
   const [refreshingPrices, setRefreshingPrices] = useState({});
   const [priceChanges, setPriceChanges] = useState({});
+  const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false);
 
   // Collection State
   const [collection, setCollection] = useState([]);
@@ -546,7 +547,7 @@ export default function App() {
         }
       );
       const data = await response.json();
-      const price = data.lowest_price?.value || null;
+      const price = data.lowest_price?.value !== undefined ? data.lowest_price.value : null;
 
       setCollection(prev => prev.map(item => {
         if (item.id !== id) return item;
@@ -572,9 +573,17 @@ export default function App() {
   };
 
   const updateAllPrices = async () => {
-    for (const item of collection) {
-      await updatePrice(item.id);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsUpdatingAllPrices(true);
+    try {
+      for (const item of collection) {
+        await updatePrice(item.id);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      showToast('All prices updated successfully', 'success');
+    } catch (err) {
+      showToast('Failed to update some prices', 'error');
+    } finally {
+      setIsUpdatingAllPrices(false);
     }
   };
 
@@ -604,9 +613,25 @@ export default function App() {
   const getStats = () => {
     const total = collection.length;
     const favorites = collection.filter(v => v.isFavorite).length;
-    const withPrice = collection.filter(v => v.lowestPrice !== null).length;
-    const totalValue = collection.reduce((sum, v) => sum + (v.lowestPrice || 0), 0);
+    const withPrice = collection.filter(v => v.lowestPrice !== null && v.lowestPrice !== undefined).length;
+    const totalValue = collection.reduce((sum, v) => {
+      const price = v.lowestPrice;
+      return sum + (typeof price === 'number' ? price : 0);
+    }, 0);
     const avgValue = withPrice > 0 ? totalValue / withPrice : 0;
+
+    // Get most common currency from price history
+    const currencies = collection
+      .flatMap(v => v.priceHistory || [])
+      .map(p => p.currency)
+      .filter(Boolean);
+    const currencyCount = currencies.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {});
+    const currency = Object.keys(currencyCount).length > 0
+      ? Object.keys(currencyCount).sort((a, b) => currencyCount[b] - currencyCount[a])[0]
+      : 'USD';
 
     const genreCounts = {};
     collection.forEach(v => {
@@ -618,7 +643,7 @@ export default function App() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    return { total, favorites, withPrice, totalValue, avgValue, topGenres };
+    return { total, favorites, withPrice, totalValue, avgValue, currency, topGenres };
   };
 
   // Collection Sorting & Filtering (V2.1)
@@ -693,7 +718,7 @@ export default function App() {
       top: 0,
       left: 0,
       right: 0,
-      height: '60px',
+      height: '56px',
       backgroundColor: themes.surface,
       borderBottom: `1px solid ${themes.border}`,
       display: 'flex',
@@ -713,7 +738,7 @@ export default function App() {
             src={LOGO_PATH}
             alt="VinylScout Logo"
             style={{
-              height: '40px',
+              height: '36px',
               width: 'auto',
               objectFit: 'contain'
             }}
@@ -725,9 +750,9 @@ export default function App() {
             alignItems: 'center',
             gap: designSystem.spacing.xs
           }}>
-            <Music size={24} color={themes.primary} />
+            <Music size={22} color={themes.primary} />
             <h1 style={{
-              fontSize: designSystem.typography.sizes.lg,
+              fontSize: designSystem.typography.sizes.base,
               fontWeight: designSystem.typography.weights.bold,
               color: themes.text,
               margin: 0
@@ -796,7 +821,7 @@ export default function App() {
   );
 
   const renderSearchView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <div style={{
         display: 'flex',
         gap: designSystem.spacing.sm,
@@ -1099,6 +1124,44 @@ export default function App() {
         </div>
       )}
 
+      {!isLoading && searchResults.length === 0 && !searchQuery && !Object.values(advancedSearch).some(v => v) && (
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <Music size={64} color={themes.primary} style={{ opacity: 0.4, marginBottom: designSystem.spacing.lg }} />
+          <h3 style={{
+            color: themes.text,
+            fontSize: designSystem.typography.sizes.xl,
+            fontWeight: designSystem.typography.weights.semibold,
+            margin: `0 0 ${designSystem.spacing.sm} 0`
+          }}>
+            Start Your Search
+          </h3>
+          <p style={{
+            color: themes.textSecondary,
+            fontSize: designSystem.typography.sizes.base,
+            margin: `0 0 ${designSystem.spacing.lg} 0`,
+            maxWidth: '400px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
+            Search the Discogs database for vinyl records to add to your collection. Use the search bar above or try Advanced Search for more specific results.
+          </p>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: designSystem.spacing.sm,
+            alignItems: 'center',
+            color: themes.textSecondary,
+            fontSize: designSystem.typography.sizes.sm
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: designSystem.spacing.xs }}>
+              <Info size={16} />
+              <span>Try searching for an artist, album, or record label</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!isLoading && searchResults.length > 0 && (
         <>
           <div style={{
@@ -1366,7 +1429,7 @@ export default function App() {
     const collectionValue = calculateCollectionValue();
 
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -1395,6 +1458,7 @@ export default function App() {
           </div>
           <button
             onClick={updateAllPrices}
+            disabled={isUpdatingAllPrices}
             style={{
               padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
               minHeight: designSystem.touchTarget.min,
@@ -1402,12 +1466,21 @@ export default function App() {
               color: '#FFFFFF',
               border: 'none',
               borderRadius: designSystem.borderRadius.sm,
-              cursor: 'pointer',
+              cursor: isUpdatingAllPrices ? 'not-allowed' : 'pointer',
+              opacity: isUpdatingAllPrices ? 0.6 : 1,
               fontSize: designSystem.typography.sizes.sm,
-              fontWeight: designSystem.typography.weights.medium
+              fontWeight: designSystem.typography.weights.medium,
+              display: 'flex',
+              alignItems: 'center',
+              gap: designSystem.spacing.xs
             }}
           >
-            Update Prices
+            {isUpdatingAllPrices ? (
+              <>
+                <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                <span>Updating...</span>
+              </>
+            ) : 'Update Prices'}
           </button>
         </div>
 
@@ -1645,7 +1718,7 @@ export default function App() {
     const stats = getStats();
 
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <h2 style={{
           fontSize: designSystem.typography.sizes.xl,
           fontWeight: designSystem.typography.weights.bold,
@@ -1665,8 +1738,8 @@ export default function App() {
             { label: 'Total Vinyls', value: stats.total },
             { label: 'Favorites', value: stats.favorites },
             { label: 'With Price', value: stats.withPrice },
-            { label: 'Total Value', value: `$${stats.totalValue.toFixed(2)}` },
-            { label: 'Avg Value', value: `$${stats.avgValue.toFixed(2)}` }
+            { label: 'Total Value', value: formatPrice(stats.totalValue, stats.currency) },
+            { label: 'Avg Value', value: formatPrice(stats.avgValue, stats.currency) }
           ].map(stat => (
             <div
               key={stat.label}
@@ -1743,7 +1816,7 @@ export default function App() {
   };
 
   const renderSettingsView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <h2 style={{
         fontSize: designSystem.typography.sizes.xl,
         fontWeight: designSystem.typography.weights.bold,
@@ -2719,6 +2792,9 @@ export default function App() {
     <div style={{
       backgroundColor: themes.background,
       minHeight: '100vh',
+      width: '100%',
+      maxWidth: '100vw',
+      overflowX: 'hidden',
       color: themes.text,
       fontFamily: designSystem.typography.fontFamily
     }}>
