@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem, createTheme, withOpacity, themeDefinitions } from './designsystem';
 
+// App Version
+const APP_VERSION = '2.3.3';
+
 export default function App() {
   // Logo Configuration
   const LOGO_PATH = "/VinylScoutLogo.png";
@@ -95,7 +98,7 @@ export default function App() {
       const backupData = {
         collection,
         exportDate: new Date().toISOString(),
-        version: '2.3'
+        version: APP_VERSION
       };
 
       const dataStr = JSON.stringify(backupData, null, 2);
@@ -2278,6 +2281,29 @@ export default function App() {
               Export your collection as JSON backup. Import to restore from backup.
             </p>
           </div>
+        </div>
+
+        <div style={{
+          padding: designSystem.spacing.md,
+          backgroundColor: themes.surface,
+          border: `1px solid ${themes.border}`,
+          borderRadius: designSystem.borderRadius.md,
+          textAlign: 'center'
+        }}>
+          <p style={{
+            fontSize: designSystem.typography.sizes.sm,
+            color: themes.textSecondary,
+            margin: 0
+          }}>
+            VinylScout <span style={{ fontWeight: designSystem.typography.weights.semibold, color: themes.text }}>v{APP_VERSION}</span>
+          </p>
+          <p style={{
+            fontSize: designSystem.typography.sizes.xs,
+            color: themes.textTertiary,
+            margin: `${designSystem.spacing.xs} 0 0 0`
+          }}>
+            Stable Release • {new Date().getFullYear()}
+          </p>
         </div>
       </div>
     </div>
