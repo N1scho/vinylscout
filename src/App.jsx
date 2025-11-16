@@ -821,7 +821,7 @@ export default function App() {
   );
 
   const renderSearchView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <div style={{
         display: 'flex',
         gap: designSystem.spacing.sm,
@@ -1357,12 +1357,12 @@ export default function App() {
     <div style={{
       position: 'relative',
       width: '100%',
-      height: '100vh',
-      backgroundColor: themes.background,
+      height: 'calc(100vh - 56px - 80px)',
+      backgroundColor: '#000',
       display: 'flex',
       flexDirection: 'column',
-      paddingTop: '60px',
-      paddingBottom: designSystem.spacing.nav
+      marginTop: '56px',
+      overflow: 'hidden'
     }}>
       <video
         ref={videoRef}
@@ -1379,30 +1379,50 @@ export default function App() {
       
       <div style={{
         position: 'absolute',
-        bottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.xl})`,
+        bottom: designSystem.spacing.xl,
         left: 0,
         right: 0,
         display: 'flex',
         justifyContent: 'center',
-        padding: designSystem.spacing.md
+        padding: designSystem.spacing.md,
+        zIndex: 101
       }}>
         <button
-          onClick={captureAndAnalyze}
-          disabled={!isCameraActive || isAnalyzing || !anthropicToken}
+          onClick={() => {
+            if (!anthropicToken) {
+              showToast('Please enter your Anthropic API key in Settings to use camera identification', 'error');
+              return;
+            }
+            if (!isCameraActive) {
+              showToast('Camera is not active. Please allow camera access.', 'error');
+              return;
+            }
+            captureAndAnalyze();
+          }}
+          disabled={isAnalyzing}
           style={{
-            padding: `${designSystem.spacing.md} ${designSystem.spacing.xl}`,
-            minHeight: designSystem.touchTarget.min,
-            backgroundColor: themes.primary,
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: designSystem.borderRadius.md,
-            cursor: (!isCameraActive || isAnalyzing || !anthropicToken) ? 'not-allowed' : 'pointer',
-            opacity: (!isCameraActive || isAnalyzing || !anthropicToken) ? 0.6 : 1,
-            fontSize: designSystem.typography.sizes.base,
-            fontWeight: designSystem.typography.weights.medium
+            width: '70px',
+            height: '70px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            border: '4px solid #FFFFFF',
+            cursor: isAnalyzing ? 'not-allowed' : 'pointer',
+            opacity: isAnalyzing ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            transition: 'transform 0.1s ease',
+            position: 'relative'
           }}
         >
-          {isAnalyzing ? 'Analyzing...' : 'Capture & Identify'}
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            backgroundColor: isAnalyzing ? '#FFA500' : '#EF4444',
+            border: '3px solid #FFFFFF'
+          }} />
         </button>
       </div>
 
@@ -1429,7 +1449,7 @@ export default function App() {
     const collectionValue = calculateCollectionValue();
 
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -1718,7 +1738,7 @@ export default function App() {
     const stats = getStats();
 
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <h2 style={{
           fontSize: designSystem.typography.sizes.xl,
           fontWeight: designSystem.typography.weights.bold,
@@ -1816,7 +1836,7 @@ export default function App() {
   };
 
   const renderSettingsView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <h2 style={{
         fontSize: designSystem.typography.sizes.xl,
         fontWeight: designSystem.typography.weights.bold,
