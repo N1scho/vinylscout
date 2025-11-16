@@ -890,7 +890,15 @@ export default function App() {
   );
 
   const renderSearchView = () => (
-    <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{
+      width: '100%',
+      padding: designSystem.spacing.md,
+      paddingTop: '72px',
+      paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`,
+      overflowY: 'auto',
+      maxHeight: '100vh',
+      WebkitOverflowScrolling: 'touch'
+    }}>
       <div style={{
         display: 'flex',
         gap: designSystem.spacing.sm,
@@ -1284,7 +1292,7 @@ export default function App() {
                       {result.year || 'Year unknown'}
                     </p>
 
-                    {resultPrices[result.id] && (
+                    {resultPrices[result.id] ? (
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1336,6 +1344,19 @@ export default function App() {
                             animation: refreshingPrices[result.id] ? 'spin 1s linear infinite' : 'none'
                           }} />
                         </button>
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: `${designSystem.spacing.xs} 0`,
+                        marginBottom: designSystem.spacing.xs
+                      }}>
+                        <span style={{
+                          fontSize: designSystem.typography.sizes.xs,
+                          color: themes.textSecondary,
+                          fontStyle: 'italic'
+                        }}>
+                          Loading price...
+                        </span>
                       </div>
                     )}
 
