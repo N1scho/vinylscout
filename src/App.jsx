@@ -334,12 +334,14 @@ export default function App() {
       ctx.drawImage(video, 0, 0);
       
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      const base64Image = imageData.split(',')[1];
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Image })
+        body: JSON.stringify({
+          image: imageData,
+          apiKey: anthropicToken
+        })
       });
 
       if (!response.ok) {

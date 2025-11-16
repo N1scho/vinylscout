@@ -17,18 +17,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { image } = req.body;
+    const { image, apiKey } = req.body;
 
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
     }
 
-    // Get API key from Vercel environment variable
+    if (!apiKey) {
+      return res.status(400).json({ error: 'No API key provided' });
+    }
+
+    // Use API key from request body (user's key from settings)
     const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: apiKey,
     });
 
-    const base64Data = image.split(',')[1];
+    const base64Data = image;
     
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
