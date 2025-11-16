@@ -89,6 +89,62 @@ export default function App() {
     return `${symbol}${parseFloat(value).toFixed(2)} ${currency}`;
   };
 
+  // Backup & Export Functions
+  const exportCollection = () => {
+    try {
+      const backupData = {
+        collection,
+        exportDate: new Date().toISOString(),
+        version: '2.3'
+      };
+
+      const dataStr = JSON.stringify(backupData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `vinylscout-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Exported ${collection.length} records`, 'success');
+    } catch (error) {
+      console.error('Export failed:', error);
+      showToast('Failed to export collection', 'error');
+    }
+  };
+
+  const importCollection = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const backupData = JSON.parse(e.target.result);
+
+        if (!backupData.collection || !Array.isArray(backupData.collection)) {
+          showToast('Invalid backup file format', 'error');
+          return;
+        }
+
+        setCollection(backupData.collection);
+        localStorage.setItem('vinylCollection', JSON.stringify(backupData.collection));
+        showToast(`Imported ${backupData.collection.length} records`, 'success');
+      } catch (error) {
+        console.error('Import failed:', error);
+        showToast('Failed to import collection', 'error');
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so the same file can be selected again
+    event.target.value = '';
+  };
+
   // Load Google Fonts Inter & Add CSS Animations
   useEffect(() => {
     const link = document.createElement('link');
@@ -2151,6 +2207,75 @@ export default function App() {
           }}>
             Note: Currently only Discogs integration is active
           </p>
+        </div>
+
+        <div>
+          <label style={{
+            display: 'block',
+            fontSize: designSystem.typography.sizes.sm,
+            fontWeight: designSystem.typography.weights.medium,
+            color: themes.text,
+            marginBottom: designSystem.spacing.sm
+          }}>
+            Backup & Data
+          </label>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: designSystem.spacing.sm
+          }}>
+            <button
+              onClick={exportCollection}
+              disabled={collection.length === 0}
+              style={{
+                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: collection.length === 0 ? themes.border : themes.primary,
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: designSystem.borderRadius.md,
+                cursor: collection.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: designSystem.typography.sizes.base,
+                fontWeight: designSystem.typography.weights.medium,
+                transition: designSystem.transitions.base,
+                opacity: collection.length === 0 ? 0.5 : 1
+              }}
+            >
+              Export Collection ({collection.length} records)
+            </button>
+
+            <label style={{
+              display: 'block',
+              padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+              minHeight: designSystem.touchTarget.min,
+              backgroundColor: 'transparent',
+              color: themes.text,
+              border: `1px solid ${themes.border}`,
+              borderRadius: designSystem.borderRadius.md,
+              cursor: 'pointer',
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: designSystem.typography.weights.medium,
+              textAlign: 'center',
+              transition: designSystem.transitions.base
+            }}>
+              Import Collection
+              <input
+                type="file"
+                accept=".json"
+                onChange={importCollection}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            <p style={{
+              fontSize: designSystem.typography.sizes.xs,
+              color: themes.textSecondary,
+              margin: `${designSystem.spacing.xs} 0 0 0`,
+              fontStyle: 'italic'
+            }}>
+              Export your collection as JSON backup. Import to restore from backup.
+            </p>
+          </div>
         </div>
       </div>
     </div>
