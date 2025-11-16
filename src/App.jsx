@@ -320,8 +320,13 @@ export default function App() {
   };
 
   const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || !anthropicToken) {
-      setCameraError('Missing requirements for analysis');
+    if (!videoRef.current || !canvasRef.current) {
+      showToast('Camera not ready. Please try again.', 'error');
+      return;
+    }
+
+    if (!anthropicToken) {
+      showToast('Please enter your Anthropic API key in Settings', 'error');
       return;
     }
 
@@ -355,14 +360,17 @@ export default function App() {
       const data = await response.json();
       
       if (data.artist && data.album) {
+        showToast(`Found: ${data.artist} - ${data.album}`, 'success');
         setSearchQuery(`${data.artist} ${data.album}`);
         setView('search');
         await searchDiscogs(false, `${data.artist} ${data.album}`, 1);
       } else {
+        showToast('Could not identify album. Try again with better lighting.', 'error');
         setCameraError('Could not identify album');
       }
     } catch (err) {
       console.error('Analysis error:', err);
+      showToast(err.message || 'Analysis failed. Please try again.', 'error');
       setCameraError(err.message || 'Analysis failed');
     } finally {
       setIsAnalyzing(false);
