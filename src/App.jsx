@@ -831,15 +831,6 @@ export default function App() {
           </div>
         )}
       </div>
-      <div style={{
-        position: 'absolute',
-        right: designSystem.spacing.md,
-        fontSize: designSystem.typography.sizes.xs,
-        color: themes.textSecondary,
-        fontWeight: designSystem.typography.weights.medium
-      }}>
-        v2.3
-      </div>
     </header>
   );
 
