@@ -1,184 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
-import { designSystem, createTheme, withOpacity, themeDefinitions } from './designsystem';
+import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { designSystem, createTheme, withOpacity } from './designSystem';
 
 export default function App() {
-  // Logo Configuration
-  const LOGO_PATH = "/VinylScoutLogo.png";
-
-  // Navigation & View State
   const [view, setView] = useState('search');
-
-  // Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-  const [advancedSearch, setAdvancedSearch] = useState({
-    artist: '', album: '', year: '', label: '', genre: ''
-  });
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const ITEMS_PER_PAGE = 50;
-
-  // Price State (V2.1)
-  const [resultPrices, setResultPrices] = useState({});
-  const [refreshingPrices, setRefreshingPrices] = useState({});
-  const [priceChanges, setPriceChanges] = useState({});
-
-  // Collection State
   const [collection, setCollection] = useState([]);
-  const [sortBy, setSortBy] = useState('artist-asc');
-  const [collectionView, setCollectionView] = useState('grid');
-  const [collectionFilter, setCollectionFilter] = useState('all');
-
-  // Modal State
   const [selectedVinyl, setSelectedVinyl] = useState(null);
-  const [selectedResult, setSelectedResult] = useState(null);
-  const [showValueModal, setShowValueModal] = useState(false);
-  const [valueHistory, setValueHistory] = useState([]);
-
-  // Settings State
-  const [discogsToken, setDiscogsToken] = useState('');
-  const [anthropicToken, setAnthropicToken] = useState('');
+  const [discogsToken, setDiscogsToken] = useState(localStorage.getItem('discogsToken') || '');
+  const [anthropicToken, setAnthropicToken] = useState(localStorage.getItem('anthropicToken') || '');
   const [showDiscogsToken, setShowDiscogsToken] = useState(false);
   const [showAnthropicToken, setShowAnthropicToken] = useState(false);
-  const [theme, setTheme] = useState('classic');
-  const [customColors, setCustomColors] = useState({
-    primary: '#2563eb',
-    background: '#ffffff',
-    accent: '#10b981',
-    text: '#0f172a'
-  });
-  const [selectedShops, setSelectedShops] = useState(['discogs', 'hhv', 'ebay']);
-
-  // Camera State
   const [cameraStream, setCameraStream] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  // Logo State
-  const [logoError, setLogoError] = useState(false);
-
-  // Toast & Confirmation
-  const [toast, setToast] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [searchHistory, setSearchHistory] = useState(() => {
-    const saved = localStorage.getItem('searchHistory');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Refs
+  const [selectedResult, setSelectedResult] = useState(null);
+  const [showValueModal, setShowValueModal] = useState(false);
+  const [valueHistory, setValueHistory] = useState([]);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'default');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const ITEMS_PER_PAGE = 50;
 
-  // Theme System
-  const themes = createTheme(theme, customColors);
+  const themes = createTheme(theme);
 
-  // Helper Functions
-  const showToast = (message, type = 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 5000);
-  };
-
-  const formatPrice = (value, currency) => {
-    const symbols = { USD: '$', EUR: '€', GBP: '£' };
-    const symbol = symbols[currency] || '';
-    return `${symbol}${parseFloat(value).toFixed(2)} ${currency}`;
-  };
-
-  // Load Google Fonts Inter & Add CSS Animations
   useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(link);
-      document.head.removeChild(style);
-    };
+    const saved = localStorage.getItem('vinylCollection');
+    if (saved) setCollection(JSON.parse(saved));
   }, []);
 
-  // V1 Migration + Load Settings
   useEffect(() => {
-    // Migration from V1
-    const oldCollection = localStorage.getItem('collection');
-    if (oldCollection && !localStorage.getItem('vinylCollection')) {
-      localStorage.setItem('vinylCollection', oldCollection);
-    }
-
-    const oldTheme = localStorage.getItem('selectedTheme');
-    if (oldTheme && !localStorage.getItem('appTheme')) {
-      localStorage.setItem('appTheme', oldTheme);
-    }
-
-    const oldPrimary = localStorage.getItem('primaryColor');
-    const oldSecondary = localStorage.getItem('secondaryColor');
-    const oldAccent = localStorage.getItem('accentColor');
-
-    if (oldPrimary && oldSecondary && oldAccent && !localStorage.getItem('customColors')) {
-      localStorage.setItem('customColors', JSON.stringify({
-        primary: oldPrimary,
-        background: oldSecondary,
-        accent: oldAccent
-      }));
-    }
-
-    // Load settings
-    const saved = {
-      collection: localStorage.getItem('vinylCollection'),
-      token: localStorage.getItem('discogsToken'),
-      anthropic: localStorage.getItem('anthropicToken'),
-      theme: localStorage.getItem('appTheme'),
-      colors: localStorage.getItem('customColors'),
-      shops: localStorage.getItem('selectedShops')
-    };
-
-    if (saved.collection) setCollection(JSON.parse(saved.collection));
-    if (saved.token) setDiscogsToken(saved.token);
-    if (saved.anthropic) setAnthropicToken(saved.anthropic);
-    if (saved.theme) setTheme(saved.theme);
-    if (saved.colors) setCustomColors(JSON.parse(saved.colors));
-    if (saved.shops) setSelectedShops(JSON.parse(saved.shops));
-  }, []);
-
-  // Save to localStorage
-  useEffect(() => {
-    if (collection.length > 0) {
-      localStorage.setItem('vinylCollection', JSON.stringify(collection));
-    }
+    localStorage.setItem('vinylCollection', JSON.stringify(collection));
   }, [collection]);
 
   useEffect(() => {
-    localStorage.setItem('appTheme', theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem('discogsToken', discogsToken);
-  }, [discogsToken]);
-
-  useEffect(() => {
-    localStorage.setItem('anthropicToken', anthropicToken);
-  }, [anthropicToken]);
-
-  useEffect(() => {
-    localStorage.setItem('customColors', JSON.stringify(customColors));
-  }, [customColors]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedShops', JSON.stringify(selectedShops));
-  }, [selectedShops]);
 
   useEffect(() => {
     if (view === 'camera' && !isCameraActive) {
@@ -194,9 +56,7 @@ export default function App() {
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
-        if (confirmDelete) {
-          setConfirmDelete(null);
-        } else if (showValueModal) {
+        if (showValueModal) {
           setShowValueModal(false);
           setValueHistory([]);
         } else if (selectedResult) {
@@ -207,19 +67,11 @@ export default function App() {
       }
     };
 
-    if (selectedResult || selectedVinyl || showValueModal || confirmDelete) {
+    if (selectedResult || selectedVinyl || showValueModal) {
       document.addEventListener('keydown', handleEsc);
       return () => document.removeEventListener('keydown', handleEsc);
     }
-  }, [selectedResult, selectedVinyl, showValueModal, confirmDelete]);
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (selectedResult || selectedVinyl || showValueModal || confirmDelete) {
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = 'auto'; };
-    }
-  }, [selectedResult, selectedVinyl, showValueModal, confirmDelete]);
+  }, [selectedResult, selectedVinyl, showValueModal]);
 
   useEffect(() => {
     if (selectedResult || selectedVinyl) {
@@ -295,7 +147,7 @@ export default function App() {
       if (data.artist && data.album) {
         setSearchQuery(`${data.artist} ${data.album}`);
         setView('search');
-        await searchDiscogs(false, `${data.artist} ${data.album}`, 1);
+        await searchDiscogs(`${data.artist} ${data.album}`, 1);
       } else {
         setCameraError('Could not identify album');
       }
@@ -307,188 +159,33 @@ export default function App() {
     }
   };
 
-  // Discogs API Functions
-  const searchDiscogs = async (isAdvanced = false, queryOverride = null, page = 1) => {
-    if (!discogsToken) {
-      showToast('Please set your Discogs API token in Settings', 'error');
-      setView('settings');
-      return;
-    }
-
+  const searchDiscogs = async (query, page = 1) => {
+    if (!discogsToken || !query.trim()) return;
+    
     setIsLoading(true);
     try {
-      let searchUrl = 'https://api.discogs.com/database/search?';
-
-      if (isAdvanced) {
-        const params = [];
-        if (advancedSearch.artist) params.push(`artist=${encodeURIComponent(advancedSearch.artist)}`);
-        if (advancedSearch.album) params.push(`release_title=${encodeURIComponent(advancedSearch.album)}`);
-        if (advancedSearch.year) params.push(`year=${encodeURIComponent(advancedSearch.year)}`);
-        if (advancedSearch.label) params.push(`label=${encodeURIComponent(advancedSearch.label)}`);
-        if (advancedSearch.genre) params.push(`genre=${encodeURIComponent(advancedSearch.genre)}`);
-
-        if (params.length === 0) {
-          showToast('Please fill in at least one field', 'error');
-          setIsLoading(false);
-          return;
-        }
-
-        searchUrl += params.join('&') + `&per_page=${ITEMS_PER_PAGE}&page=${page}&type=release`;
-      } else {
-        const query = queryOverride || searchQuery;
-        if (!query.trim()) {
-          setIsLoading(false);
-          return;
-        }
-        searchUrl += `q=${encodeURIComponent(query)}&type=release&per_page=${ITEMS_PER_PAGE}&page=${page}`;
-      }
-
-      const response = await fetch(searchUrl, {
-        headers: {
-          'Authorization': `Discogs token=${discogsToken}`,
-          'User-Agent': 'VinylScout/2.3'
-        }
-      });
-
-      if (!response.ok) throw new Error('Search failed');
-
+      const response = await fetch(
+        `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=${ITEMS_PER_PAGE}&page=${page}`,
+        { headers: { 'Authorization': `Discogs token=${discogsToken}` } }
+      );
       const data = await response.json();
-      const results = data.results || [];
-      setSearchResults(results);
-      setCurrentPage(data.pagination?.page || page);
+      setSearchResults(data.results || []);
+      setCurrentPage(page);
       setTotalPages(data.pagination?.pages || 1);
-
-      if (results.length > 0) {
-        fetchAllPrices(results);
-      }
     } catch (err) {
       console.error('Search failed:', err);
-      showToast('Search failed. Please check your API token.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchPriceInfo = async (releaseId) => {
-    if (!discogsToken) return null;
-    try {
-      const response = await fetch(
-        `https://api.discogs.com/marketplace/stats/${releaseId}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/2.3'
-          }
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.lowest_price && data.num_for_sale > 0) {
-          return {
-            value: data.lowest_price.value,
-            currency: data.lowest_price.currency,
-            num_for_sale: data.num_for_sale,
-            stats: data
-          };
-        }
-      }
-    } catch (error) {
-      console.error('Price error:', error);
-    }
-    return null;
-  };
-
-  const fetchAllPrices = async (results) => {
-    const prices = {};
-    for (const result of results.slice(0, 10)) {
-      const priceData = await fetchPriceInfo(result.id);
-      if (priceData) prices[result.id] = priceData;
-      await new Promise(resolve => setTimeout(resolve, 400));
-    }
-    setResultPrices(prices);
-  };
-
-  const refreshPrice = async (itemId, isCollectionItem = false) => {
-    if (!discogsToken) {
-      showToast('Please add your Discogs API token in Settings', 'error');
-      return;
-    }
-
-    let oldPrice = null;
-    if (resultPrices[itemId]) {
-      oldPrice = resultPrices[itemId].value;
-    } else if (isCollectionItem) {
-      const item = collection.find(i => i.id === itemId);
-      if (item && item.price) {
-        oldPrice = item.price.value;
-      }
-    }
-
-    setRefreshingPrices(prev => ({ ...prev, [itemId]: true }));
-
-    try {
-      const priceData = await fetchPriceInfo(itemId);
-
-      if (priceData) {
-        if (oldPrice !== null) {
-          const change = priceData.value - oldPrice;
-          setPriceChanges(prev => ({
-            ...prev,
-            [itemId]: {
-              amount: change,
-              currency: priceData.currency
-            }
-          }));
-
-          setTimeout(() => {
-            setPriceChanges(prev => {
-              const newChanges = { ...prev };
-              delete newChanges[itemId];
-              return newChanges;
-            });
-          }, 5000);
-        }
-
-        setResultPrices(prev => ({
-          ...prev,
-          [itemId]: priceData
-        }));
-
-        if (isCollectionItem) {
-          const newCollection = collection.map(item => {
-            if (item.id === itemId) {
-              return {
-                ...item,
-                price: { value: priceData.value, currency: priceData.currency }
-              };
-            }
-            return item;
-          });
-          setCollection(newCollection);
-          localStorage.setItem('vinylCollection', JSON.stringify(newCollection));
-        }
-      } else {
-        showToast('No price data available', 'error');
-      }
-    } catch (error) {
-      showToast(`Error refreshing price: ${error.message}`, 'error');
-    }
-
-    setRefreshingPrices(prev => ({ ...prev, [itemId]: false }));
-  };
-
   const fetchVinylDetails = async (id) => {
     if (!discogsToken) return null;
-
+    
     try {
       const response = await fetch(
         `https://api.discogs.com/releases/${id}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/2.3'
-          }
-        }
+        { headers: { 'Authorization': `Discogs token=${discogsToken}` } }
       );
       return await response.json();
     } catch (err) {
@@ -534,16 +231,11 @@ export default function App() {
 
   const updatePrice = async (id) => {
     if (!discogsToken) return;
-
+    
     try {
       const response = await fetch(
         `https://api.discogs.com/marketplace/stats/${id}`,
-        {
-          headers: {
-            'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/2.3'
-          }
-        }
+        { headers: { 'Authorization': `Discogs token=${discogsToken}` } }
       );
       const data = await response.json();
       const price = data.lowest_price?.value || null;
@@ -621,134 +313,6 @@ export default function App() {
     return { total, favorites, withPrice, totalValue, avgValue, topGenres };
   };
 
-  // Collection Sorting & Filtering (V2.1)
-  const sortCollection = (items, sortBy) => {
-    const sorted = [...items];
-    switch(sortBy) {
-      case 'artist-asc':
-        return sorted.sort((a, b) => {
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return aArtist.localeCompare(bArtist);
-        });
-      case 'artist-desc':
-        return sorted.sort((a, b) => {
-          const aArtist = (a.title?.split(' - ')[0] || '').toLowerCase();
-          const bArtist = (b.title?.split(' - ')[0] || '').toLowerCase();
-          return bArtist.localeCompare(aArtist);
-        });
-      case 'album-asc':
-        return sorted.sort((a, b) => {
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return aAlbum.localeCompare(bAlbum);
-        });
-      case 'album-desc':
-        return sorted.sort((a, b) => {
-          const aAlbum = (a.title?.split(' - ')[1] || a.title || '').toLowerCase();
-          const bAlbum = (b.title?.split(' - ')[1] || b.title || '').toLowerCase();
-          return bAlbum.localeCompare(aAlbum);
-        });
-      case 'price-asc':
-        return sorted.sort((a, b) => (a.price?.value || a.lowestPrice || 0) - (b.price?.value || b.lowestPrice || 0));
-      case 'price-desc':
-        return sorted.sort((a, b) => (b.price?.value || b.lowestPrice || 0) - (a.price?.value || a.lowestPrice || 0));
-      case 'date-new':
-        return sorted.sort((a, b) => new Date(b.addedAt || 0) - new Date(a.addedAt || 0));
-      case 'date-old':
-        return sorted.sort((a, b) => new Date(a.addedAt || 0) - new Date(b.addedAt || 0));
-      default:
-        return sorted;
-    }
-  };
-
-  const filterCollection = (items, filter) => {
-    return filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
-  };
-
-  const calculateCollectionValue = () => {
-    let total = 0, count = 0, currency = 'EUR';
-    collection.forEach(item => {
-      const price = item.price?.value || item.lowestPrice;
-      if (price && typeof price === 'number') {
-        total += price;
-        count++;
-        if (item.price?.currency) currency = item.price.currency;
-      }
-    });
-    return { value: total.toFixed(2), currency, count };
-  };
-
-  const toggleShop = (shop) => {
-    setSelectedShops(prev =>
-      prev.includes(shop) ? prev.filter(s => s !== shop) : [...prev, shop]
-    );
-  };
-
-  const sortedCollection = sortCollection(filterCollection(collection, collectionFilter), sortBy);
-
-  const renderHeader = () => (
-    <header style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: '60px',
-      backgroundColor: themes.surface,
-      borderBottom: `1px solid ${themes.border}`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: `0 ${designSystem.spacing.md}`,
-      zIndex: 100,
-      boxShadow: designSystem.shadows.sm
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: designSystem.spacing.sm
-      }}>
-        {!logoError ? (
-          <img
-            src={LOGO_PATH}
-            alt="VinylScout Logo"
-            style={{
-              height: '40px',
-              width: 'auto',
-              objectFit: 'contain'
-            }}
-            onError={() => setLogoError(true)}
-          />
-        ) : (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: designSystem.spacing.xs
-          }}>
-            <Music size={24} color={themes.primary} />
-            <h1 style={{
-              fontSize: designSystem.typography.sizes.lg,
-              fontWeight: designSystem.typography.weights.bold,
-              color: themes.text,
-              margin: 0
-            }}>
-              VinylScout
-            </h1>
-          </div>
-        )}
-      </div>
-      <div style={{
-        position: 'absolute',
-        right: designSystem.spacing.md,
-        fontSize: designSystem.typography.sizes.xs,
-        color: themes.textSecondary,
-        fontWeight: designSystem.typography.weights.medium
-      }}>
-        v2.3
-      </div>
-    </header>
-  );
-
   const renderNavigation = () => (
     <nav style={{
       display: 'flex',
@@ -796,7 +360,7 @@ export default function App() {
   );
 
   const renderSearchView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ padding: designSystem.spacing.md, paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <div style={{
         display: 'flex',
         gap: designSystem.spacing.sm,
@@ -806,7 +370,7 @@ export default function App() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && searchDiscogs(false, searchQuery, 1)}
+          onKeyPress={(e) => e.key === 'Enter' && searchDiscogs(searchQuery, 1)}
           placeholder="Search for vinyl..."
           style={{
             flex: 1,
@@ -820,7 +384,7 @@ export default function App() {
           }}
         />
         <button
-          onClick={() => searchDiscogs(false, searchQuery, 1)}
+          onClick={() => searchDiscogs(searchQuery, 1)}
           disabled={isLoading}
           style={{
             padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
@@ -833,273 +397,14 @@ export default function App() {
             cursor: isLoading ? 'not-allowed' : 'pointer',
             opacity: isLoading ? 0.6 : 1,
             fontSize: designSystem.typography.sizes.base,
-            fontWeight: designSystem.typography.weights.medium,
-            display: 'flex',
-            alignItems: 'center',
-            gap: designSystem.spacing.xs,
-            justifyContent: 'center'
+            fontWeight: designSystem.typography.weights.medium
           }}
         >
-          {isLoading ? (
-            <>
-              <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-              <span>Searching...</span>
-            </>
-          ) : 'Search'}
+          {isLoading ? '...' : 'Search'}
         </button>
       </div>
 
-      <button
-        onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: designSystem.spacing.xs,
-          padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
-          backgroundColor: 'transparent',
-          color: themes.text,
-          border: `1px solid ${themes.border}`,
-          borderRadius: designSystem.borderRadius.sm,
-          cursor: 'pointer',
-          fontSize: designSystem.typography.sizes.sm,
-          fontWeight: designSystem.typography.weights.medium,
-          marginBottom: designSystem.spacing.md
-        }}
-      >
-        {showAdvancedSearch ? <Minus size={16} /> : <Plus size={16} />}
-        Advanced Search
-      </button>
-
-      {showAdvancedSearch && (
-        <div style={{
-          padding: designSystem.spacing.md,
-          backgroundColor: themes.surface,
-          border: `1px solid ${themes.border}`,
-          borderRadius: designSystem.borderRadius.md,
-          marginBottom: designSystem.spacing.lg
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: designSystem.spacing.md }}>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: designSystem.typography.sizes.xs,
-                fontWeight: designSystem.typography.weights.medium,
-                color: themes.textSecondary,
-                marginBottom: designSystem.spacing.xs
-              }}>
-                Artist
-              </label>
-              <input
-                type="text"
-                value={advancedSearch.artist}
-                onChange={(e) => setAdvancedSearch({...advancedSearch, artist: e.target.value})}
-                placeholder="Artist name"
-                style={{
-                  width: '100%',
-                  padding: designSystem.spacing.sm,
-                  fontSize: designSystem.typography.sizes.sm,
-                  backgroundColor: themes.background,
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.sm,
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: designSystem.typography.sizes.xs,
-                fontWeight: designSystem.typography.weights.medium,
-                color: themes.textSecondary,
-                marginBottom: designSystem.spacing.xs
-              }}>
-                Album
-              </label>
-              <input
-                type="text"
-                value={advancedSearch.album}
-                onChange={(e) => setAdvancedSearch({...advancedSearch, album: e.target.value})}
-                placeholder="Album title"
-                style={{
-                  width: '100%',
-                  padding: designSystem.spacing.sm,
-                  fontSize: designSystem.typography.sizes.sm,
-                  backgroundColor: themes.background,
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.sm,
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: designSystem.typography.sizes.xs,
-                fontWeight: designSystem.typography.weights.medium,
-                color: themes.textSecondary,
-                marginBottom: designSystem.spacing.xs
-              }}>
-                Year
-              </label>
-              <input
-                type="text"
-                value={advancedSearch.year}
-                onChange={(e) => setAdvancedSearch({...advancedSearch, year: e.target.value})}
-                placeholder="Release year"
-                style={{
-                  width: '100%',
-                  padding: designSystem.spacing.sm,
-                  fontSize: designSystem.typography.sizes.sm,
-                  backgroundColor: themes.background,
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.sm,
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: designSystem.typography.sizes.xs,
-                fontWeight: designSystem.typography.weights.medium,
-                color: themes.textSecondary,
-                marginBottom: designSystem.spacing.xs
-              }}>
-                Label
-              </label>
-              <input
-                type="text"
-                value={advancedSearch.label}
-                onChange={(e) => setAdvancedSearch({...advancedSearch, label: e.target.value})}
-                placeholder="Record label"
-                style={{
-                  width: '100%',
-                  padding: designSystem.spacing.sm,
-                  fontSize: designSystem.typography.sizes.sm,
-                  backgroundColor: themes.background,
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.sm,
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{
-                display: 'block',
-                fontSize: designSystem.typography.sizes.xs,
-                fontWeight: designSystem.typography.weights.medium,
-                color: themes.textSecondary,
-                marginBottom: designSystem.spacing.xs
-              }}>
-                Genre
-              </label>
-              <input
-                type="text"
-                value={advancedSearch.genre}
-                onChange={(e) => setAdvancedSearch({...advancedSearch, genre: e.target.value})}
-                placeholder="Genre"
-                style={{
-                  width: '100%',
-                  padding: designSystem.spacing.sm,
-                  fontSize: designSystem.typography.sizes.sm,
-                  backgroundColor: themes.background,
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.sm,
-                  outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: designSystem.spacing.sm, marginTop: designSystem.spacing.md }}>
-            <button
-              onClick={() => searchDiscogs(true, null, 1)}
-              disabled={isLoading}
-              style={{
-                flex: 1,
-                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: themes.primary,
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: designSystem.borderRadius.md,
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-                fontSize: designSystem.typography.sizes.base,
-                fontWeight: designSystem.typography.weights.medium
-              }}
-            >
-              {isLoading ? 'Searching...' : 'Search with Advanced Filters'}
-            </button>
-            <button
-              onClick={() => setAdvancedSearch({ artist: '', album: '', year: '', label: '', genre: '' })}
-              style={{
-                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: 'transparent',
-                color: themes.textSecondary,
-                border: `1px solid ${themes.border}`,
-                borderRadius: designSystem.borderRadius.md,
-                cursor: 'pointer',
-                fontSize: designSystem.typography.sizes.base,
-                fontWeight: designSystem.typography.weights.medium
-              }}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isLoading && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <RefreshCw
-            size={48}
-            color={themes.primary}
-            style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }}
-          />
-          <h3 style={{
-            color: themes.text,
-            fontSize: designSystem.typography.sizes.lg,
-            margin: '0 0 8px 0'
-          }}>
-            Searching Discogs...
-          </h3>
-          <p style={{
-            color: themes.textSecondary,
-            fontSize: designSystem.typography.sizes.sm,
-            margin: 0
-          }}>
-            Fetching prices for results...
-          </p>
-        </div>
-      )}
-
-      {!isLoading && searchResults.length === 0 && (searchQuery || Object.values(advancedSearch).some(v => v)) && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <Search size={48} color={themes.textSecondary} style={{ opacity: 0.3, marginBottom: '16px' }} />
-          <h3 style={{
-            color: themes.text,
-            fontSize: designSystem.typography.sizes.lg,
-            margin: '0 0 8px 0'
-          }}>
-            No Results Found
-          </h3>
-          <p style={{
-            color: themes.textSecondary,
-            fontSize: designSystem.typography.sizes.sm,
-            margin: 0
-          }}>
-            Try a different search term or adjust your filters
-          </p>
-        </div>
-      )}
-
-      {!isLoading && searchResults.length > 0 && (
+      {searchResults.length > 0 && (
         <>
           <div style={{
             display: 'grid',
@@ -1147,66 +452,10 @@ export default function App() {
                     <p style={{
                       fontSize: designSystem.typography.sizes.xs,
                       color: themes.textSecondary,
-                      margin: `0 0 ${designSystem.spacing.xs} 0`
+                      margin: `0 0 ${designSystem.spacing.sm} 0`
                     }}>
                       {result.year || 'Year unknown'}
                     </p>
-
-                    {resultPrices[result.id] && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: designSystem.spacing.xs,
-                        padding: `${designSystem.spacing.xs} 0`
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: designSystem.spacing.xs }}>
-                          <span style={{
-                            fontSize: designSystem.typography.sizes.sm,
-                            fontWeight: designSystem.typography.weights.semibold,
-                            color: themes.primary
-                          }}>
-                            {resultPrices[result.id].value} {resultPrices[result.id].currency}
-                          </span>
-                          {priceChanges[result.id] && (
-                            <span style={{
-                              fontSize: designSystem.typography.sizes.xs,
-                              color: priceChanges[result.id].amount > 0 ? themes.success :
-                                     priceChanges[result.id].amount < 0 ? themes.error : themes.textSecondary,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '2px'
-                            }}>
-                              {priceChanges[result.id].amount > 0 ? <TrendingUp size={12} /> :
-                               priceChanges[result.id].amount < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
-                              {Math.abs(priceChanges[result.id].amount).toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            refreshPrice(result.id, false);
-                          }}
-                          disabled={refreshingPrices[result.id]}
-                          style={{
-                            padding: designSystem.spacing.xs,
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            color: themes.primary,
-                            cursor: refreshingPrices[result.id] ? 'not-allowed' : 'pointer',
-                            opacity: refreshingPrices[result.id] ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <RefreshCw size={14} style={{
-                            animation: refreshingPrices[result.id] ? 'spin 1s linear infinite' : 'none'
-                          }} />
-                        </button>
-                      </div>
-                    )}
-
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1246,7 +495,7 @@ export default function App() {
               marginTop: designSystem.spacing.lg
             }}>
               <button
-                onClick={() => searchDiscogs(false, searchQuery, currentPage - 1)}
+                onClick={() => searchDiscogs(searchQuery, currentPage - 1)}
                 disabled={currentPage === 1}
                 style={{
                   padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
@@ -1268,7 +517,7 @@ export default function App() {
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => searchDiscogs(false, searchQuery, currentPage + 1)}
+                onClick={() => searchDiscogs(searchQuery, currentPage + 1)}
                 disabled={currentPage === totalPages}
                 style={{
                   padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
@@ -1298,7 +547,6 @@ export default function App() {
       backgroundColor: themes.background,
       display: 'flex',
       flexDirection: 'column',
-      paddingTop: '60px',
       paddingBottom: designSystem.spacing.nav
     }}>
       <video
@@ -1362,37 +610,27 @@ export default function App() {
   );
 
   const renderCollectionView = () => {
-    const filteredAndSorted = sortCollection(filterCollection(collection, collectionFilter), sortBy);
-    const collectionValue = calculateCollectionValue();
+    const sortedCollection = [...collection].sort((a, b) => {
+      if (a.isFavorite !== b.isFavorite) return b.isFavorite ? 1 : -1;
+      return new Date(b.addedAt) - new Date(a.addedAt);
+    });
 
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ padding: designSystem.spacing.md, paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: designSystem.spacing.lg
         }}>
-          <div>
-            <h2 style={{
-              fontSize: designSystem.typography.sizes.xl,
-              fontWeight: designSystem.typography.weights.bold,
-              color: themes.text,
-              margin: 0
-            }}>
-              Collection ({collection.length})
-            </h2>
-            {collectionValue.count > 0 && (
-              <p style={{
-                fontSize: designSystem.typography.sizes.sm,
-                color: themes.primary,
-                margin: `${designSystem.spacing.xs} 0 0 0`,
-                fontWeight: designSystem.typography.weights.medium
-              }}>
-                Total Value: {collectionValue.value} {collectionValue.currency}
-              </p>
-            )}
-          </div>
+          <h2 style={{
+            fontSize: designSystem.typography.sizes.xl,
+            fontWeight: designSystem.typography.weights.bold,
+            color: themes.text,
+            margin: 0
+          }}>
+            Collection ({collection.length})
+          </h2>
           <button
             onClick={updateAllPrices}
             style={{
@@ -1412,145 +650,11 @@ export default function App() {
         </div>
 
         <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: designSystem.spacing.md,
-          marginBottom: designSystem.spacing.lg,
-          padding: designSystem.spacing.md,
-          backgroundColor: themes.surface,
-          border: `1px solid ${themes.border}`,
-          borderRadius: designSystem.borderRadius.md
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gap: designSystem.spacing.md
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: designSystem.spacing.xs }}>
-            <button
-              onClick={() => setCollectionView('grid')}
-              style={{
-                padding: designSystem.spacing.sm,
-                minWidth: designSystem.touchTarget.min,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: collectionView === 'grid' ? themes.primary : 'transparent',
-                color: collectionView === 'grid' ? '#FFFFFF' : themes.textSecondary,
-                border: `1px solid ${collectionView === 'grid' ? themes.primary : themes.border}`,
-                borderRadius: designSystem.borderRadius.sm,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <Grid size={20} />
-            </button>
-            <button
-              onClick={() => setCollectionView('list')}
-              style={{
-                padding: designSystem.spacing.sm,
-                minWidth: designSystem.touchTarget.min,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: collectionView === 'list' ? themes.primary : 'transparent',
-                color: collectionView === 'list' ? '#FFFFFF' : themes.textSecondary,
-                border: `1px solid ${collectionView === 'list' ? themes.primary : themes.border}`,
-                borderRadius: designSystem.borderRadius.sm,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <List size={20} />
-            </button>
-          </div>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              flex: 1,
-              minWidth: '150px',
-              padding: designSystem.spacing.sm,
-              fontSize: designSystem.typography.sizes.sm,
-              backgroundColor: themes.background,
-              color: themes.text,
-              border: `1px solid ${themes.border}`,
-              borderRadius: designSystem.borderRadius.sm,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="artist-asc">Artist (A-Z)</option>
-            <option value="artist-desc">Artist (Z-A)</option>
-            <option value="album-asc">Album (A-Z)</option>
-            <option value="album-desc">Album (Z-A)</option>
-            <option value="price-asc">Price (Low to High)</option>
-            <option value="price-desc">Price (High to Low)</option>
-            <option value="date-new">Recently Added</option>
-            <option value="date-old">Oldest First</option>
-          </select>
-
-          <select
-            value={collectionFilter}
-            onChange={(e) => setCollectionFilter(e.target.value)}
-            style={{
-              minWidth: '120px',
-              padding: designSystem.spacing.sm,
-              fontSize: designSystem.typography.sizes.sm,
-              backgroundColor: themes.background,
-              color: themes.text,
-              border: `1px solid ${themes.border}`,
-              borderRadius: designSystem.borderRadius.sm,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="all">All Items</option>
-            <option value="favorites">Favorites Only</option>
-          </select>
-        </div>
-
-        {filteredAndSorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <Music size={48} color={themes.textSecondary} style={{ opacity: 0.3, marginBottom: '16px' }} />
-            <h3 style={{
-              color: themes.text,
-              fontSize: designSystem.typography.sizes.lg,
-              margin: '0 0 8px 0'
-            }}>
-              {collectionFilter === 'favorites' ? 'No Favorites Yet' : 'Collection is Empty'}
-            </h3>
-            <p style={{
-              color: themes.textSecondary,
-              fontSize: designSystem.typography.sizes.sm,
-              margin: '0 0 16px 0'
-            }}>
-              {collectionFilter === 'favorites'
-                ? 'Star some vinyls to see them here'
-                : 'Search and add vinyls to start your collection'}
-            </p>
-            {collectionFilter === 'all' && (
-              <button
-                onClick={() => setView('search')}
-                style={{
-                  padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                  backgroundColor: themes.primary,
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: designSystem.borderRadius.md,
-                  cursor: 'pointer',
-                  fontSize: designSystem.typography.sizes.base,
-                  fontWeight: designSystem.typography.weights.medium
-                }}
-              >
-                Go to Search
-              </button>
-            )}
-          </div>
-        ) : (
-          <div style={{
-            display: collectionView === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns: collectionView === 'grid' ? 'repeat(auto-fill, minmax(160px, 1fr))' : 'unset',
-            flexDirection: collectionView === 'list' ? 'column' : 'unset',
-            gap: designSystem.spacing.md
-          }}>
-            {filteredAndSorted.map(item => {
+          {sortedCollection.map(item => {
             const priceChange = getPriceChange(item);
             return (
               <div
@@ -1635,17 +739,16 @@ export default function App() {
               </div>
             );
           })}
-          </div>
-        )}
+        </div>
       </div>
     );
   };
 
   const renderStatsView = () => {
     const stats = getStats();
-
+    
     return (
-      <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{ padding: designSystem.spacing.md, paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
         <h2 style={{
           fontSize: designSystem.typography.sizes.xl,
           fontWeight: designSystem.typography.weights.bold,
@@ -1743,7 +846,7 @@ export default function App() {
   };
 
   const renderSettingsView = () => (
-    <div style={{ padding: designSystem.spacing.md, paddingTop: '76px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{ padding: designSystem.spacing.md, paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
       <h2 style={{
         fontSize: designSystem.typography.sizes.xl,
         fontWeight: designSystem.typography.weights.bold,
@@ -1885,179 +988,12 @@ export default function App() {
               cursor: 'pointer'
             }}
           >
-            <option value="classic">Classic</option>
+            <option value="default">Default</option>
             <option value="dark">Dark</option>
-            <option value="neon">Neon</option>
-            <option value="forest">Forest</option>
-            <option value="sunset">Sunset</option>
+            <option value="light">Light</option>
             <option value="midnight">Midnight</option>
-            <option value="custom">Custom</option>
+            <option value="sunset">Sunset</option>
           </select>
-        </div>
-
-        {theme === 'custom' && (
-          <div style={{
-            padding: designSystem.spacing.lg,
-            backgroundColor: themes.surface,
-            border: `1px solid ${themes.border}`,
-            borderRadius: designSystem.borderRadius.md
-          }}>
-            <h4 style={{
-              fontSize: designSystem.typography.sizes.base,
-              fontWeight: designSystem.typography.weights.semibold,
-              color: themes.text,
-              marginTop: 0,
-              marginBottom: designSystem.spacing.md
-            }}>
-              Custom Theme Colors
-            </h4>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: designSystem.spacing.md
-            }}>
-              {[
-                { key: 'primary', label: 'Primary Color', desc: 'Buttons, links, active states' },
-                { key: 'background', label: 'Background Color', desc: 'Main app background' },
-                { key: 'accent', label: 'Accent Color', desc: 'Highlights and secondary actions' },
-                { key: 'text', label: 'Text Color', desc: 'Main text and icon colors' }
-              ].map(({ key, label, desc }) => (
-                <div key={key}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: designSystem.typography.sizes.sm,
-                    fontWeight: designSystem.typography.weights.medium,
-                    color: themes.text,
-                    marginBottom: designSystem.spacing.xs
-                  }}>
-                    {label}
-                  </label>
-                  <p style={{
-                    fontSize: designSystem.typography.sizes.xs,
-                    color: themes.textSecondary,
-                    margin: `0 0 ${designSystem.spacing.xs} 0`
-                  }}>
-                    {desc}
-                  </p>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: designSystem.spacing.sm
-                  }}>
-                    <input
-                      type="color"
-                      value={customColors[key]}
-                      onChange={(e) => setCustomColors({
-                        ...customColors,
-                        [key]: e.target.value
-                      })}
-                      style={{
-                        width: '60px',
-                        height: '44px',
-                        border: `1px solid ${themes.border}`,
-                        borderRadius: designSystem.borderRadius.sm,
-                        cursor: 'pointer'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={customColors[key]}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                          setCustomColors({
-                            ...customColors,
-                            [key]: value
-                          });
-                        }
-                      }}
-                      placeholder="#000000"
-                      style={{
-                        flex: 1,
-                        padding: designSystem.spacing.md,
-                        fontSize: designSystem.typography.sizes.sm,
-                        fontFamily: 'monospace',
-                        backgroundColor: themes.surface,
-                        color: themes.text,
-                        border: `1px solid ${themes.border}`,
-                        borderRadius: designSystem.borderRadius.sm,
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <label style={{
-            display: 'block',
-            fontSize: designSystem.typography.sizes.sm,
-            fontWeight: designSystem.typography.weights.medium,
-            color: themes.text,
-            marginBottom: designSystem.spacing.sm
-          }}>
-            Price Sources
-          </label>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: designSystem.spacing.sm,
-            padding: designSystem.spacing.md,
-            backgroundColor: themes.surface,
-            border: `1px solid ${themes.border}`,
-            borderRadius: designSystem.borderRadius.md
-          }}>
-            {[
-              { id: 'discogs', label: 'Discogs Marketplace', icon: Music },
-              { id: 'hhv', label: 'HHV Records', icon: ExternalLink },
-              { id: 'ebay', label: 'eBay', icon: ExternalLink }
-            ].map(({ id, label, icon: Icon }) => (
-              <label
-                key={id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: designSystem.spacing.sm,
-                  padding: designSystem.spacing.sm,
-                  cursor: 'pointer',
-                  borderRadius: designSystem.borderRadius.sm,
-                  backgroundColor: selectedShops.includes(id) ? withOpacity(themes.primary, 0.1) : 'transparent',
-                  transition: designSystem.transitions.base
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedShops.includes(id)}
-                  onChange={() => toggleShop(id)}
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer',
-                    accentColor: themes.primary
-                  }}
-                />
-                <Icon size={16} color={themes.textSecondary} />
-                <span style={{
-                  fontSize: designSystem.typography.sizes.sm,
-                  color: themes.text,
-                  flex: 1
-                }}>
-                  {label}
-                </span>
-              </label>
-            ))}
-          </div>
-          <p style={{
-            fontSize: designSystem.typography.sizes.xs,
-            color: themes.textSecondary,
-            margin: `${designSystem.spacing.xs} 0 0 0`,
-            fontStyle: 'italic'
-          }}>
-            Note: Currently only Discogs integration is active
-          </p>
         </div>
       </div>
     </div>
@@ -2692,7 +1628,10 @@ export default function App() {
               </button>
               <button
                 data-modal-button
-                onClick={() => setConfirmDelete(selectedVinyl.id)}
+                onClick={() => {
+                  removeFromCollection(selectedVinyl.id);
+                  setSelectedVinyl(null);
+                }}
                 style={{
                   flex: 1,
                   padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
@@ -2722,7 +1661,6 @@ export default function App() {
       color: themes.text,
       fontFamily: designSystem.typography.fontFamily
     }}>
-      {renderHeader()}
       {view === 'search' && renderSearchView()}
       {view === 'camera' && renderCameraView()}
       {view === 'collection' && renderCollectionView()}
@@ -2733,121 +1671,6 @@ export default function App() {
       {renderDetailModal()}
       {renderValueModal()}
       {renderVinylDetail()}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '20px',
-          zIndex: 9999,
-          backgroundColor: toast.type === 'error' ? themes.error : themes.success,
-          color: '#FFFFFF',
-          padding: '16px 24px',
-          borderRadius: designSystem.borderRadius.md,
-          boxShadow: designSystem.shadows.lg,
-          display: 'flex',
-          alignItems: 'center',
-          gap: designSystem.spacing.sm,
-          maxWidth: '400px',
-          animation: 'slideIn 0.3s ease-out'
-        }}>
-          <span style={{ flex: 1, fontSize: designSystem.typography.sizes.sm }}>{toast.message}</span>
-          <X
-            size={18}
-            onClick={() => setToast(null)}
-            style={{ cursor: 'pointer', flexShrink: 0 }}
-          />
-        </div>
-      )}
-
-      {/* Confirmation Dialog */}
-      {confirmDelete && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: withOpacity('#000000', 0.8),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: designSystem.spacing.md,
-            zIndex: 2000
-          }}
-          onClick={() => setConfirmDelete(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: themes.surface,
-              padding: designSystem.spacing.xl,
-              borderRadius: designSystem.borderRadius.lg,
-              maxWidth: '400px',
-              width: '100%'
-            }}
-          >
-            <h3 style={{
-              fontSize: designSystem.typography.sizes.xl,
-              fontWeight: designSystem.typography.weights.bold,
-              color: themes.text,
-              margin: `0 0 ${designSystem.spacing.sm} 0`
-            }}>
-              Remove from Collection?
-            </h3>
-            <p style={{
-              fontSize: designSystem.typography.sizes.base,
-              color: themes.textSecondary,
-              margin: `0 0 ${designSystem.spacing.lg} 0`
-            }}>
-              This vinyl will be permanently removed from your collection. This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: designSystem.spacing.sm }}>
-              <button
-                onClick={() => {
-                  removeFromCollection(confirmDelete);
-                  setConfirmDelete(null);
-                  setSelectedVinyl(null);
-                  showToast('Removed from collection', 'success');
-                }}
-                style={{
-                  flex: 1,
-                  padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                  minHeight: designSystem.touchTarget.min,
-                  backgroundColor: themes.error,
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: designSystem.borderRadius.md,
-                  cursor: 'pointer',
-                  fontSize: designSystem.typography.sizes.base,
-                  fontWeight: designSystem.typography.weights.medium
-                }}
-              >
-                Remove
-              </button>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                style={{
-                  flex: 1,
-                  padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                  minHeight: designSystem.touchTarget.min,
-                  backgroundColor: 'transparent',
-                  color: themes.text,
-                  border: `1px solid ${themes.border}`,
-                  borderRadius: designSystem.borderRadius.md,
-                  cursor: 'pointer',
-                  fontSize: designSystem.typography.sizes.base,
-                  fontWeight: designSystem.typography.weights.medium
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
