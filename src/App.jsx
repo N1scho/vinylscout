@@ -884,12 +884,13 @@ export default function App() {
   const renderSearchView = () => (
     <div style={{
       width: '100%',
+      height: '100vh',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
       padding: designSystem.spacing.md,
       paddingTop: '72px',
-      paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`,
-      overflowY: 'auto',
-      maxHeight: '100vh',
-      WebkitOverflowScrolling: 'touch'
+      paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`
     }}>
       <div style={{
         display: 'flex',
@@ -1531,7 +1532,16 @@ export default function App() {
     const collectionValue = calculateCollectionValue();
 
     return (
-      <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{
+        width: '100%',
+        height: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        padding: designSystem.spacing.md,
+        paddingTop: '72px',
+        paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`
+      }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -1820,7 +1830,16 @@ export default function App() {
     const stats = getStats();
 
     return (
-      <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+      <div style={{
+        width: '100%',
+        height: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        padding: designSystem.spacing.md,
+        paddingTop: '72px',
+        paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`
+      }}>
         <h2 style={{
           fontSize: designSystem.typography.sizes.xl,
           fontWeight: designSystem.typography.weights.bold,
@@ -1918,7 +1937,16 @@ export default function App() {
   };
 
   const renderSettingsView = () => (
-    <div style={{ width: '100%', padding: designSystem.spacing.md, paddingTop: '72px', paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})` }}>
+    <div style={{
+      width: '100%',
+      height: '100vh',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      padding: designSystem.spacing.md,
+      paddingTop: '72px',
+      paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`
+    }}>
       <h2 style={{
         fontSize: designSystem.typography.sizes.xl,
         fontWeight: designSystem.typography.weights.bold,
