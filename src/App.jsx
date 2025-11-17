@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem, createTheme, withOpacity, themeDefinitions } from './designsystem';
 
@@ -36,6 +36,7 @@ export default function App() {
   const [sortBy, setSortBy] = useState('artist-asc');
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionFilter, setCollectionFilter] = useState('all');
+  const [collectionSearch, setCollectionSearch] = useState('');
 
   // Modal State
   const [selectedVinyl, setSelectedVinyl] = useState(null);
@@ -765,6 +766,7 @@ export default function App() {
       ? Object.keys(currencyCount).sort((a, b) => currencyCount[b] - currencyCount[a])[0]
       : 'USD';
 
+    // Genre statistics
     const genreCounts = {};
     collection.forEach(v => {
       v.genres?.forEach(g => {
@@ -775,7 +777,66 @@ export default function App() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    return { total, favorites, withPrice, totalValue, avgValue, currency, topGenres };
+    // NEW: Most valuable record
+    const mostValuable = collection
+      .filter(v => v.lowestPrice && v.lowestPrice > 0)
+      .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))[0] || null;
+
+    // NEW: Recent additions (last 7 days)
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const recentAdditions = collection.filter(v =>
+      v.addedAt && new Date(v.addedAt).getTime() > sevenDaysAgo
+    ).length;
+
+    // NEW: Price gainers (top 3)
+    const priceGainers = collection
+      .filter(v => {
+        const change = getPriceChange(v);
+        return change && change.isPositive;
+      })
+      .sort((a, b) => {
+        const aChange = getPriceChange(a);
+        const bChange = getPriceChange(b);
+        return (bChange?.value || 0) - (aChange?.value || 0);
+      })
+      .slice(0, 3);
+
+    // NEW: Decade breakdown
+    const decadeCounts = {};
+    collection.forEach(v => {
+      if (v.year) {
+        const decade = Math.floor(v.year / 10) * 10;
+        decadeCounts[`${decade}s`] = (decadeCounts[`${decade}s`] || 0) + 1;
+      }
+    });
+    const topDecades = Object.entries(decadeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    // NEW: Format breakdown
+    const formatCounts = {};
+    collection.forEach(v => {
+      const format = v.format || v.formats?.[0] || 'Unknown';
+      formatCounts[format] = (formatCounts[format] || 0) + 1;
+    });
+    const topFormats = Object.entries(formatCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    return {
+      total,
+      favorites,
+      withPrice,
+      totalValue,
+      avgValue,
+      currency,
+      topGenres,
+      mostValuable,
+      recentAdditions,
+      priceGainers,
+      topDecades,
+      topFormats
+    };
   };
 
   // Collection Sorting & Filtering (V2.1)
@@ -819,8 +880,20 @@ export default function App() {
     }
   };
 
-  const filterCollection = (items, filter) => {
-    return filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
+  const filterCollection = (items, filter, searchQuery = '') => {
+    let filtered = filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
+
+    // Apply search filter if query exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(item => {
+        const title = (item.title || '').toLowerCase();
+        const artist = (item.artist || '').toLowerCase();
+        return title.includes(query) || artist.includes(query);
+      });
+    }
+
+    return filtered;
   };
 
   const calculateCollectionValue = () => {
@@ -1590,8 +1663,16 @@ export default function App() {
   );
 
   const renderCollectionView = () => {
-    const filteredAndSorted = sortCollection(filterCollection(collection, collectionFilter), sortBy);
-    const collectionValue = calculateCollectionValue();
+    // Memoize expensive filtering and sorting operations
+    const filteredAndSorted = useMemo(() =>
+      sortCollection(filterCollection(collection, collectionFilter, collectionSearch), sortBy),
+      [collection, collectionFilter, collectionSearch, sortBy]
+    );
+
+    const collectionValue = useMemo(() =>
+      calculateCollectionValue(),
+      [collection]
+    );
 
     return (
       <div style={{
@@ -1656,6 +1737,29 @@ export default function App() {
               </>
             ) : 'Update Prices'}
           </button>
+        </div>
+
+        {/* Search Input */}
+        <div style={{ marginBottom: designSystem.spacing.md }}>
+          <input
+            type="text"
+            value={collectionSearch}
+            onChange={(e) => setCollectionSearch(e.target.value)}
+            placeholder="Search by artist or album..."
+            style={{
+              width: '100%',
+              padding: designSystem.spacing.md,
+              fontSize: designSystem.typography.sizes.base,
+              backgroundColor: themes.surface,
+              color: themes.text,
+              border: `1px solid ${themes.border}`,
+              borderRadius: designSystem.borderRadius.md,
+              outline: 'none',
+              transition: designSystem.transitions.fast
+            }}
+            onFocus={(e) => e.target.style.borderColor = themes.primary}
+            onBlur={(e) => e.target.style.borderColor = themes.border}
+          />
         </div>
 
         <div style={{
@@ -1829,6 +1933,7 @@ export default function App() {
                 <img
                   src={item.thumb || item.cover_image}
                   alt={item.title}
+                  loading="lazy"
                   style={{
                     width: '100%',
                     aspectRatio: '1',
@@ -1921,8 +2026,10 @@ export default function App() {
             { label: 'Total Vinyls', value: stats.total },
             { label: 'Favorites', value: stats.favorites },
             { label: 'With Price', value: stats.withPrice },
+            { label: 'Added (7 days)', value: stats.recentAdditions },
             { label: 'Total Value', value: formatPrice(stats.totalValue, stats.currency) },
-            { label: 'Avg Value', value: formatPrice(stats.avgValue, stats.currency) }
+            { label: 'Avg Value', value: formatPrice(stats.avgValue, stats.currency) },
+            { label: 'Most Valuable', value: stats.mostValuable ? `$${stats.mostValuable.lowestPrice.toFixed(2)}` : 'N/A' }
           ].map(stat => (
             <div
               key={stat.label}
@@ -1953,7 +2060,7 @@ export default function App() {
         </div>
 
         {stats.topGenres.length > 0 && (
-          <div>
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
             <h3 style={{
               fontSize: designSystem.typography.sizes.lg,
               fontWeight: designSystem.typography.weights.semibold,
@@ -1981,6 +2088,92 @@ export default function App() {
                     color: themes.text
                   }}>
                     {genre}
+                  </span>
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}>
+                    {count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stats.topDecades.length > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              By Decade
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.topDecades.map(([decade, count]) => (
+                <div
+                  key={decade}
+                  style={{
+                    backgroundColor: themes.surface,
+                    padding: designSystem.spacing.md,
+                    borderRadius: designSystem.borderRadius.md,
+                    border: `1px solid ${themes.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text
+                  }}>
+                    {decade}
+                  </span>
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}>
+                    {count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stats.topFormats.length > 0 && (
+          <div>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              By Format
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.topFormats.map(([format, count]) => (
+                <div
+                  key={format}
+                  style={{
+                    backgroundColor: themes.surface,
+                    padding: designSystem.spacing.md,
+                    borderRadius: designSystem.borderRadius.md,
+                    border: `1px solid ${themes.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text
+                  }}>
+                    {format}
                   </span>
                   <span style={{
                     fontSize: designSystem.typography.sizes.sm,
