@@ -37,6 +37,9 @@ export default function App() {
   const [collectionView, setCollectionView] = useState('grid');
   const [collectionFilter, setCollectionFilter] = useState('all');
   const [collectionSearch, setCollectionSearch] = useState('');
+  const [activeGenreFilter, setActiveGenreFilter] = useState(null);
+  const [activeDecadeFilter, setActiveDecadeFilter] = useState(null);
+  const [activeFormatFilter, setActiveFormatFilter] = useState(null);
 
   // Modal State
   const [selectedVinyl, setSelectedVinyl] = useState(null);
@@ -880,7 +883,7 @@ export default function App() {
     }
   };
 
-  const filterCollection = (items, filter, searchQuery = '') => {
+  const filterCollection = (items, filter, searchQuery = '', genreFilter = null, decadeFilter = null, formatFilter = null) => {
     let filtered = filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
 
     // Apply search filter if query exists
@@ -890,6 +893,30 @@ export default function App() {
         const title = (item.title || '').toLowerCase();
         const artist = (item.artist || '').toLowerCase();
         return title.includes(query) || artist.includes(query);
+      });
+    }
+
+    // Apply genre filter
+    if (genreFilter) {
+      filtered = filtered.filter(item =>
+        item.genres && item.genres.some(g => g === genreFilter)
+      );
+    }
+
+    // Apply decade filter
+    if (decadeFilter) {
+      filtered = filtered.filter(item => {
+        if (!item.year) return false;
+        const decade = Math.floor(item.year / 10) * 10;
+        return `${decade}s` === decadeFilter;
+      });
+    }
+
+    // Apply format filter
+    if (formatFilter) {
+      filtered = filtered.filter(item => {
+        const format = item.format || item.formats?.[0] || 'Unknown';
+        return format === formatFilter;
       });
     }
 
@@ -1665,8 +1692,8 @@ export default function App() {
   const renderCollectionView = () => {
     // Memoize expensive filtering and sorting operations
     const filteredAndSorted = useMemo(() =>
-      sortCollection(filterCollection(collection, collectionFilter, collectionSearch), sortBy),
-      [collection, collectionFilter, collectionSearch, sortBy]
+      sortCollection(filterCollection(collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter), sortBy),
+      [collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter, sortBy]
     );
 
     const collectionValue = useMemo(() =>
@@ -1773,6 +1800,146 @@ export default function App() {
             onBlur={(e) => e.target.style.borderColor = themes.border}
           />
         </div>
+
+        {/* Active Filter Badges */}
+        {(activeGenreFilter || activeDecadeFilter || activeFormatFilter) && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: designSystem.spacing.xs,
+            marginBottom: designSystem.spacing.md,
+            padding: designSystem.spacing.md,
+            backgroundColor: themes.primary10,
+            border: `1px solid ${themes.primary20}`,
+            borderRadius: designSystem.borderRadius.md
+          }}>
+            <span style={{
+              fontSize: designSystem.typography.sizes.sm,
+              color: themes.textSecondary,
+              display: 'flex',
+              alignItems: 'center',
+              paddingRight: designSystem.spacing.sm
+            }}>
+              Filters:
+            </span>
+            {activeGenreFilter && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: designSystem.spacing.xs,
+                padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                backgroundColor: themes.primary,
+                color: '#FFFFFF',
+                borderRadius: designSystem.borderRadius.sm,
+                fontSize: designSystem.typography.sizes.sm,
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                <span>Genre: {activeGenreFilter}</span>
+                <button
+                  onClick={() => setActiveGenreFilter(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            {activeDecadeFilter && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: designSystem.spacing.xs,
+                padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                backgroundColor: themes.primary,
+                color: '#FFFFFF',
+                borderRadius: designSystem.borderRadius.sm,
+                fontSize: designSystem.typography.sizes.sm,
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                <span>Decade: {activeDecadeFilter}</span>
+                <button
+                  onClick={() => setActiveDecadeFilter(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            {activeFormatFilter && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: designSystem.spacing.xs,
+                padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                backgroundColor: themes.primary,
+                color: '#FFFFFF',
+                borderRadius: designSystem.borderRadius.sm,
+                fontSize: designSystem.typography.sizes.sm,
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                <span>Format: {activeFormatFilter}</span>
+                <button
+                  onClick={() => setActiveFormatFilter(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setActiveGenreFilter(null);
+                setActiveDecadeFilter(null);
+                setActiveFormatFilter(null);
+              }}
+              style={{
+                marginLeft: 'auto',
+                padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                backgroundColor: 'transparent',
+                color: themes.textSecondary,
+                border: `1px solid ${themes.border}`,
+                borderRadius: designSystem.borderRadius.sm,
+                cursor: 'pointer',
+                fontSize: designSystem.typography.sizes.sm,
+                fontWeight: designSystem.typography.weights.medium,
+                transition: designSystem.transitions.fast
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                e.currentTarget.style.borderColor = themes.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = themes.border;
+              }}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
 
         <div style={{
           display: 'flex',
@@ -2174,6 +2341,12 @@ export default function App() {
               {stats.topGenres.map(([genre, count]) => (
                 <div
                   key={genre}
+                  onClick={() => {
+                    setActiveGenreFilter(genre);
+                    setActiveDecadeFilter(null);
+                    setActiveFormatFilter(null);
+                    handleViewChange('collection');
+                  }}
                   style={{
                     backgroundColor: themes.surface,
                     padding: designSystem.spacing.md,
@@ -2181,7 +2354,17 @@ export default function App() {
                     border: `1px solid ${themes.border}`,
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: designSystem.transitions.fast
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.surface;
+                    e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
                   <span style={{
@@ -2217,6 +2400,12 @@ export default function App() {
               {stats.topDecades.map(([decade, count]) => (
                 <div
                   key={decade}
+                  onClick={() => {
+                    setActiveDecadeFilter(decade);
+                    setActiveGenreFilter(null);
+                    setActiveFormatFilter(null);
+                    handleViewChange('collection');
+                  }}
                   style={{
                     backgroundColor: themes.surface,
                     padding: designSystem.spacing.md,
@@ -2224,7 +2413,17 @@ export default function App() {
                     border: `1px solid ${themes.border}`,
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: designSystem.transitions.fast
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.surface;
+                    e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
                   <span style={{
@@ -2260,6 +2459,12 @@ export default function App() {
               {stats.topFormats.map(([format, count]) => (
                 <div
                   key={format}
+                  onClick={() => {
+                    setActiveFormatFilter(format);
+                    setActiveGenreFilter(null);
+                    setActiveDecadeFilter(null);
+                    handleViewChange('collection');
+                  }}
                   style={{
                     backgroundColor: themes.surface,
                     padding: designSystem.spacing.md,
@@ -2267,7 +2472,17 @@ export default function App() {
                     border: `1px solid ${themes.border}`,
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: designSystem.transitions.fast
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = themes.surface;
+                    e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
                   <span style={{
