@@ -454,18 +454,27 @@ export default function App() {
     }
   };
 
-  const fetchPriceInfo = async (releaseId) => {
+  const fetchPriceInfo = async (releaseId, timeoutMs = 8000) => {
     if (!discogsToken) return null;
+
     try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(
         `https://api.discogs.com/marketplace/stats/${releaseId}`,
         {
           headers: {
             'Authorization': `Discogs token=${discogsToken}`,
-            'User-Agent': 'VinylScout/2.3'
-          }
+            'User-Agent': 'VinylScout/2.4'
+          },
+          signal: controller.signal
         }
       );
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         if (data.lowest_price && data.num_for_sale > 0) {
@@ -477,20 +486,59 @@ export default function App() {
           };
         }
       }
+
+      // Handle rate limiting
+      if (response.status === 429) {
+        console.warn('Rate limited by Discogs API');
+        return null;
+      }
     } catch (error) {
-      console.error('Price error:', error);
+      if (error.name === 'AbortError') {
+        console.warn(`Price fetch timeout for ${releaseId}`);
+      } else {
+        console.error('Price error:', error);
+      }
     }
     return null;
   };
 
   const fetchAllPrices = async (results) => {
-    const prices = {};
-    for (const result of results.slice(0, 10)) {
-      const priceData = await fetchPriceInfo(result.id);
-      if (priceData) prices[result.id] = priceData;
-      await new Promise(resolve => setTimeout(resolve, 400));
+    // Clear previous prices
+    setResultPrices({});
+
+    // Load prices for ALL results (not just 10), but with smart limits
+    const itemsToFetch = results.slice(0, Math.min(results.length, 50));
+
+    // Batch processing: Update UI incrementally, not all at once
+    let fetchedPrices = {};
+
+    for (let i = 0; i < itemsToFetch.length; i++) {
+      const result = itemsToFetch[i];
+
+      try {
+        const priceData = await fetchPriceInfo(result.id);
+
+        if (priceData) {
+          fetchedPrices[result.id] = priceData;
+
+          // Update UI every 3 items for smooth incremental loading
+          if ((i + 1) % 3 === 0 || i === itemsToFetch.length - 1) {
+            setResultPrices(prev => ({ ...prev, ...fetchedPrices }));
+            fetchedPrices = {}; // Clear batch
+          }
+        }
+
+        // Respect Discogs rate limits: 60 requests/min = 1 per second
+        // Use 1100ms to be safe
+        await new Promise(resolve => setTimeout(resolve, 1100));
+
+      } catch (error) {
+        // Log but continue - don't let one failure block everything
+        console.error(`Failed to fetch price for ${result.id}:`, error);
+        // Still respect rate limit even on error
+        await new Promise(resolve => setTimeout(resolve, 1100));
+      }
     }
-    setResultPrices(prices);
   };
 
   const refreshPrice = async (itemId, isCollectionItem = false) => {
