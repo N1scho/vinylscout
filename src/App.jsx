@@ -11,6 +11,8 @@ export default function App() {
 
   // Navigation & View State
   const [view, setView] = useState('search');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayView, setDisplayView] = useState('search');
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +81,24 @@ export default function App() {
 
   // Theme System
   const themes = createTheme(theme, customColors);
+
+  // View Transition Handler
+  const handleViewChange = (newView) => {
+    if (newView === view) return; // Don't transition to same view
+
+    setIsTransitioning(true);
+
+    // After fade out (125ms), switch the view
+    setTimeout(() => {
+      setDisplayView(newView);
+      setView(newView);
+
+      // Then fade in (remaining 125ms)
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 125);
+    }, 125);
+  };
 
   // Helper Functions
   const showToast = (message, type = 'error') => {
@@ -363,7 +383,7 @@ export default function App() {
       if (data.artist && data.album) {
         showToast(`Found: ${data.artist} - ${data.album}`, 'success');
         setSearchQuery(`${data.artist} ${data.album}`);
-        setView('search');
+        handleViewChange('search');
         await searchDiscogs(false, `${data.artist} ${data.album}`, 1);
       } else {
         showToast('Could not identify album. Try again with better lighting.', 'error');
@@ -382,7 +402,7 @@ export default function App() {
   const searchDiscogs = async (isAdvanced = false, queryOverride = null, page = 1) => {
     if (!discogsToken) {
       showToast('Please set your Discogs API token in Settings', 'error');
-      setView('settings');
+      handleViewChange('settings');
       return;
     }
 
@@ -858,7 +878,7 @@ export default function App() {
       ].map(({ id, icon: Icon, label }) => (
         <button
           key={id}
-          onClick={() => setView(id)}
+          onClick={() => handleViewChange(id)}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -1712,7 +1732,7 @@ export default function App() {
             </p>
             {collectionFilter === 'all' && (
               <button
-                onClick={() => setView('search')}
+                onClick={() => handleViewChange('search')}
                 style={{
                   padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
                   backgroundColor: themes.primary,
@@ -3021,12 +3041,24 @@ export default function App() {
       fontFamily: designSystem.typography.fontFamily
     }}>
       {renderHeader()}
-      {view === 'search' && renderSearchView()}
-      {view === 'camera' && renderCameraView()}
-      {view === 'collection' && renderCollectionView()}
-      {view === 'stats' && renderStatsView()}
-      {view === 'settings' && renderSettingsView()}
-      
+
+      {/* View Container with Transition */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        opacity: isTransitioning ? 0 : 1,
+        transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
+        transition: 'opacity 250ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+        willChange: 'opacity, transform'
+      }}>
+        {displayView === 'search' && renderSearchView()}
+        {displayView === 'camera' && renderCameraView()}
+        {displayView === 'collection' && renderCollectionView()}
+        {displayView === 'stats' && renderStatsView()}
+        {displayView === 'settings' && renderSettingsView()}
+      </div>
+
       {renderNavigation()}
       {renderDetailModal()}
       {renderValueModal()}
