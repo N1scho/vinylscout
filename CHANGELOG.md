@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-11-17
+
+### Fixed
+- **Critical:** Scroll issues in all views (Search, Collection, Stats, Settings)
+- Views now properly scroll to top without being cut off
+- Added proper scroll container with `height: 100vh` and `overflowY: auto`
+- Improved touch scrolling on iOS with `WebkitOverflowScrolling`
+
+### Changed
+- Rolled back problematic ESLint fixes from morning that caused black screen
+- Restored stable codebase from 2025-11-16
+- Updated to version 2.4.0 to mark stable release
+
+### Technical
+- All view containers now have consistent scroll properties
+- Removed `maxHeight` in favor of `height: 100vh` for better mobile support
+- Added `overflowX: hidden` to prevent horizontal scroll issues
+
 ## [2.3.3] - 2025-11-16
 
 ### Added
