@@ -11,8 +11,7 @@ export default function App() {
 
   // Navigation & View State
   const [view, setView] = useState('search');
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [displayView, setDisplayView] = useState('search');
+  const [previousView, setPreviousView] = useState(null);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,18 +85,13 @@ export default function App() {
   const handleViewChange = (newView) => {
     if (newView === view) return; // Don't transition to same view
 
-    setIsTransitioning(true);
+    setPreviousView(view);
+    setView(newView);
 
-    // After fade out (125ms), switch the view
+    // Clear previous view after transition completes
     setTimeout(() => {
-      setDisplayView(newView);
-      setView(newView);
-
-      // Then fade in (remaining 125ms)
-      setTimeout(() => {
-        setIsTransitioning(false);
-      }, 125);
-    }, 125);
+      setPreviousView(null);
+    }, 300);
   };
 
   // Helper Functions
@@ -3042,21 +3036,48 @@ export default function App() {
     }}>
       {renderHeader()}
 
-      {/* View Container with Transition */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        opacity: isTransitioning ? 0 : 1,
-        transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
-        transition: 'opacity 250ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0.0, 0.2, 1)',
-        willChange: 'opacity, transform'
-      }}>
-        {displayView === 'search' && renderSearchView()}
-        {displayView === 'camera' && renderCameraView()}
-        {displayView === 'collection' && renderCollectionView()}
-        {displayView === 'stats' && renderStatsView()}
-        {displayView === 'settings' && renderSettingsView()}
+      {/* View Container with Cross-fade Transition */}
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {/* Previous view fading out */}
+        {previousView && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0,
+            transform: 'scale(0.98)',
+            transition: 'opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}>
+            {previousView === 'search' && renderSearchView()}
+            {previousView === 'camera' && renderCameraView()}
+            {previousView === 'collection' && renderCollectionView()}
+            {previousView === 'stats' && renderStatsView()}
+            {previousView === 'settings' && renderSettingsView()}
+          </div>
+        )}
+
+        {/* Current view fading in */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: 1,
+          transform: 'scale(1)',
+          transition: 'opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+          zIndex: 2
+        }}>
+          {view === 'search' && renderSearchView()}
+          {view === 'camera' && renderCameraView()}
+          {view === 'collection' && renderCollectionView()}
+          {view === 'stats' && renderStatsView()}
+          {view === 'settings' && renderSettingsView()}
+        </div>
       </div>
 
       {renderNavigation()}
