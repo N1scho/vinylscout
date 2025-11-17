@@ -1692,14 +1692,26 @@ export default function App() {
           marginBottom: designSystem.spacing.lg
         }}>
           <div>
-            <h2 style={{
-              fontSize: designSystem.typography.sizes.xl,
-              fontWeight: designSystem.typography.weights.bold,
-              color: themes.text,
-              margin: 0
-            }}>
-              Collection ({collection.length})
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: designSystem.spacing.sm }}>
+              <h2 style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>
+                Collection
+              </h2>
+              <span style={{
+                backgroundColor: themes.primary,
+                color: '#FFFFFF',
+                padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                borderRadius: designSystem.borderRadius.sm,
+                fontSize: designSystem.typography.sizes.sm,
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                {filteredAndSorted.length}{filteredAndSorted.length !== collection.length ? `/${collection.length}` : ''}
+              </span>
+            </div>
             {collectionValue.count > 0 && (
               <p style={{
                 fontSize: designSystem.typography.sizes.sm,
@@ -1858,39 +1870,91 @@ export default function App() {
         </div>
 
         {filteredAndSorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <Music size={48} color={themes.textSecondary} style={{ opacity: 0.3, marginBottom: '16px' }} />
+          <div style={{
+            textAlign: 'center',
+            padding: '80px 20px',
+            backgroundColor: themes.surface,
+            borderRadius: designSystem.borderRadius.lg,
+            border: `2px dashed ${themes.border}`
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 24px',
+              backgroundColor: withOpacity(themes.primary, 0.1),
+              borderRadius: designSystem.borderRadius.circle,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Music size={40} color={themes.primary} style={{ opacity: 0.6 }} />
+            </div>
             <h3 style={{
               color: themes.text,
-              fontSize: designSystem.typography.sizes.lg,
-              margin: '0 0 8px 0'
+              fontSize: designSystem.typography.sizes.xl,
+              fontWeight: designSystem.typography.weights.bold,
+              margin: '0 0 12px 0'
             }}>
-              {collectionFilter === 'favorites' ? 'No Favorites Yet' : 'Collection is Empty'}
+              {collectionSearch ? 'No Results Found' : collectionFilter === 'favorites' ? 'No Favorites Yet' : 'Start Your Collection'}
             </h3>
             <p style={{
               color: themes.textSecondary,
-              fontSize: designSystem.typography.sizes.sm,
-              margin: '0 0 16px 0'
+              fontSize: designSystem.typography.sizes.base,
+              margin: '0 0 24px 0',
+              maxWidth: '400px',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              lineHeight: 1.6
             }}>
-              {collectionFilter === 'favorites'
-                ? 'Star some vinyls to see them here'
-                : 'Search and add vinyls to start your collection'}
+              {collectionSearch
+                ? `No vinyls match "${collectionSearch}". Try a different search term.`
+                : collectionFilter === 'favorites'
+                ? 'Star your favorite vinyls to quickly access them here'
+                : 'Search for your vinyl records and add them to track their value over time'}
             </p>
-            {collectionFilter === 'all' && (
+            {collectionFilter === 'all' && !collectionSearch && (
               <button
                 onClick={() => handleViewChange('search')}
                 style={{
-                  padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                  padding: `${designSystem.spacing.md} ${designSystem.spacing.xl}`,
                   backgroundColor: themes.primary,
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: designSystem.borderRadius.md,
                   cursor: 'pointer',
                   fontSize: designSystem.typography.sizes.base,
-                  fontWeight: designSystem.typography.weights.medium
+                  fontWeight: designSystem.typography.weights.medium,
+                  boxShadow: designSystem.shadows.md,
+                  transition: designSystem.transitions.fast
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = designSystem.shadows.lg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = designSystem.shadows.md;
                 }}
               >
-                Go to Search
+                Start Searching
+              </button>
+            )}
+            {collectionSearch && (
+              <button
+                onClick={() => setCollectionSearch('')}
+                style={{
+                  padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}`,
+                  backgroundColor: 'transparent',
+                  color: themes.primary,
+                  border: `2px solid ${themes.primary}`,
+                  borderRadius: designSystem.borderRadius.md,
+                  cursor: 'pointer',
+                  fontSize: designSystem.typography.sizes.sm,
+                  fontWeight: designSystem.typography.weights.medium,
+                  transition: designSystem.transitions.fast
+                }}
+              >
+                Clear Search
               </button>
             )}
           </div>
@@ -1899,10 +1963,11 @@ export default function App() {
             display: collectionView === 'grid' ? 'grid' : 'flex',
             gridTemplateColumns: collectionView === 'grid' ? 'repeat(auto-fill, minmax(160px, 1fr))' : 'unset',
             flexDirection: collectionView === 'list' ? 'column' : 'unset',
-            gap: designSystem.spacing.md
+            gap: collectionView === 'list' ? designSystem.spacing.sm : designSystem.spacing.md
           }}>
             {filteredAndSorted.map(item => {
             const priceChange = getPriceChange(item);
+            const isListView = collectionView === 'list';
             return (
               <div
                 key={item.id}
@@ -1913,8 +1978,23 @@ export default function App() {
                   overflow: 'hidden',
                   cursor: 'pointer',
                   border: `1px solid ${themes.border}`,
-                  transition: designSystem.transitions.base,
-                  position: 'relative'
+                  transition: 'all 200ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+                  position: 'relative',
+                  transform: 'translateY(0)',
+                  boxShadow: designSystem.shadows.sm,
+                  display: isListView ? 'flex' : 'block',
+                  flexDirection: isListView ? 'row' : 'column',
+                  alignItems: isListView ? 'center' : 'stretch'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = isListView ? 'translateX(4px)' : 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = designSystem.shadows.lg;
+                  e.currentTarget.style.borderColor = themes.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = isListView ? 'translateX(0)' : 'translateY(0)';
+                  e.currentTarget.style.boxShadow = designSystem.shadows.sm;
+                  e.currentTarget.style.borderColor = themes.border;
                 }}
               >
                 {item.isFavorite && (
@@ -1935,24 +2015,45 @@ export default function App() {
                   alt={item.title}
                   loading="lazy"
                   style={{
-                    width: '100%',
+                    width: isListView ? '80px' : '100%',
+                    height: isListView ? '80px' : 'auto',
                     aspectRatio: '1',
                     objectFit: 'cover',
-                    backgroundColor: themes.border
+                    backgroundColor: themes.border,
+                    flexShrink: 0
                   }}
                 />
-                <div style={{ padding: designSystem.spacing.sm }}>
-                  <h3 style={{
-                    fontSize: designSystem.typography.sizes.sm,
-                    fontWeight: designSystem.typography.weights.medium,
-                    color: themes.text,
-                    margin: `0 0 ${designSystem.spacing.xs} 0`,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {item.title}
-                  </h3>
+                <div style={{
+                  padding: designSystem.spacing.sm,
+                  flex: isListView ? 1 : 'unset',
+                  display: isListView ? 'flex' : 'block',
+                  flexDirection: isListView ? 'row' : 'column',
+                  justifyContent: isListView ? 'space-between' : 'flex-start',
+                  alignItems: isListView ? 'center' : 'stretch',
+                  gap: isListView ? designSystem.spacing.md : 0
+                }}>
+                  <div style={{ flex: isListView ? 1 : 'unset' }}>
+                    <h3 style={{
+                      fontSize: isListView ? designSystem.typography.sizes.base : designSystem.typography.sizes.sm,
+                      fontWeight: designSystem.typography.weights.medium,
+                      color: themes.text,
+                      margin: `0 0 ${designSystem.spacing.xs} 0`,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {item.title}
+                    </h3>
+                    {isListView && item.year && (
+                      <p style={{
+                        fontSize: designSystem.typography.sizes.sm,
+                        color: themes.textSecondary,
+                        margin: 0
+                      }}>
+                        {item.year}
+                      </p>
+                    )}
+                  </div>
                   {item.lowestPrice !== null && (
                     <div style={{
                       display: 'flex',
