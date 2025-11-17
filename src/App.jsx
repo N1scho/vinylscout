@@ -3,7 +3,7 @@ import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star,
 import { designSystem, createTheme, withOpacity, themeDefinitions } from './designsystem';
 
 // App Version
-const APP_VERSION = '2.3.3';
+const APP_VERSION = '2.4.0';
 
 export default function App() {
   // Logo Configuration
