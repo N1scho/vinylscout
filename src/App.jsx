@@ -942,7 +942,16 @@ export default function App() {
     );
   };
 
-  const sortedCollection = sortCollection(filterCollection(collection, collectionFilter), sortBy);
+  // Memoize expensive filtering and sorting operations
+  const filteredAndSorted = useMemo(() =>
+    sortCollection(filterCollection(collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter), sortBy),
+    [collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter, sortBy]
+  );
+
+  const collectionValue = useMemo(() =>
+    calculateCollectionValue(),
+    [collection]
+  );
 
   const renderHeader = () => (
     <header style={{
@@ -1690,17 +1699,6 @@ export default function App() {
   );
 
   const renderCollectionView = () => {
-    // Memoize expensive filtering and sorting operations
-    const filteredAndSorted = useMemo(() =>
-      sortCollection(filterCollection(collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter), sortBy),
-      [collection, collectionFilter, collectionSearch, activeGenreFilter, activeDecadeFilter, activeFormatFilter, sortBy]
-    );
-
-    const collectionValue = useMemo(() =>
-      calculateCollectionValue(),
-      [collection]
-    );
-
     return (
       <div style={{
         width: '100%',
