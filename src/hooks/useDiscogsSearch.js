@@ -133,7 +133,8 @@ export const useDiscogsSearch = (discogsToken) => {
 
         return priceData;
       } else {
-        throw new Error('No price data available');
+        // Don't throw - just return null silently (price data often unavailable)
+        return null;
       }
     } finally {
       setRefreshingPrices(prev => ({ ...prev, [itemId]: false }));
