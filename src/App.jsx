@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem } from './designsystem';
+import DemoPanel from './components/DemoPanel';
 import SearchView from './views/SearchView';
 import CameraView from './views/CameraView';
 import CollectionView from './views/CollectionView';
@@ -517,6 +518,8 @@ return (
         themes={themes}
       />
 
+      {/* Demo Panel - temporarily restored for compatibility */}
+      <DemoPanel />
     </div>
   );
 }
