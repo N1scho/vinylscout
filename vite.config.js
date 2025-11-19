@@ -79,8 +79,8 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
+    environment: 'node', // Use node instead of jsdom for Node 18 compatibility
+    // setupFiles: './src/test/setup.js', // Disabled for now
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

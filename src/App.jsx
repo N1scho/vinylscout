@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem, createTheme, withOpacity, themeDefinitions } from './designsystem';
+import DemoPanel from './components/DemoPanel';
 
 // App Version
 const APP_VERSION = '2.5.0';
@@ -767,7 +768,7 @@ export default function App() {
     }, {});
     const currency = Object.keys(currencyCount).length > 0
       ? Object.keys(currencyCount).sort((a, b) => currencyCount[b] - currencyCount[a])[0]
-      : 'USD';
+      : 'EUR';
 
     // Genre statistics
     const genreCounts = {};
@@ -780,18 +781,18 @@ export default function App() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    // NEW: Most valuable record
+    // Most valuable record
     const mostValuable = collection
       .filter(v => v.lowestPrice && v.lowestPrice > 0)
       .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))[0] || null;
 
-    // NEW: Recent additions (last 7 days)
+    // Recent additions (last 7 days)
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const recentAdditions = collection.filter(v =>
       v.addedAt && new Date(v.addedAt).getTime() > sevenDaysAgo
     ).length;
 
-    // NEW: Price gainers (top 3)
+    // Price gainers (top 3)
     const priceGainers = collection
       .filter(v => {
         const change = getPriceChange(v);
@@ -804,7 +805,20 @@ export default function App() {
       })
       .slice(0, 3);
 
-    // NEW: Decade breakdown
+    // Price losers (top 3)
+    const priceLosers = collection
+      .filter(v => {
+        const change = getPriceChange(v);
+        return change && change.isNegative;
+      })
+      .sort((a, b) => {
+        const aChange = getPriceChange(a);
+        const bChange = getPriceChange(b);
+        return (aChange?.value || 0) - (bChange?.value || 0);
+      })
+      .slice(0, 3);
+
+    // Decade breakdown
     const decadeCounts = {};
     collection.forEach(v => {
       if (v.year) {
@@ -816,7 +830,7 @@ export default function App() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    // NEW: Format breakdown
+    // Format breakdown
     const formatCounts = {};
     collection.forEach(v => {
       const format = v.format || v.formats?.[0] || 'Unknown';
@@ -826,19 +840,169 @@ export default function App() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
+    // === NEW COMPETITOR-INSPIRED STATS ===
+
+    // Top Artists (most albums)
+    const artistCounts = {};
+    collection.forEach(v => {
+      const artist = v.artist || 'Unknown';
+      artistCounts[artist] = (artistCounts[artist] || 0) + 1;
+    });
+    const topArtists = Object.entries(artistCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    // Top Labels
+    const labelCounts = {};
+    collection.forEach(v => {
+      const label = v.label || 'Unknown';
+      labelCounts[label] = (labelCounts[label] || 0) + 1;
+    });
+    const topLabels = Object.entries(labelCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    // Total runtime (if tracklist has durations)
+    let totalRuntime = 0;
+    let totalTracks = 0;
+    collection.forEach(v => {
+      if (v.tracklist) {
+        totalTracks += v.tracklist.length;
+        v.tracklist.forEach(track => {
+          if (track.duration) {
+            const parts = track.duration.split(':');
+            if (parts.length === 2) {
+              const minutes = parseInt(parts[0]) || 0;
+              const seconds = parseInt(parts[1]) || 0;
+              totalRuntime += (minutes * 60) + seconds;
+            }
+          }
+        });
+      }
+    });
+    const avgTracksPerAlbum = collection.length > 0 ? totalTracks / collection.length : 0;
+
+    // Oldest and newest releases
+    const sortedByYear = collection
+      .filter(v => v.year)
+      .sort((a, b) => a.year - b.year);
+    const oldestRelease = sortedByYear[0] || null;
+    const newestRelease = sortedByYear[sortedByYear.length - 1] || null;
+
+    // Collection diversity score (genres per album ratio)
+    const totalGenres = Object.keys(genreCounts).length;
+    const diversityScore = collection.length > 0 ? totalGenres / collection.length : 0;
+
+    // Added this month/year
+    const now = new Date();
+    const thisMonth = collection.filter(v => {
+      if (!v.addedAt) return false;
+      const added = new Date(v.addedAt);
+      return added.getMonth() === now.getMonth() && added.getFullYear() === now.getFullYear();
+    }).length;
+
+    const thisYear = collection.filter(v => {
+      if (!v.addedAt) return false;
+      const added = new Date(v.addedAt);
+      return added.getFullYear() === now.getFullYear();
+    }).length;
+
+    // Value distribution
+    const priceRanges = {
+      '0-10': 0,
+      '10-25': 0,
+      '25-50': 0,
+      '50-100': 0,
+      '100+': 0
+    };
+    collection.forEach(v => {
+      const price = v.lowestPrice;
+      if (typeof price === 'number') {
+        if (price < 10) priceRanges['0-10']++;
+        else if (price < 25) priceRanges['10-25']++;
+        else if (price < 50) priceRanges['25-50']++;
+        else if (price < 100) priceRanges['50-100']++;
+        else priceRanges['100+']++;
+      }
+    });
+
+    // Completeness score (% with price data)
+    const completenessScore = collection.length > 0 ? (withPrice / collection.length) * 100 : 0;
+
+    // Average collection age (years since release)
+    const currentYear = new Date().getFullYear();
+    const totalAge = collection.reduce((sum, v) => {
+      if (v.year) {
+        return sum + (currentYear - v.year);
+      }
+      return sum;
+    }, 0);
+    const avgAge = collection.length > 0 ? totalAge / collection.length : 0;
+
+    // Rarest items (least collected on Discogs - placeholder, would need API data)
+    // For now, show items with highest value as proxy for rarity
+    const rarestItems = collection
+      .filter(v => v.lowestPrice && v.lowestPrice > 100)
+      .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))
+      .slice(0, 5);
+
+    // Total value growth (comparing first vs last price in history)
+    let totalValueGrowth = 0;
+    let itemsWithGrowth = 0;
+    collection.forEach(v => {
+      if (v.priceHistory && v.priceHistory.length >= 2) {
+        const firstPrice = v.priceHistory[0].price;
+        const lastPrice = v.priceHistory[v.priceHistory.length - 1].price;
+        const growth = lastPrice - firstPrice;
+        totalValueGrowth += growth;
+        itemsWithGrowth++;
+      }
+    });
+    const avgValueGrowth = itemsWithGrowth > 0 ? totalValueGrowth / itemsWithGrowth : 0;
+
     return {
+      // Core stats
       total,
       favorites,
       withPrice,
       totalValue,
       avgValue,
       currency,
+
+      // Breakdowns
       topGenres,
-      mostValuable,
-      recentAdditions,
-      priceGainers,
       topDecades,
-      topFormats
+      topFormats,
+
+      // Value stats
+      mostValuable,
+      priceGainers,
+      priceLosers,
+      priceRanges,
+      avgValueGrowth,
+
+      // Collection insights
+      recentAdditions,
+      thisMonth,
+      thisYear,
+      oldestRelease,
+      newestRelease,
+      avgAge,
+
+      // Artist & Label stats
+      topArtists,
+      topLabels,
+
+      // Audio stats
+      totalTracks,
+      totalRuntime,
+      avgTracksPerAlbum,
+
+      // Quality metrics
+      completenessScore,
+      diversityScore,
+      totalGenres,
+      rarestItems
     };
   };
 
@@ -2501,6 +2665,529 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* NEW: Top Artists Section */}
+        {stats.topArtists.length > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Top Artists
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.topArtists.slice(0, 5).map(([artist, count]) => (
+                <div
+                  key={artist}
+                  style={{
+                    backgroundColor: themes.surface,
+                    padding: designSystem.spacing.md,
+                    borderRadius: designSystem.borderRadius.md,
+                    border: `1px solid ${themes.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    fontWeight: designSystem.typography.weights.medium
+                  }}>
+                    {artist}
+                  </span>
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.bold,
+                    color: themes.primary
+                  }}>
+                    {count} album{count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Top Labels Section */}
+        {stats.topLabels.length > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Top Record Labels
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.topLabels.map(([label, count]) => (
+                <div
+                  key={label}
+                  style={{
+                    backgroundColor: themes.surface,
+                    padding: designSystem.spacing.md,
+                    borderRadius: designSystem.borderRadius.md,
+                    border: `1px solid ${themes.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text
+                  }}>
+                    {label}
+                  </span>
+                  <span style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}>
+                    {count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Collection Insights Grid */}
+        <div style={{ marginBottom: designSystem.spacing.xl }}>
+          <h3 style={{
+            fontSize: designSystem.typography.sizes.lg,
+            fontWeight: designSystem.typography.weights.semibold,
+            color: themes.text,
+            marginBottom: designSystem.spacing.md
+          }}>
+            Collection Insights
+          </h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: designSystem.spacing.md
+          }}>
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Added This Month</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.primary,
+                margin: 0
+              }}>{stats.thisMonth}</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Added This Year</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.primary,
+                margin: 0
+              }}>{stats.thisYear}</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Total Tracks</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>{stats.totalTracks.toLocaleString()}</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Avg Tracks/Album</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>{stats.avgTracksPerAlbum.toFixed(1)}</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Total Runtime</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>
+                {Math.floor(stats.totalRuntime / 3600)}h {Math.floor((stats.totalRuntime % 3600) / 60)}m
+              </p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Avg Collection Age</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>{stats.avgAge.toFixed(0)} years</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Genre Diversity</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}>{stats.totalGenres} genres</p>
+            </div>
+
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.md,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `0 0 ${designSystem.spacing.xs} 0`
+              }}>Data Completeness</p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: stats.completenessScore > 80 ? '#10b981' : stats.completenessScore > 50 ? '#f59e0b' : '#ef4444',
+                margin: 0
+              }}>{stats.completenessScore.toFixed(0)}%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* NEW: Release Timeline */}
+        {(stats.oldestRelease || stats.newestRelease) && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Release Timeline
+            </h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: designSystem.spacing.md
+            }}>
+              {stats.oldestRelease && (
+                <div style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`
+                }}>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    marginBottom: designSystem.spacing.sm
+                  }}>Oldest Release</p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    fontWeight: designSystem.typography.weights.semibold,
+                    color: themes.text,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`
+                  }}>{stats.oldestRelease.title}</p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    color: themes.textSecondary,
+                    margin: 0
+                  }}>{stats.oldestRelease.artist} • {stats.oldestRelease.year}</p>
+                </div>
+              )}
+              {stats.newestRelease && (
+                <div style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`
+                }}>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    marginBottom: designSystem.spacing.sm
+                  }}>Newest Release</p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    fontWeight: designSystem.typography.weights.semibold,
+                    color: themes.text,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`
+                  }}>{stats.newestRelease.title}</p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    color: themes.textSecondary,
+                    margin: 0
+                  }}>{stats.newestRelease.artist} • {stats.newestRelease.year}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Value Distribution */}
+        {stats.withPrice > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Value Distribution
+            </h3>
+            <div style={{
+              backgroundColor: themes.surface,
+              padding: designSystem.spacing.lg,
+              borderRadius: designSystem.borderRadius.md,
+              border: `1px solid ${themes.border}`
+            }}>
+              {Object.entries(stats.priceRanges).map(([range, count]) => {
+                const percentage = stats.withPrice > 0 ? (count / stats.withPrice) * 100 : 0;
+                return (
+                  <div key={range} style={{ marginBottom: designSystem.spacing.md }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: designSystem.spacing.xs
+                    }}>
+                      <span style={{
+                        fontSize: designSystem.typography.sizes.sm,
+                        color: themes.text
+                      }}>{stats.currency} {range}</span>
+                      <span style={{
+                        fontSize: designSystem.typography.sizes.sm,
+                        fontWeight: designSystem.typography.weights.medium,
+                        color: themes.primary
+                      }}>{count} ({percentage.toFixed(0)}%)</span>
+                    </div>
+                    <div style={{
+                      height: '8px',
+                      backgroundColor: withOpacity(themes.border, 0.3),
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${percentage}%`,
+                        backgroundColor: themes.primary,
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Price Losers (if any) */}
+        {stats.priceLosers.length > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Price Decliners
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.priceLosers.map(item => {
+                const change = getPriceChange(item);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      backgroundColor: themes.surface,
+                      padding: designSystem.spacing.md,
+                      borderRadius: designSystem.borderRadius.md,
+                      border: `1px solid ${themes.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <p style={{
+                        fontSize: designSystem.typography.sizes.base,
+                        fontWeight: designSystem.typography.weights.medium,
+                        color: themes.text,
+                        margin: `0 0 ${designSystem.spacing.xs} 0`
+                      }}>{item.title}</p>
+                      <p style={{
+                        fontSize: designSystem.typography.sizes.sm,
+                        color: themes.textSecondary,
+                        margin: 0
+                      }}>{item.artist}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{
+                        fontSize: designSystem.typography.sizes.lg,
+                        fontWeight: designSystem.typography.weights.bold,
+                        color: '#ef4444',
+                        margin: 0
+                      }}>{change?.value.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Valuable Items (Rarest/Most Expensive) */}
+        {stats.rarestItems.length > 0 && (
+          <div style={{ marginBottom: designSystem.spacing.xl }}>
+            <h3 style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}>
+              Most Valuable Items (€100+)
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+              {stats.rarestItems.map(item => (
+                <div
+                  key={item.id}
+                  style={{
+                    backgroundColor: themes.surface,
+                    padding: designSystem.spacing.md,
+                    borderRadius: designSystem.borderRadius.md,
+                    border: `1px solid ${themes.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <p style={{
+                      fontSize: designSystem.typography.sizes.base,
+                      fontWeight: designSystem.typography.weights.medium,
+                      color: themes.text,
+                      margin: `0 0 ${designSystem.spacing.xs} 0`
+                    }}>{item.title}</p>
+                    <p style={{
+                      fontSize: designSystem.typography.sizes.sm,
+                      color: themes.textSecondary,
+                      margin: 0
+                    }}>{item.artist} • {item.year}</p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{
+                      fontSize: designSystem.typography.sizes.xl,
+                      fontWeight: designSystem.typography.weights.bold,
+                      color: '#f59e0b',
+                      margin: 0
+                    }}>{stats.currency} {item.lowestPrice.toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Collection Growth Indicator */}
+        {stats.avgValueGrowth !== 0 && (
+          <div style={{
+            backgroundColor: withOpacity(stats.avgValueGrowth > 0 ? '#10b981' : '#ef4444', 0.1),
+            padding: designSystem.spacing.lg,
+            borderRadius: designSystem.borderRadius.md,
+            border: `1px solid ${withOpacity(stats.avgValueGrowth > 0 ? '#10b981' : '#ef4444', 0.3)}`,
+            textAlign: 'center'
+          }}>
+            <p style={{
+              fontSize: designSystem.typography.sizes.sm,
+              color: themes.textSecondary,
+              margin: `0 0 ${designSystem.spacing.sm} 0`
+            }}>Average Collection Value Growth</p>
+            <p style={{
+              fontSize: designSystem.typography.sizes.xxl,
+              fontWeight: designSystem.typography.weights.bold,
+              color: stats.avgValueGrowth > 0 ? '#10b981' : '#ef4444',
+              margin: 0
+            }}>
+              {stats.avgValueGrowth > 0 ? '+' : ''}{stats.currency} {Math.abs(stats.avgValueGrowth).toFixed(2)}
+            </p>
+            <p style={{
+              fontSize: designSystem.typography.sizes.xs,
+              color: themes.textSecondary,
+              marginTop: designSystem.spacing.xs
+            }}>per album since tracking began</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -3979,6 +4666,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Demo Panel - Shows Zustand in action! */}
+      <DemoPanel />
     </div>
   );
 }
