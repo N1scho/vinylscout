@@ -12,7 +12,16 @@
       "Bash(for:*)",
       "Bash(done)",
       "Bash(timeout 60 npm run build:*)",
-      "Bash(node -c:*)"
+      "Bash(node -c:*)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(nvm alias:*)",
+      "Bash(node --version:*)"
     ],
     "deny": [],
     "ask": []
