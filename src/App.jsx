@@ -233,6 +233,8 @@ export default function App() {
       try {
         await refreshPrice(item.id, true);
         updated++;
+        // Rate limit: Wait 1.1 seconds between requests (Discogs allows 60/min)
+        await new Promise(resolve => setTimeout(resolve, 1100));
       } catch (error) {
         console.error(`Failed to update price for ${item.id}:`, error);
       }
