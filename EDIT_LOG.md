@@ -511,6 +511,232 @@ Added type checking before numeric operations:
 
 ---
 
+### 2025-11-20 16:45 - FEATURE: State Persistence for Tab Switching
+**Files Modified**:
+- `src/App.jsx:38-54,73-89` (view state persistence)
+- `src/hooks/useSearch.js:13-95` (search state persistence)
+
+**Operation**: EDIT/FEATURE
+**Reason**: Add state persistence so app doesn't reset when tabbing out/in
+**Context**: User requested "i want to be able to tab out of the app and back in without resetting"
+
+#### Problem:
+When switching browser tabs or apps on mobile, the entire app state would reset:
+- Current view resets to search
+- Search results disappear
+- Navigation history lost
+- Current page/pagination lost
+
+This made the app feel unreliable and frustrating to use.
+
+#### Solution:
+Implemented comprehensive state persistence using localStorage for all critical UI state.
+
+#### Changes Made:
+
+**1. App.jsx - View & Navigation Persistence (lines 38-89)**
+
+**Initial State from localStorage:**
+```javascript
+// Load current view
+const [view, setView] = useState(() => {
+  try {
+    const saved = localStorage.getItem('currentView');
+    return saved || 'search';
+  } catch {
+    return 'search';
+  }
+});
+
+// Load navigation history
+const [viewHistory, setViewHistory] = useState(() => {
+  try {
+    const saved = localStorage.getItem('viewHistory');
+    return saved ? JSON.parse(saved) : ['search'];
+  } catch {
+    return ['search'];
+  }
+});
+```
+
+**Auto-save on Change:**
+```javascript
+// Save current view whenever it changes
+useEffect(() => {
+  try {
+    localStorage.setItem('currentView', view);
+  } catch (error) {
+    console.error('Failed to save current view:', error);
+  }
+}, [view]);
+
+// Save navigation history whenever it changes
+useEffect(() => {
+  try {
+    localStorage.setItem('viewHistory', JSON.stringify(viewHistory));
+  } catch (error) {
+    console.error('Failed to save view history:', error);
+  }
+}, [viewHistory]);
+```
+
+**2. useSearch.js - Search State Persistence (lines 13-95)**
+
+**Initial State from localStorage:**
+```javascript
+// Load search query
+const [searchQuery, setSearchQuery] = useState(() => {
+  try {
+    return localStorage.getItem('searchQuery') || '';
+  } catch {
+    return '';
+  }
+});
+
+// Load search results
+const [searchResults, setSearchResults] = useState(() => {
+  try {
+    const saved = localStorage.getItem('searchResults');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+});
+
+// Load current page
+const [currentPage, setCurrentPage] = useState(() => {
+  try {
+    const saved = localStorage.getItem('searchPage');
+    return saved ? parseInt(saved, 10) : 1;
+  } catch {
+    return 1;
+  }
+});
+
+// Load total pages
+const [totalPages, setTotalPages] = useState(() => {
+  try {
+    const saved = localStorage.getItem('searchTotalPages');
+    return saved ? parseInt(saved, 10) : 1;
+  } catch {
+    return 1;
+  }
+});
+```
+
+**Auto-save on Change:**
+```javascript
+// Save search query
+useEffect(() => {
+  try {
+    localStorage.setItem('searchQuery', searchQuery);
+  } catch (error) {
+    console.error('Failed to save search query:', error);
+  }
+}, [searchQuery]);
+
+// Save search results
+useEffect(() => {
+  try {
+    localStorage.setItem('searchResults', JSON.stringify(searchResults));
+  } catch (error) {
+    console.error('Failed to save search results:', error);
+  }
+}, [searchResults]);
+
+// Save pagination
+useEffect(() => {
+  try {
+    localStorage.setItem('searchPage', currentPage.toString());
+  } catch (error) {
+    console.error('Failed to save search page:', error);
+  }
+}, [currentPage]);
+
+useEffect(() => {
+  try {
+    localStorage.setItem('searchTotalPages', totalPages.toString());
+  } catch (error) {
+    console.error('Failed to save total pages:', error);
+  }
+}, [totalPages]);
+```
+
+#### What Gets Persisted:
+
+**Navigation State:**
+- ✅ Current view (search/camera/collection/stats/settings)
+- ✅ View history stack (for back button)
+
+**Search State:**
+- ✅ Current search query
+- ✅ Search results array
+- ✅ Current page number
+- ✅ Total pages count
+- ✅ Search history (already implemented)
+
+**Collection State:**
+- ✅ Already persisted via `storageService.js`
+
+**Settings State:**
+- ✅ Already persisted via localStorage in `useSettings.js`
+
+#### Benefits:
+
+✅ **Seamless tab switching** - Switch to another tab and come back without losing anything
+✅ **Mobile-friendly** - Background/foreground app without reset
+✅ **Browser refresh** - Even F5 won't lose your place
+✅ **Search persistence** - Your search results stay when switching tabs
+✅ **Navigation history** - Back button still works after tab switch
+✅ **Better UX** - App feels more reliable and native-like
+✅ **Error handling** - Try/catch prevents localStorage errors from breaking app
+
+#### User Experience Flow:
+
+**Before:**
+1. User searches for "Pink Floyd"
+2. Browses results on page 2
+3. Switches to email tab
+4. Comes back → **RESET!** Back on search view, results gone
+
+**After:**
+1. User searches for "Pink Floyd"
+2. Browses results on page 2
+3. Switches to email tab
+4. Comes back → **Still on page 2 of Pink Floyd results!**
+
+#### Technical Details:
+
+**localStorage Keys Used:**
+- `currentView` - Current active view name
+- `viewHistory` - JSON array of navigation history
+- `searchQuery` - Last search query string
+- `searchResults` - JSON array of search results
+- `searchPage` - Current page number (string)
+- `searchTotalPages` - Total pages count (string)
+
+**Error Handling:**
+- All localStorage operations wrapped in try/catch
+- Graceful fallback to defaults on error
+- Console errors for debugging but doesn't break app
+
+**Performance:**
+- Lazy initialization with function form of useState
+- Only saves when state actually changes
+- Minimal localStorage operations
+
+#### Testing Performed:
+- ✅ ESLint passes on all modified files
+- ✅ No runtime errors
+- ✅ Safe error handling for localStorage failures
+
+#### Dependencies:
+- Works with existing `storageService.js` (collection already persisted)
+- Works with existing `useSettings.js` (settings already persisted)
+- Compatible with browser history implementation
+
+---
+
 <!--
   New entries should follow this format:
 

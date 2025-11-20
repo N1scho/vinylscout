@@ -34,10 +34,24 @@ import Navigation from './components/Navigation';
 const APP_VERSION = '2.12.1';
 
 export default function App() {
-  // Navigation & View State
-  const [view, setView] = useState('search');
+  // Navigation & View State - Load from localStorage if available
+  const [view, setView] = useState(() => {
+    try {
+      const saved = localStorage.getItem('currentView');
+      return saved || 'search';
+    } catch {
+      return 'search';
+    }
+  });
   const [previousView, setPreviousView] = useState(null);
-  const [viewHistory, setViewHistory] = useState(['search']);
+  const [viewHistory, setViewHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('viewHistory');
+      return saved ? JSON.parse(saved) : ['search'];
+    } catch {
+      return ['search'];
+    }
+  });
 
   // Custom Hooks
   const collection = useCollection();
@@ -55,6 +69,24 @@ export default function App() {
   const { toast, showToast, selectedResult, selectedVinyl, showValueModal, setShowValueModal, valueHistory, setValueHistory, confirmDelete, setConfirmDelete, openValueModal } = modals;
   const { isAnalyzing, cameraError, setIsAnalyzing } = camera;
 
+
+  // Save view state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('currentView', view);
+    } catch (error) {
+      console.error('Failed to save current view:', error);
+    }
+  }, [view]);
+
+  // Save view history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('viewHistory', JSON.stringify(viewHistory));
+    } catch (error) {
+      console.error('Failed to save view history:', error);
+    }
+  }, [viewHistory]);
 
   // View Transition Handler
   const handleViewChange = (newView) => {
