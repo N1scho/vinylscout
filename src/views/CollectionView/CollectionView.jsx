@@ -131,7 +131,7 @@ export default function CollectionView({
                 fontWeight: designSystem.typography.weights.medium
               }}
             >
-              Total Value: {collectionValue.value} {collectionValue.currency}
+              Total Value: {collectionValue.currency} {collectionValue.total.toFixed(2)}
             </p>
           )}
         </div>

@@ -737,6 +737,51 @@ useEffect(() => {
 
 ---
 
+### 2025-11-20 17:00 - BUGFIX: Total Value Display in Collection
+**Files Modified**:
+- `src/views/CollectionView/CollectionView.jsx:134` (fixed property access)
+
+**Operation**: EDIT/BUGFIX
+**Reason**: Total value not displaying in collection view
+**Context**: User reported "total value not working in collection"
+
+#### Root Cause:
+Simple property name mismatch - `calculateCollectionValue()` returns `{total, count, currency}` but the view was accessing `collectionValue.value` instead of `collectionValue.total`.
+
+#### Fix:
+
+**Before:**
+```javascript
+Total Value: {collectionValue.value} {collectionValue.currency}
+```
+
+**After:**
+```javascript
+Total Value: {collectionValue.currency} {collectionValue.total.toFixed(2)}
+```
+
+#### Changes:
+- Changed `collectionValue.value` → `collectionValue.total`
+- Added `.toFixed(2)` for consistent decimal formatting
+- Moved currency symbol before number (standard format)
+
+#### Impact:
+- ✅ Total collection value now displays correctly
+- ✅ Shows sum of all items with prices
+- ✅ Displays in consistent currency format
+- ✅ Updates automatically when prices change
+
+#### Example Output:
+**Before:** Nothing displayed (value was `undefined`)
+**After:** `Total Value: USD 234.56` or `Total Value: EUR 187.90`
+
+#### Testing:
+- ✅ ESLint passes
+- ✅ Correctly accesses `total` property from `calculateCollectionValue`
+- ✅ Format matches currency display elsewhere in app
+
+---
+
 <!--
   New entries should follow this format:
 
