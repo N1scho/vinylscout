@@ -423,8 +423,19 @@ export default function CollectionView({
             const historicalPriceChange = getPriceChange(item);
             // Get temporary price change from recent refresh (shows for 5 seconds)
             const tempPriceChange = priceChanges[item.id];
-            // Use temp change if available, otherwise use historical
-            const priceChange = tempPriceChange || historicalPriceChange;
+
+            // Normalize the price change format
+            // tempPriceChange has {amount, currency}
+            // historicalPriceChange has {absolute, value, current, previous, ...}
+            let priceChange = null;
+            if (tempPriceChange) {
+              priceChange = tempPriceChange;
+            } else if (historicalPriceChange) {
+              priceChange = {
+                amount: historicalPriceChange.absolute,
+                currency: item.price?.currency || 'USD'
+              };
+            }
 
             // Support both price structures for backward compatibility
             const priceData = item.price || (item.lowestPrice ? { value: item.lowestPrice, currency: 'USD' } : null);

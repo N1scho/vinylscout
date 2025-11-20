@@ -37,6 +37,7 @@ export default function App() {
   // Navigation & View State
   const [view, setView] = useState('search');
   const [previousView, setPreviousView] = useState(null);
+  const [viewHistory, setViewHistory] = useState(['search']);
 
   // Custom Hooks
   const collection = useCollection();
@@ -62,11 +63,48 @@ export default function App() {
     setPreviousView(view);
     setView(newView);
 
+    // Add to history stack
+    setViewHistory(prev => [...prev, newView]);
+
+    // Push state to browser history for back button support
+    window.history.pushState({ view: newView }, '', `#${newView}`);
+
     // Clear previous view after transition completes
     setTimeout(() => {
       setPreviousView(null);
     }, 300);
   };
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = (event) => {
+      event.preventDefault();
+
+      if (viewHistory.length > 1) {
+        // Go back to previous view in our history
+        const newHistory = [...viewHistory];
+        newHistory.pop(); // Remove current
+        const previousView = newHistory[newHistory.length - 1];
+
+        setViewHistory(newHistory);
+        setView(previousView);
+      } else {
+        // If we're at the first view, don't close the app
+        // Just stay on the current view
+        window.history.pushState({ view }, '', `#${view}`);
+      }
+    };
+
+    // Listen for back button
+    window.addEventListener('popstate', handlePopState);
+
+    // Initialize history state
+    window.history.replaceState({ view }, '', `#${view}`);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [view, viewHistory]);
 
   // Backup & Export Functions
   const exportCollection = () => {
@@ -171,6 +209,13 @@ export default function App() {
 
       // If collection item, update collection with price history
       if (isCollectionItem && priceData) {
+        // Validate price data
+        if (typeof priceData.value !== 'number' || isNaN(priceData.value)) {
+          console.error('Invalid price data received:', priceData);
+          modals.showToast('Received invalid price data from Discogs', 'error');
+          return;
+        }
+
         const newCollection = collection.collection.map(item => {
           if (item.id === itemId) {
             // Add to price history
@@ -192,8 +237,11 @@ export default function App() {
         });
         collection.setCollection(newCollection);
         StorageService.saveCollection(newCollection);
+      } else if (isCollectionItem && !priceData) {
+        modals.showToast('No price data available for this item', 'error');
       }
     } catch (error) {
+      console.error('Error refreshing price:', error);
       modals.showToast(error.message || 'Error refreshing price', 'error');
     }
   };

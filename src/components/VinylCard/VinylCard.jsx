@@ -122,7 +122,9 @@ export default function VinylCard({
             ) : (
               <TrendingDown size={10} />
             )}
-            {Math.abs(priceChange.amount).toFixed(2)} {priceChange.currency}
+            {typeof priceChange.amount === 'number' && !isNaN(priceChange.amount)
+              ? Math.abs(priceChange.amount).toFixed(2)
+              : '0.00'} {priceChange.currency || 'USD'}
           </div>
         )}
       </div>
@@ -178,7 +180,7 @@ export default function VinylCard({
                 color: themes.primary
               }}
             >
-              {price.currency} {price.value.toFixed(2)}
+              {price.currency} {typeof price.value === 'number' ? price.value.toFixed(2) : price.value}
             </div>
           ) : (
             <div
