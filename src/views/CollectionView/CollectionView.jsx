@@ -1,6 +1,6 @@
 import React from 'react';
 import { RefreshCw, Grid, List, X, Music } from 'lucide-react';
-import { designSystem, withOpacity } from '../../designsystem';
+import { designSystem } from '../../designsystem';
 import VinylCard from '../../components/VinylCard';
 import FilterChip from '../../components/FilterChip';
 import EmptyState from '../../components/EmptyState';
@@ -419,17 +419,25 @@ export default function CollectionView({
           }}
         >
           {filteredAndSorted.map((item) => {
-            const priceChange = getPriceChange(item);
+            // Get price change from history (for long-term tracking)
+            const historicalPriceChange = getPriceChange(item);
+            // Get temporary price change from recent refresh (shows for 5 seconds)
+            const tempPriceChange = priceChanges[item.id];
+            // Use temp change if available, otherwise use historical
+            const priceChange = tempPriceChange || historicalPriceChange;
+
+            // Support both price structures for backward compatibility
+            const priceData = item.price || (item.lowestPrice ? { value: item.lowestPrice, currency: 'USD' } : null);
 
             return (
               <VinylCard
                 key={item.id}
                 vinyl={item}
-                price={item.price}
+                price={priceData}
                 isRefreshing={refreshingPrices[item.id]}
                 priceChange={priceChange}
                 inCollection={true}
-                isFavorite={item.favorite}
+                isFavorite={item.isFavorite}
                 onToggleFavorite={() => onToggleFavorite(item.id)}
                 onRefreshPrice={() => onRefreshPrice(item.id, true)}
                 onRemove={() => onRemove(item.id)}

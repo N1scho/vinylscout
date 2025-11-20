@@ -326,7 +326,18 @@ export default function VinylCard({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddToCollection(vinyl);
+                    // Include price data when adding to collection
+                    const itemWithPrice = {
+                      ...vinyl,
+                      price: price || null,
+                      lowestPrice: price?.value || null,
+                      priceHistory: price ? [{
+                        date: new Date().toISOString(),
+                        price: price.value,
+                        currency: price.currency
+                      }] : []
+                    };
+                    onAddToCollection(itemWithPrice);
                   }}
                   style={{
                     flex: 1,

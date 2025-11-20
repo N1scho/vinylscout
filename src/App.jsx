@@ -161,20 +161,31 @@ export default function App() {
         oldPrice = discogsApi.resultPrices[itemId].value;
       } else if (isCollectionItem) {
         const item = collection.collection.find(i => i.id === itemId);
-        if (item && item.price) {
-          oldPrice = item.price.value;
+        if (item) {
+          // Support both price structures for backward compatibility
+          oldPrice = item.price?.value || item.lowestPrice || null;
         }
       }
 
       const priceData = await discogsApi.refreshPrice(itemId, oldPrice);
 
-      // If collection item, update collection
+      // If collection item, update collection with price history
       if (isCollectionItem && priceData) {
         const newCollection = collection.collection.map(item => {
           if (item.id === itemId) {
+            // Add to price history
+            const priceHistory = [...(item.priceHistory || [])];
+            priceHistory.push({
+              date: new Date().toISOString(),
+              price: priceData.value,
+              currency: priceData.currency
+            });
+
             return {
               ...item,
-              price: { value: priceData.value, currency: priceData.currency }
+              price: { value: priceData.value, currency: priceData.currency },
+              lowestPrice: priceData.value, // Keep for backward compatibility
+              priceHistory: priceHistory.slice(-30) // Keep last 30 entries
             };
           }
           return item;
