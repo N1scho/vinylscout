@@ -136,7 +136,8 @@ export default function App() {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [view, viewHistory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   // Backup & Export Functions
   const exportCollection = () => {
