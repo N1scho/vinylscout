@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
@@ -12,7 +13,7 @@ import { designSystem } from '../../designsystem';
  * - Action buttons (favorite, refresh, remove)
  * - Price change indicator
  */
-export default function VinylCard({
+const VinylCard = React.memo(function VinylCard({
   vinyl,
   price,
   isRefreshing = false,
@@ -393,4 +394,55 @@ export default function VinylCard({
       </div>
     </div>
   );
-}
+});
+
+VinylCard.propTypes = {
+  vinyl: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    title: PropTypes.string.isRequired,
+    artist: PropTypes.string,
+    year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    label: PropTypes.string,
+    format: PropTypes.string,
+    genre: PropTypes.arrayOf(PropTypes.string),
+    cover_image: PropTypes.string,
+    thumb: PropTypes.string,
+    isFavorite: PropTypes.bool
+  }).isRequired,
+  price: PropTypes.shape({
+    value: PropTypes.number.isRequired,
+    currency: PropTypes.string.isRequired
+  }),
+  isRefreshing: PropTypes.bool,
+  priceChange: PropTypes.shape({
+    amount: PropTypes.number.isRequired,
+    currency: PropTypes.string.isRequired
+  }),
+  inCollection: PropTypes.bool,
+  onToggleFavorite: PropTypes.func,
+  onRefreshPrice: PropTypes.func,
+  onRemove: PropTypes.func,
+  onViewDetails: PropTypes.func,
+  onAddToCollection: PropTypes.func,
+  themes: PropTypes.shape({
+    primary: PropTypes.string.isRequired,
+    surface: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    textSecondary: PropTypes.string.isRequired,
+    border: PropTypes.string.isRequired
+  }).isRequired
+};
+
+VinylCard.defaultProps = {
+  price: null,
+  isRefreshing: false,
+  priceChange: null,
+  inCollection: false,
+  onToggleFavorite: null,
+  onRefreshPrice: null,
+  onRemove: null,
+  onViewDetails: null,
+  onAddToCollection: null
+};
+
+export default VinylCard;

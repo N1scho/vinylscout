@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Plus, Minus, Music, Info } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import SearchBar from '../../components/SearchBar';
@@ -23,7 +24,7 @@ import EmptyState from '../../components/EmptyState';
  *
  * @component
  */
-export default function SearchView({
+const SearchView = React.memo(function SearchView({
   // Search State
   searchQuery,
   onSearchQueryChange,
@@ -264,4 +265,59 @@ export default function SearchView({
       )}
     </div>
   );
-}
+});
+
+SearchView.propTypes = {
+  // Search State
+  searchQuery: PropTypes.string.isRequired,
+  onSearchQueryChange: PropTypes.func.isRequired,
+  advancedSearch: PropTypes.shape({
+    artist: PropTypes.string,
+    title: PropTypes.string,
+    label: PropTypes.string,
+    year: PropTypes.string,
+    format: PropTypes.string,
+    genre: PropTypes.string
+  }).isRequired,
+  onAdvancedSearchChange: PropTypes.func.isRequired,
+  searchResults: PropTypes.arrayOf(PropTypes.object).isRequired,
+  isLoading: PropTypes.bool.isRequired,
+
+  // Pagination State
+  currentPage: PropTypes.number.isRequired,
+  totalPages: PropTypes.number.isRequired,
+
+  // Price State
+  resultPrices: PropTypes.objectOf(PropTypes.shape({
+    value: PropTypes.number,
+    currency: PropTypes.string
+  })).isRequired,
+  refreshingPrices: PropTypes.objectOf(PropTypes.bool).isRequired,
+  priceChanges: PropTypes.objectOf(PropTypes.shape({
+    amount: PropTypes.number,
+    currency: PropTypes.string
+  })).isRequired,
+
+  // Collection State
+  collection: PropTypes.arrayOf(PropTypes.object).isRequired,
+
+  // Actions
+  onSearch: PropTypes.func.isRequired,
+  onAdvancedSearch: PropTypes.func.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  onRefreshPrice: PropTypes.func.isRequired,
+  onAddToCollection: PropTypes.func.isRequired,
+  onRemoveFromCollection: PropTypes.func.isRequired,
+  onViewDetails: PropTypes.func.isRequired,
+
+  // Theme
+  themes: PropTypes.shape({
+    background: PropTypes.string.isRequired,
+    surface: PropTypes.string.isRequired,
+    primary: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    textSecondary: PropTypes.string.isRequired
+  }).isRequired
+};
+
+export default SearchView;
