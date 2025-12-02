@@ -4,6 +4,8 @@
  * Provides secure validation for user inputs and API responses
  */
 
+import DOMPurify from 'dompurify';
+
 export const validators = {
   /**
    * Validate year is within reasonable range
@@ -16,13 +18,37 @@ export const validators = {
 
   /**
    * Sanitize string input to prevent XSS
+   * Uses DOMPurify for comprehensive XSS protection
    */
   sanitizeString: (str, maxLength = 200) => {
     if (typeof str !== 'string') return '';
-    return str
+
+    // Use DOMPurify to sanitize the string
+    const cleaned = DOMPurify.sanitize(str, {
+      ALLOWED_TAGS: [], // Strip all HTML tags
+      ALLOWED_ATTR: [], // Strip all attributes
+      KEEP_CONTENT: true // Keep text content
+    });
+
+    return cleaned
       .trim()
-      .slice(0, maxLength)
-      .replace(/[<>]/g, ''); // Basic XSS protection
+      .slice(0, maxLength);
+  },
+
+  /**
+   * Sanitize HTML content (for cases where HTML is needed)
+   * Allows only safe HTML tags
+   */
+  sanitizeHtml: (html, maxLength = 1000) => {
+    if (typeof html !== 'string') return '';
+
+    const cleaned = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p'],
+      ALLOWED_ATTR: [],
+      KEEP_CONTENT: true
+    });
+
+    return cleaned.slice(0, maxLength);
   },
 
   /**
@@ -89,6 +115,22 @@ export const validators = {
       typeof vinyl.title === 'string' &&
       vinyl.title.length > 0 &&
       vinyl.title.length <= 500
+    );
+  },
+
+  /**
+   * Validate price data object from API
+   */
+  isValidPriceData: (priceData) => {
+    if (!priceData || typeof priceData !== 'object') return false;
+
+    return (
+      typeof priceData.value === 'number' &&
+      !isNaN(priceData.value) &&
+      isFinite(priceData.value) &&
+      priceData.value >= 0 &&
+      priceData.value < 1000000 &&
+      validators.isValidCurrency(priceData.currency)
     );
   },
 

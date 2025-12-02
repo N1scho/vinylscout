@@ -58,10 +58,21 @@ export const useModals = () => {
     }
   }, [selectedResult, selectedVinyl, showValueModal, confirmDelete]);
 
+  // Auto-hide toast after 5 seconds with proper cleanup
+  useEffect(() => {
+    if (!toast) return;
+
+    const timerId = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+
+    // Cleanup: cancel timer if component unmounts or toast changes
+    return () => clearTimeout(timerId);
+  }, [toast]);
+
   // Show toast notification
   const showToast = (message, type = 'error') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 5000);
   };
 
   // Open value modal with price history

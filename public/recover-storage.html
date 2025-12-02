@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VinylScout - Storage Recovery</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1A1A2E;
+      color: #EAEAEA;
+    }
+    h1 { color: #FF6B6B; }
+    h2 { color: #4ECDC4; margin-top: 30px; }
+    .section {
+      background: #16213E;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .key {
+      color: #4ECDC4;
+      font-weight: bold;
+    }
+    .value {
+      background: #0F3460;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    button {
+      background: #FF6B6B;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #E55A5A;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      background: #0F3460;
+      border: 1px solid #4ECDC4;
+      color: #EAEAEA;
+      border-radius: 4px;
+      font-family: monospace;
+      margin: 10px 0;
+    }
+    textarea {
+      min-height: 100px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎵 VinylScout Storage Recovery</h1>
+  <p>This tool helps you view and restore your VinylScout data.</p>
+
+  <div class="section">
+    <h2>📊 Current Storage Contents</h2>
+    <button onclick="showStorage()">Show All Storage Data</button>
+    <button onclick="exportAllData()">Export All Data as JSON</button>
+    <div id="storage-contents"></div>
+  </div>
+
+  <div class="section">
+    <h2>💾 Restore Data</h2>
+    <h3>Restore Collection</h3>
+    <textarea id="collection-input" placeholder='Paste your collection JSON here (array format or export format)'></textarea>
+    <button onclick="restoreCollection()">Restore Collection</button>
+
+    <h3>Restore Discogs Token</h3>
+    <input type="text" id="discogs-input" placeholder="Paste your Discogs token">
+    <button onclick="restoreDiscogsToken()">Restore Discogs Token</button>
+
+    <h3>Restore Anthropic Token</h3>
+    <input type="text" id="anthropic-input" placeholder="Paste your Anthropic API key">
+    <button onclick="restoreAnthropicToken()">Restore Anthropic Token</button>
+
+    <div id="restore-status"></div>
+  </div>
+
+  <div class="section">
+    <h2>📥 Import from Backup File</h2>
+    <input type="file" id="file-input" accept=".json">
+    <button onclick="importFromFile()">Import Backup</button>
+    <div id="import-status"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEYS = {
+      COLLECTION: 'vinylCollection',
+      DISCOGS_TOKEN: 'discogsToken',
+      ANTHROPIC_TOKEN: 'anthropicApiKey',
+      THEME: 'theme',
+      CUSTOM_COLORS: 'customColors',
+      SELECTED_SHOPS: 'selectedShops',
+      SEARCH_HISTORY: 'vinylSearchHistory'
+    };
+
+    function showStorage() {
+      const container = document.getElementById('storage-contents');
+      let html = '<h3>Storage Keys Found:</h3>';
+
+      const allData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        allData[key] = value;
+
+        html += `
+          <div style="margin: 15px 0; padding: 10px; background: #0F3460; border-radius: 4px;">
+            <div class="key">${key}</div>
+            <div class="value">${value ? value.substring(0, 200) + (value.length > 200 ? '...' : '') : '(empty)'}</div>
+            <small style="color: #888;">Length: ${value ? value.length : 0} characters</small>
+          </div>
+        `;
+      }
+
+      if (localStorage.length === 0) {
+        html += '<p class="error">⚠️ No data found in localStorage!</p>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function exportAllData() {
+      const allData = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        let value = localStorage.getItem(key);
+
+        // Try to parse JSON values
+        try {
+          value = JSON.parse(value);
+        } catch (e) {
+          // Keep as string if not JSON
+        }
+
+        allData[key] = value;
+      }
+
+      const dataStr = JSON.stringify(allData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `vinylscout-full-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('✅ Full backup exported successfully!');
+    }
+
+    function restoreCollection() {
+      const input = document.getElementById('collection-input').value.trim();
+      const status = document.getElementById('restore-status');
+
+      if (!input) {
+        status.innerHTML = '<p class="error">❌ Please paste collection data</p>';
+        return;
+      }
+
+      try {
+        const data = JSON.parse(input);
+        let collection = [];
+
+        // Handle different formats
+        if (Array.isArray(data)) {
+          collection = data;
+        } else if (data.collection && Array.isArray(data.collection)) {
+          collection = data.collection;
+        } else {
+          throw new Error('Invalid format');
+        }
+
+        localStorage.setItem(STORAGE_KEYS.COLLECTION, JSON.stringify(collection));
+        status.innerHTML = `<p class="success">✅ Collection restored! ${collection.length} items</p>`;
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } catch (error) {
+        status.innerHTML = `<p class="error">❌ Invalid JSON: ${error.message}</p>`;
+      }
+    }
+
+    function restoreDiscogsToken() {
+      const input = document.getElementById('discogs-input').value.trim();
+      const status = document.getElementById('restore-status');
+
+      if (!input) {
+        status.innerHTML = '<p class="error">❌ Please enter Discogs token</p>';
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEYS.DISCOGS_TOKEN, input);
+      status.innerHTML = '<p class="success">✅ Discogs token restored!</p>';
+
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    }
+
+    function restoreAnthropicToken() {
+      const input = document.getElementById('anthropic-input').value.trim();
+      const status = document.getElementById('restore-status');
+
+      if (!input) {
+        status.innerHTML = '<p class="error">❌ Please enter Anthropic token</p>';
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEYS.ANTHROPIC_TOKEN, input);
+      status.innerHTML = '<p class="success">✅ Anthropic token restored!</p>';
+
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    }
+
+    function importFromFile() {
+      const fileInput = document.getElementById('file-input');
+      const status = document.getElementById('import-status');
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        status.innerHTML = '<p class="error">❌ Please select a file</p>';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          let restored = [];
+
+          // Restore all keys found in backup
+          Object.keys(data).forEach(key => {
+            const value = typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]);
+            localStorage.setItem(key, value);
+            restored.push(key);
+          });
+
+          status.innerHTML = `<p class="success">✅ Restored ${restored.length} items: ${restored.join(', ')}</p>`;
+
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } catch (error) {
+          status.innerHTML = `<p class="error">❌ Invalid backup file: ${error.message}</p>`;
+        }
+      };
+
+      reader.onerror = () => {
+        status.innerHTML = '<p class="error">❌ Failed to read file</p>';
+      };
+
+      reader.readAsText(file);
+    }
+
+    // Auto-show storage on load
+    window.addEventListener('load', showStorage);
+  </script>
+</body>
+</html>

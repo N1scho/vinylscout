@@ -21,7 +21,7 @@ export const useCamera = (isActive) => {
   const startCamera = async () => {
     setCameraError(null);
     try {
-      const stream = await startCameraStream(
+      await startCameraStream(
         (stream) => {
           setCameraStream(stream);
           setIsCameraActive(true);
@@ -34,7 +34,7 @@ export const useCamera = (isActive) => {
           setIsCameraActive(false);
         }
       );
-    } catch (err) {
+    } catch {
       // Error already handled by callback
     }
   };
@@ -48,6 +48,15 @@ export const useCamera = (isActive) => {
     }
   };
 
+  // Use ref to track camera stream for cleanup
+  const cameraStreamRef = useRef(null);
+  const videoElementRef = useRef(null);
+
+  useEffect(() => {
+    cameraStreamRef.current = cameraStream;
+    videoElementRef.current = videoRef.current;
+  }, [cameraStream]);
+
   // Auto start/stop based on active state
   useEffect(() => {
     if (isActive && !isCameraActive) {
@@ -56,11 +65,14 @@ export const useCamera = (isActive) => {
       stopCamera();
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount - use refs to avoid stale closure
     return () => {
-      if (isCameraActive) stopCamera();
+      if (cameraStreamRef.current) {
+        stopCameraStream(cameraStreamRef.current, videoElementRef.current);
+      }
     };
-  }, [isActive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, isCameraActive]);
 
   return {
     // State

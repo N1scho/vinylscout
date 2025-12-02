@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem } from './designsystem';
 import SearchView from './views/SearchView';
@@ -11,6 +11,7 @@ import SettingsView from './views/SettingsView';
 import { calculateCollectionStats } from './utils/statistics';
 import { formatPrice } from './utils/collectionHelpers';
 import { captureAndAnalyzeVinyl } from './utils/cameraHelpers';
+import { validators } from './utils/validators';
 
 // Services
 import * as StorageService from './services/storageService';
@@ -43,7 +44,6 @@ export default function App() {
       return 'search';
     }
   });
-  const [previousView, setPreviousView] = useState(null);
   const [viewHistory, setViewHistory] = useState(() => {
     try {
       const saved = localStorage.getItem('viewHistory');
@@ -63,6 +63,7 @@ export default function App() {
 
   // Price update state (still managed here for now)
   const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false);
+  const updatePricesAbortControllerRef = useRef(null);
 
   // Destructure commonly used values for cleaner code
   const { themes, showDiscogsToken, setShowDiscogsToken, showAnthropicToken, setShowAnthropicToken, customColors } = settings;
@@ -92,7 +93,6 @@ export default function App() {
   const handleViewChange = (newView) => {
     if (newView === view) return; // Don't transition to same view
 
-    setPreviousView(view);
     setView(newView);
 
     // Add to history stack
@@ -100,21 +100,26 @@ export default function App() {
 
     // Push state to browser history for back button support
     window.history.pushState({ view: newView }, '', `#${newView}`);
-
-    // Clear previous view after transition completes
-    setTimeout(() => {
-      setPreviousView(null);
-    }, 300);
   };
 
-  // Handle browser back button
+  // Use refs to avoid stale closures in event listener
+  const viewRef = useRef(view);
+  const viewHistoryRef = useRef(viewHistory);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    viewRef.current = view;
+    viewHistoryRef.current = viewHistory;
+  }, [view, viewHistory]);
+
+  // Handle browser back button (only set up once)
   useEffect(() => {
     const handlePopState = (event) => {
       event.preventDefault();
 
-      if (viewHistory.length > 1) {
+      if (viewHistoryRef.current.length > 1) {
         // Go back to previous view in our history
-        const newHistory = [...viewHistory];
+        const newHistory = [...viewHistoryRef.current];
         newHistory.pop(); // Remove current
         const previousView = newHistory[newHistory.length - 1];
 
@@ -123,21 +128,20 @@ export default function App() {
       } else {
         // If we're at the first view, don't close the app
         // Just stay on the current view
-        window.history.pushState({ view }, '', `#${view}`);
+        window.history.pushState({ view: viewRef.current }, '', `#${viewRef.current}`);
       }
     };
 
-    // Listen for back button
+    // Listen for back button (only once)
     window.addEventListener('popstate', handlePopState);
 
     // Initialize history state
-    window.history.replaceState({ view }, '', `#${view}`);
+    window.history.replaceState({ view: viewRef.current }, '', `#${viewRef.current}`);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, []); // Empty dependency array - only runs once
 
   // Backup & Export Functions
   const exportCollection = () => {
@@ -242,8 +246,8 @@ export default function App() {
 
       // If collection item, update collection with price history
       if (isCollectionItem && priceData) {
-        // Validate price data
-        if (typeof priceData.value !== 'number' || isNaN(priceData.value)) {
+        // Validate price data comprehensively
+        if (!validators.isValidPriceData(priceData)) {
           console.error('Invalid price data received:', priceData);
           modals.showToast('Received invalid price data from Discogs', 'error');
           return;
@@ -317,24 +321,63 @@ export default function App() {
       return;
     }
 
+    // Cancel any existing update operation
+    if (updatePricesAbortControllerRef.current) {
+      updatePricesAbortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this operation
+    const abortController = new AbortController();
+    updatePricesAbortControllerRef.current = abortController;
+
     setIsUpdatingAllPrices(true);
     const itemsToUpdate = collection.collection.filter(item => item.id);
     let updated = 0;
 
-    for (const item of itemsToUpdate) {
-      try {
-        await refreshPrice(item.id, true);
-        updated++;
-        // Rate limit: Wait 1.1 seconds between requests (Discogs allows 60/min)
-        await new Promise(resolve => setTimeout(resolve, 1100));
-      } catch (error) {
-        console.error(`Failed to update price for ${item.id}:`, error);
-      }
-    }
+    try {
+      for (const item of itemsToUpdate) {
+        // Check if operation was cancelled
+        if (abortController.signal.aborted) {
+          showToast(`Price update cancelled. Updated ${updated} of ${itemsToUpdate.length} items`, 'info');
+          break;
+        }
 
-    setIsUpdatingAllPrices(false);
-    showToast(`Updated prices for ${updated} of ${itemsToUpdate.length} items`, 'success');
+        try {
+          await refreshPrice(item.id, true);
+          updated++;
+
+          // Rate limit: Wait 1.1 seconds between requests (Discogs allows 60/min)
+          // Use abortable delay
+          await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(resolve, 1100);
+            abortController.signal.addEventListener('abort', () => {
+              clearTimeout(timeoutId);
+              reject(new Error('Aborted'));
+            });
+          });
+        } catch (error) {
+          if (error.message === 'Aborted') break;
+          console.error(`Failed to update price for ${item.id}:`, error);
+        }
+      }
+
+      if (!abortController.signal.aborted) {
+        showToast(`Updated prices for ${updated} of ${itemsToUpdate.length} items`, 'success');
+      }
+    } finally {
+      setIsUpdatingAllPrices(false);
+      updatePricesAbortControllerRef.current = null;
+    }
   };
+
+  // Cancel price updates when component unmounts or view changes
+  useEffect(() => {
+    return () => {
+      if (updatePricesAbortControllerRef.current) {
+        updatePricesAbortControllerRef.current.abort();
+      }
+    };
+  }, [view]); // Cancel when navigating away
 
 // Collection Sorting & Filtering (V2.1)
   // Memoize expensive filtering and sorting operations
@@ -518,49 +561,27 @@ return (
     }}>
       <Header themes={themes} />
 
-      {/* View Container with Cross-fade Transition */}
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        {/* Previous view fading out */}
-        {previousView && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: 0,
-            transform: 'scale(0.98)',
-            transition: 'opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}>
-            {previousView === 'search' && renderSearchView()}
-            {previousView === 'camera' && renderCameraView()}
-            {previousView === 'collection' && renderCollectionView()}
-            {previousView === 'stats' && renderStatsView()}
-            {previousView === 'settings' && renderSettingsView()}
-          </div>
-        )}
-
-        {/* Current view fading in */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 1,
-          transform: 'scale(1)',
-          transition: 'opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
-          zIndex: 2
-        }}>
-          {view === 'search' && renderSearchView()}
-          {view === 'camera' && renderCameraView()}
-          {view === 'collection' && renderCollectionView()}
-          {view === 'stats' && renderStatsView()}
-          {view === 'settings' && renderSettingsView()}
-        </div>
+      {/* View Container with Optimized Rendering - Only render current view */}
+      <div style={{
+        width: '100%',
+        minHeight: 'calc(100vh - 140px)',
+        opacity: 1,
+        animation: 'fadeIn 200ms ease-in'
+      }}>
+        {view === 'search' && renderSearchView()}
+        {view === 'camera' && renderCameraView()}
+        {view === 'collection' && renderCollectionView()}
+        {view === 'stats' && renderStatsView()}
+        {view === 'settings' && renderSettingsView()}
       </div>
+
+      {/* Simple fade-in animation */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
       <Navigation view={view} onViewChange={handleViewChange} themes={themes} />
       <DetailModal
