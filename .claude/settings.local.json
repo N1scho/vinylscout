@@ -22,7 +22,10 @@
       "Bash(nvm use:*)",
       "Bash(nvm alias:*)",
       "Bash(node --version:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(find:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

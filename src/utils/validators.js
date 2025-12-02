@@ -148,7 +148,7 @@ export const validators = {
   sanitizeFilename: (filename) => {
     if (typeof filename !== 'string') return 'download';
     return filename
-      .replace(/[^a-zA-Z0-9-_\.]/g, '_')
+      .replace(/[^a-zA-Z0-9-_.]/g, '_')
       .slice(0, 100);
   }
 };

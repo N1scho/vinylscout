@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import { designSystem } from '../../designsystem';
@@ -29,6 +29,69 @@ const VinylCard = React.memo(function VinylCard({
   const hasPrice = price && typeof price.value === 'number';
   const hasPriceChange = priceChange && typeof priceChange.amount === 'number';
 
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleMouseEnter = useCallback((e) => {
+    e.currentTarget.style.transform = 'translateY(-4px)';
+    e.currentTarget.style.boxShadow = designSystem.shadows.lg;
+  }, []);
+
+  const handleMouseLeave = useCallback((e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = designSystem.shadows.sm;
+  }, []);
+
+  const handleViewDetails = useCallback(() => {
+    if (onViewDetails) {
+      onViewDetails(vinyl);
+    }
+  }, [onViewDetails, vinyl]);
+
+  const handleToggleFavorite = useCallback((e) => {
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(vinyl.id);
+    }
+  }, [onToggleFavorite, vinyl.id]);
+
+  const handleRefreshPrice = useCallback((e) => {
+    e.stopPropagation();
+    if (onRefreshPrice) {
+      onRefreshPrice(vinyl.id);
+    }
+  }, [onRefreshPrice, vinyl.id]);
+
+  const handleRemove = useCallback((e) => {
+    e.stopPropagation();
+    if (onRemove) {
+      onRemove(vinyl.id);
+    }
+  }, [onRemove, vinyl.id]);
+
+  const handleAddToCollection = useCallback((e) => {
+    e.stopPropagation();
+    if (onAddToCollection) {
+      // Include price data when adding to collection
+      const itemWithPrice = {
+        ...vinyl,
+        price: price || null,
+        lowestPrice: price?.value || null,
+        priceHistory: price ? [{
+          date: new Date().toISOString(),
+          price: price.value,
+          currency: price.currency
+        }] : []
+      };
+      onAddToCollection(itemWithPrice);
+    }
+  }, [onAddToCollection, vinyl, price]);
+
+  const handleViewDetailsButton = useCallback((e) => {
+    e.stopPropagation();
+    if (onViewDetails) {
+      onViewDetails(vinyl);
+    }
+  }, [onViewDetails, vinyl]);
+
   return (
     <div
       style={{
@@ -42,18 +105,12 @@ const VinylCard = React.memo(function VinylCard({
         cursor: 'pointer',
         border: `1px solid ${themes.border}`
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = designSystem.shadows.lg;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = designSystem.shadows.sm;
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Cover Image */}
       <div
-        onClick={() => onViewDetails && onViewDetails(vinyl)}
+        onClick={handleViewDetails}
         style={{
           position: 'relative',
           width: '100%',
@@ -210,10 +267,7 @@ const VinylCard = React.memo(function VinylCard({
               {/* Collection Actions */}
               {onToggleFavorite && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(vinyl.id);
-                  }}
+                  onClick={handleToggleFavorite}
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
@@ -242,10 +296,7 @@ const VinylCard = React.memo(function VinylCard({
 
               {onRefreshPrice && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRefreshPrice(vinyl.id);
-                  }}
+                  onClick={handleRefreshPrice}
                   disabled={isRefreshing}
                   style={{
                     flex: 1,
@@ -274,10 +325,7 @@ const VinylCard = React.memo(function VinylCard({
 
               {onViewDetails && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewDetails(vinyl);
-                  }}
+                  onClick={handleViewDetailsButton}
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
@@ -299,10 +347,7 @@ const VinylCard = React.memo(function VinylCard({
 
               {onRemove && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(vinyl.id);
-                  }}
+                  onClick={handleRemove}
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
@@ -327,21 +372,7 @@ const VinylCard = React.memo(function VinylCard({
               {/* Search Result Actions */}
               {onAddToCollection && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Include price data when adding to collection
-                    const itemWithPrice = {
-                      ...vinyl,
-                      price: price || null,
-                      lowestPrice: price?.value || null,
-                      priceHistory: price ? [{
-                        date: new Date().toISOString(),
-                        price: price.value,
-                        currency: price.currency
-                      }] : []
-                    };
-                    onAddToCollection(itemWithPrice);
-                  }}
+                  onClick={handleAddToCollection}
                   style={{
                     flex: 1,
                     padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
@@ -367,10 +398,7 @@ const VinylCard = React.memo(function VinylCard({
 
               {onViewDetails && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewDetails(vinyl);
-                  }}
+                  onClick={handleViewDetailsButton}
                   style={{
                     padding: designSystem.spacing.sm,
                     backgroundColor: 'transparent',

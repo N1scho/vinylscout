@@ -6,10 +6,11 @@
  */
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Music } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
-const Header = ({ themes }) => {
+const Header = React.memo(({ themes }) => {
   const LOGO_PATH = "/VinylScoutLogo.png";
   const [logoError, setLogoError] = useState(false);
 
@@ -65,6 +66,15 @@ const Header = ({ themes }) => {
       </div>
     </header>
   );
+});
+
+Header.propTypes = {
+  themes: PropTypes.shape({
+    surface: PropTypes.string.isRequired,
+    border: PropTypes.string.isRequired,
+    primary: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired
+  }).isRequired
 };
 
 export default Header;

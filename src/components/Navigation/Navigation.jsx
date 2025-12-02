@@ -6,10 +6,11 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Search, Camera, Grid, BarChart3, Settings } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
-const Navigation = ({ view, onViewChange, themes }) => {
+const Navigation = React.memo(({ view, onViewChange, themes }) => {
   const navItems = [
     { id: 'search', icon: Search, label: 'Search' },
     { id: 'camera', icon: Camera, label: 'Camera' },
@@ -32,7 +33,7 @@ const Navigation = ({ view, onViewChange, themes }) => {
       right: 0,
       zIndex: 100
     }}>
-      {navItems.map(({ id, icon: Icon, label }) => (
+      {navItems.map(({ id, icon: Icon, label }) => ( // eslint-disable-line no-unused-vars
         <button
           key={id}
           onClick={() => onViewChange(id)}
@@ -57,6 +58,15 @@ const Navigation = ({ view, onViewChange, themes }) => {
       ))}
     </nav>
   );
+});
+
+Navigation.propTypes = {
+  view: PropTypes.oneOf(['search', 'camera', 'collection', 'stats', 'settings']).isRequired,
+  onViewChange: PropTypes.func.isRequired,
+  themes: PropTypes.shape({
+    primary: PropTypes.string.isRequired,
+    textSecondary: PropTypes.string.isRequired
+  }).isRequired
 };
 
 export default Navigation;

@@ -6,10 +6,11 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
-const Toast = ({
+const Toast = React.memo(({
   toast,
   onClose,
   themes
@@ -41,6 +42,18 @@ const Toast = ({
       />
     </div>
   );
+});
+
+Toast.propTypes = {
+  toast: PropTypes.shape({
+    message: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['error', 'success', 'info']).isRequired
+  }),
+  onClose: PropTypes.func.isRequired,
+  themes: PropTypes.shape({
+    error: PropTypes.string.isRequired,
+    success: PropTypes.string.isRequired
+  }).isRequired
 };
 
 export default Toast;

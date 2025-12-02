@@ -2,14 +2,18 @@
  * Storage Service Module
  *
  * Handles all localStorage operations for VinylScout
+ * SECURITY UPDATE: API tokens now use encrypted secure storage
  * Extracted from App.jsx v2.8.0
+ * Updated: v2.13.0 - Added secure token storage
  */
+
+import { SecureStorage } from './secureStorage';
 
 // Storage keys
 const STORAGE_KEYS = {
   COLLECTION: 'vinylCollection',
-  DISCOGS_TOKEN: 'discogsToken',
-  ANTHROPIC_TOKEN: 'anthropicApiKey',
+  DISCOGS_TOKEN: 'discogsToken', // Now stored in SecureStorage
+  ANTHROPIC_TOKEN: 'anthropicToken', // Now stored in SecureStorage
   THEME: 'theme',
   CUSTOM_COLORS: 'customColors',
   SELECTED_SHOPS: 'selectedShops',
@@ -95,7 +99,7 @@ export const importCollection = async (file) => {
         }
 
         resolve(importedCollection);
-      } catch (error) {
+      } catch {
         reject(new Error('Invalid JSON file'));
       }
     };
@@ -106,39 +110,51 @@ export const importCollection = async (file) => {
 };
 
 /**
- * Save Discogs token
+ * Save Discogs token (SECURE)
+ * Now uses encrypted storage to prevent XSS token theft
  *
  * @param {string} token - Discogs API token
  */
 export const saveDiscogsToken = (token) => {
-  localStorage.setItem(STORAGE_KEYS.DISCOGS_TOKEN, token);
+  if (!token || token.trim() === '') {
+    SecureStorage.removeToken(STORAGE_KEYS.DISCOGS_TOKEN);
+    return;
+  }
+  SecureStorage.setToken(STORAGE_KEYS.DISCOGS_TOKEN, token);
 };
 
 /**
- * Load Discogs token
+ * Load Discogs token (SECURE)
+ * Retrieves token from encrypted storage
  *
  * @returns {string} Discogs API token
  */
 export const loadDiscogsToken = () => {
-  return localStorage.getItem(STORAGE_KEYS.DISCOGS_TOKEN) || '';
+  return SecureStorage.getToken(STORAGE_KEYS.DISCOGS_TOKEN) || '';
 };
 
 /**
- * Save Anthropic token
+ * Save Anthropic token (SECURE)
+ * Now uses encrypted storage to prevent XSS token theft
  *
  * @param {string} token - Anthropic API token
  */
 export const saveAnthropicToken = (token) => {
-  localStorage.setItem(STORAGE_KEYS.ANTHROPIC_TOKEN, token);
+  if (!token || token.trim() === '') {
+    SecureStorage.removeToken(STORAGE_KEYS.ANTHROPIC_TOKEN);
+    return;
+  }
+  SecureStorage.setToken(STORAGE_KEYS.ANTHROPIC_TOKEN, token);
 };
 
 /**
- * Load Anthropic token
+ * Load Anthropic token (SECURE)
+ * Retrieves token from encrypted storage
  *
  * @returns {string} Anthropic API token
  */
 export const loadAnthropicToken = () => {
-  return localStorage.getItem(STORAGE_KEYS.ANTHROPIC_TOKEN) || '';
+  return SecureStorage.getToken(STORAGE_KEYS.ANTHROPIC_TOKEN) || '';
 };
 
 /**
@@ -182,7 +198,7 @@ export const loadCustomColors = () => {
       accent: '#4ECDC4',
       text: '#EAEAEA'
     };
-  } catch (error) {
+  } catch {
     return {
       primary: '#FF6B6B',
       background: '#1A1A2E',
@@ -210,7 +226,7 @@ export const loadSelectedShops = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_SHOPS);
     return stored ? JSON.parse(stored) : ['discogs', 'hhv', 'ebay'];
-  } catch (error) {
+  } catch {
     return ['discogs', 'hhv', 'ebay'];
   }
 };
@@ -233,7 +249,7 @@ export const loadSearchHistory = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
     return stored ? JSON.parse(stored) : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

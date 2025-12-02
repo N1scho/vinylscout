@@ -15,6 +15,7 @@ import { validators } from './utils/validators';
 
 // Services
 import * as StorageService from './services/storageService';
+import { migrateExistingTokens } from './services/secureStorage';
 
 // Custom Hooks
 import { useCollection } from './hooks/useCollection';
@@ -30,11 +31,22 @@ import ConfirmDialog from './components/ConfirmDialog';
 import Toast from './components/Toast';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
+import ViewErrorBoundary from './components/ViewErrorBoundary';
 
 // App Version
 const APP_VERSION = '2.12.1';
 
 export default function App() {
+  // SECURITY: Migrate existing plain tokens to encrypted storage (runs once)
+  useEffect(() => {
+    try {
+      migrateExistingTokens();
+    } catch (error) {
+      console.error('Token migration failed:', error);
+      // Non-blocking - app can still function
+    }
+  }, []); // Run only once on mount
+
   // Navigation & View State - Load from localStorage if available
   const [view, setView] = useState(() => {
     try {
@@ -568,11 +580,51 @@ return (
         opacity: 1,
         animation: 'fadeIn 200ms ease-in'
       }}>
-        {view === 'search' && renderSearchView()}
-        {view === 'camera' && renderCameraView()}
-        {view === 'collection' && renderCollectionView()}
-        {view === 'stats' && renderStatsView()}
-        {view === 'settings' && renderSettingsView()}
+        {view === 'search' && (
+          <ViewErrorBoundary
+            viewName="Search"
+            themes={themes}
+            onNavigateHome={() => handleViewChange('search')}
+          >
+            {renderSearchView()}
+          </ViewErrorBoundary>
+        )}
+        {view === 'camera' && (
+          <ViewErrorBoundary
+            viewName="Camera"
+            themes={themes}
+            onNavigateHome={() => handleViewChange('search')}
+          >
+            {renderCameraView()}
+          </ViewErrorBoundary>
+        )}
+        {view === 'collection' && (
+          <ViewErrorBoundary
+            viewName="Collection"
+            themes={themes}
+            onNavigateHome={() => handleViewChange('search')}
+          >
+            {renderCollectionView()}
+          </ViewErrorBoundary>
+        )}
+        {view === 'stats' && (
+          <ViewErrorBoundary
+            viewName="Statistics"
+            themes={themes}
+            onNavigateHome={() => handleViewChange('search')}
+          >
+            {renderStatsView()}
+          </ViewErrorBoundary>
+        )}
+        {view === 'settings' && (
+          <ViewErrorBoundary
+            viewName="Settings"
+            themes={themes}
+            onNavigateHome={() => handleViewChange('search')}
+          >
+            {renderSettingsView()}
+          </ViewErrorBoundary>
+        )}
       </div>
 
       {/* Simple fade-in animation */}

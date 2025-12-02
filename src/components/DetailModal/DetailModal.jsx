@@ -6,10 +6,11 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 import { designSystem, withOpacity } from '../../designsystem';
 
-const DetailModal = ({
+const DetailModal = React.memo(({
   selectedResult,
   collection,
   onClose,
@@ -165,6 +166,32 @@ const DetailModal = ({
       </div>
     </div>
   );
+});
+
+DetailModal.propTypes = {
+  selectedResult: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    title: PropTypes.string.isRequired,
+    artist: PropTypes.string,
+    year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    label: PropTypes.string,
+    format: PropTypes.string,
+    genre: PropTypes.arrayOf(PropTypes.string),
+    cover_image: PropTypes.string,
+    thumb: PropTypes.string
+  }),
+  collection: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onClose: PropTypes.func.isRequired,
+  onAddToCollection: PropTypes.func.isRequired,
+  onRemoveFromCollection: PropTypes.func.isRequired,
+  themes: PropTypes.shape({
+    background: PropTypes.string.isRequired,
+    surface: PropTypes.string.isRequired,
+    primary: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    textSecondary: PropTypes.string.isRequired,
+    border: PropTypes.string.isRequired
+  }).isRequired
 };
 
 export default DetailModal;
