@@ -25,7 +25,7 @@ class ViewErrorBoundary extends React.Component {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(_error, errorInfo) {
     console.error(`Error in ${this.props.viewName || 'View'}:`, error, errorInfo);
 
     this.setState(prevState => ({
@@ -128,7 +128,7 @@ class ViewErrorBoundary extends React.Component {
             </p>
 
             {/* Error message (in development) */}
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV  && this.state.error && (
               <div style={{
                 marginBottom: designSystem.spacing.lg,
                 padding: designSystem.spacing.md,
@@ -218,7 +218,7 @@ class ViewErrorBoundary extends React.Component {
             </div>
 
             {/* Error count indicator (development only) */}
-            {process.env.NODE_ENV === 'development' && this.state.errorCount > 1 && (
+            {import.meta.env.DEV  && this.state.errorCount > 1 && (
               <p style={{
                 marginTop: designSystem.spacing.md,
                 fontSize: designSystem.typography.sizes.sm,
@@ -230,7 +230,7 @@ class ViewErrorBoundary extends React.Component {
             )}
 
             {/* Stack trace (development only) */}
-            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+            {import.meta.env.DEV  && this.state.errorInfo && (
               <details style={{
                 marginTop: designSystem.spacing.lg,
                 textAlign: 'left',

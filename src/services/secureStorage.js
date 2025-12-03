@@ -340,7 +340,7 @@ export const migrateExistingTokens = () => {
 /**
  * Security best practices reminder
  */
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.group('🔒 Secure Storage Information');
   console.info('Storage Mode:', STORAGE_MODE);
   console.info('Token Expiry:', `${TOKEN_EXPIRY_HOURS} hours`);

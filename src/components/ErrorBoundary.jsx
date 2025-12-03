@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(_error, errorInfo) {
     // Log error details for debugging
     console.error('Error Boundary caught an error:', error, errorInfo);
 
@@ -161,7 +161,7 @@ class ErrorBoundary extends React.Component {
               </button>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+            {import.meta.env.DEV && this.state.errorInfo && (
               <details style={{
                 marginTop: '24px',
                 textAlign: 'left',

@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem } from './designsystem';
-import SearchView from './views/SearchView';
-import CameraView from './views/CameraView';
-import CollectionView from './views/CollectionView';
-import StatsView from './views/StatsView';
-import SettingsView from './views/SettingsView';
+
+// Code-split views for better performance
+const SearchView = lazy(() => import('./views/SearchView'));
+const CameraView = lazy(() => import('./views/CameraView'));
+const CollectionView = lazy(() => import('./views/CollectionView'));
+const StatsView = lazy(() => import('./views/StatsView'));
+const SettingsView = lazy(() => import('./views/SettingsView'));
 
 // Utilities
 import { calculateCollectionStats } from './utils/statistics';
@@ -17,13 +19,17 @@ import { validators } from './utils/validators';
 import * as StorageService from './services/storageService';
 import { migrateExistingTokens } from './services/secureStorage';
 
-// Custom Hooks
-import { useCollection } from './hooks/useCollection';
-import { useSearch } from './hooks/useSearch';
-import { useSettings } from './hooks/useSettings';
-import { useModals } from './hooks/useModals';
+// Zustand Stores
+import { useCollectionStore } from './stores/collectionStore';
+import { useSearchStore } from './stores/searchStore';
+import { useSettingsStore } from './stores/settingsStore';
+import { useUIStore } from './stores/uiStore';
+
+// Custom Hooks (still needed for some functionality)
 import { useCamera } from './hooks/useCamera';
 import { useDiscogsSearch } from './hooks/useDiscogsSearch';
+
+// Components
 import DetailModal from './components/DetailModal';
 import ValueHistoryModal from './components/ValueHistoryModal';
 import VinylDetailsModal from './components/VinylDetailsModal';
@@ -47,29 +53,17 @@ export default function App() {
     }
   }, []); // Run only once on mount
 
-  // Navigation & View State - Load from localStorage if available
-  const [view, setView] = useState(() => {
-    try {
-      const saved = localStorage.getItem('currentView');
-      return saved || 'search';
-    } catch {
-      return 'search';
-    }
-  });
-  const [viewHistory, setViewHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('viewHistory');
-      return saved ? JSON.parse(saved) : ['search'];
-    } catch {
-      return ['search'];
-    }
-  });
+  // Zustand Stores - Much cleaner than before!
+  const collection = useCollectionStore();
+  const search = useSearchStore();
+  const settings = useSettingsStore();
+  const ui = useUIStore();
 
-  // Custom Hooks
-  const collection = useCollection();
-  const search = useSearch();
-  const settings = useSettings();
-  const modals = useModals();
+  // Derived values
+  const themes = settings.getThemes();
+  const view = ui.currentView;
+
+  // Hooks that still need local state
   const camera = useCamera(view === 'camera');
   const discogsApi = useDiscogsSearch(settings.discogsToken);
 
@@ -77,92 +71,36 @@ export default function App() {
   const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false);
   const updatePricesAbortControllerRef = useRef(null);
 
-  // Destructure commonly used values for cleaner code
-  const { themes, showDiscogsToken, setShowDiscogsToken, showAnthropicToken, setShowAnthropicToken, customColors } = settings;
-  const { toast, showToast, selectedResult, selectedVinyl, showValueModal, setShowValueModal, valueHistory, setValueHistory, confirmDelete, setConfirmDelete, openValueModal } = modals;
-  const { isAnalyzing, cameraError, setIsAnalyzing } = camera;
-
-
-  // Save view state to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('currentView', view);
-    } catch (error) {
-      console.error('Failed to save current view:', error);
-    }
-  }, [view]);
-
-  // Save view history to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('viewHistory', JSON.stringify(viewHistory));
-    } catch (error) {
-      console.error('Failed to save view history:', error);
-    }
-  }, [viewHistory]);
-
-  // View Transition Handler
+  // View Transition Handler - Now much simpler!
   const handleViewChange = (newView) => {
-    if (newView === view) return; // Don't transition to same view
-
-    setView(newView);
-
-    // Add to history stack
-    setViewHistory(prev => [...prev, newView]);
-
-    // Push state to browser history for back button support
+    if (newView === view) return;
+    ui.setView(newView);
     window.history.pushState({ view: newView }, '', `#${newView}`);
   };
 
-  // Use refs to avoid stale closures in event listener
-  const viewRef = useRef(view);
-  const viewHistoryRef = useRef(viewHistory);
-
-  // Keep refs in sync with state
-  useEffect(() => {
-    viewRef.current = view;
-    viewHistoryRef.current = viewHistory;
-  }, [view, viewHistory]);
-
-  // Handle browser back button (only set up once)
+  // Handle browser back button
   useEffect(() => {
     const handlePopState = (event) => {
       event.preventDefault();
-
-      if (viewHistoryRef.current.length > 1) {
-        // Go back to previous view in our history
-        const newHistory = [...viewHistoryRef.current];
-        newHistory.pop(); // Remove current
-        const previousView = newHistory[newHistory.length - 1];
-
-        setViewHistory(newHistory);
-        setView(previousView);
-      } else {
-        // If we're at the first view, don't close the app
-        // Just stay on the current view
-        window.history.pushState({ view: viewRef.current }, '', `#${viewRef.current}`);
-      }
+      ui.goBack();
     };
 
-    // Listen for back button (only once)
     window.addEventListener('popstate', handlePopState);
-
-    // Initialize history state
-    window.history.replaceState({ view: viewRef.current }, '', `#${viewRef.current}`);
+    window.history.replaceState({ view }, '', `#${view}`);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, []); // Empty dependency array - only runs once
+  }, [ui, view]); // Fixed dependencies
 
-  // Backup & Export Functions
+  // Backup & Export Functions - Now use stores!
   const exportCollection = () => {
     try {
       StorageService.exportCollection(collection.collection);
-      showToast(`Exported ${collection.collection.length} records`, 'success');
+      ui.ui.showToast(`Exported ${collection.collection.length} records`, 'success');
     } catch (error) {
       console.error('Export failed:', error);
-      showToast('Failed to export collection', 'error');
+      ui.ui.showToast('Failed to export collection', 'error');
     }
   };
 
@@ -173,11 +111,10 @@ export default function App() {
     try {
       const imported = await StorageService.importCollection(file);
       collection.setCollection(imported);
-      StorageService.saveCollection(imported);
-      showToast(`Imported ${imported.length} records`, 'success');
+      ui.ui.showToast(`Imported ${imported.length} records`, 'success');
     } catch (error) {
       console.error('Import failed:', error);
-      showToast('Failed to import collection', 'error');
+      ui.ui.showToast('Failed to import collection', 'error');
     }
 
     event.target.value = '';
@@ -213,7 +150,7 @@ export default function App() {
   // Modal state and ESC handling now in useModals hook
 
 
-  // Discogs API wrapper functions using hook
+  // Discogs API wrapper functions - Now with stores!
   const searchDiscogs = async (isAdvanced = false, queryOverride = null, page = 1) => {
     await discogsApi.performSearch({
       isAdvanced,
@@ -226,13 +163,13 @@ export default function App() {
         search.setSearchResults(results);
         search.setCurrentPage(data.pagination?.page || page);
         search.setTotalPages(data.pagination?.pages || 1);
-        
+
         if (results.length > 0) {
           discogsApi.fetchAllPrices(results);
         }
       },
       onError: (error) => {
-        modals.showToast(error, 'error');
+        ui.ui.showToast(error, 'error');
         if (error.includes('token')) {
           handleViewChange('settings');
         }
@@ -261,7 +198,7 @@ export default function App() {
         // Validate price data comprehensively
         if (!validators.isValidPriceData(priceData)) {
           console.error('Invalid price data received:', priceData);
-          modals.showToast('Received invalid price data from Discogs', 'error');
+          modals.ui.showToast('Received invalid price data from Discogs', 'error');
           return;
         }
 
@@ -285,20 +222,19 @@ export default function App() {
           return item;
         });
         collection.setCollection(newCollection);
-        StorageService.saveCollection(newCollection);
       } else if (isCollectionItem && !priceData) {
-        modals.showToast('No price data available for this item', 'error');
+        ui.ui.showToast('No price data available for this item', 'error');
       }
     } catch (error) {
       console.error('Error refreshing price:', error);
-      modals.showToast(error.message || 'Error refreshing price', 'error');
+      ui.ui.showToast(error.message || 'Error refreshing price', 'error');
     }
   };
 
   // Camera capture and analyze function
   const captureAndAnalyze = async () => {
     if (!settings.anthropicToken) {
-      showToast('Please enter your Anthropic API key in Settings', 'error');
+      ui.showToast('Please enter your Anthropic API key in Settings', 'error');
       return;
     }
 
@@ -316,11 +252,11 @@ export default function App() {
         await searchDiscogs(false, result.searchTerms, 1);
         handleViewChange('search');
       } else {
-        showToast('Could not identify vinyl. Please try again.', 'error');
+        ui.showToast('Could not identify vinyl. Please try again.', 'error');
       }
     } catch (error) {
       console.error('Camera analysis failed:', error);
-      showToast(error.message || 'Failed to analyze vinyl', 'error');
+      ui.showToast(error.message || 'Failed to analyze vinyl', 'error');
     } finally {
       setIsAnalyzing(false);
     }
@@ -329,7 +265,7 @@ export default function App() {
   // Update all prices in collection
   const updateAllPrices = async () => {
     if (collection.collection.length === 0) {
-      showToast('No items in collection to update', 'error');
+      ui.showToast('No items in collection to update', 'error');
       return;
     }
 
@@ -350,7 +286,7 @@ export default function App() {
       for (const item of itemsToUpdate) {
         // Check if operation was cancelled
         if (abortController.signal.aborted) {
-          showToast(`Price update cancelled. Updated ${updated} of ${itemsToUpdate.length} items`, 'info');
+          ui.showToast(`Price update cancelled. Updated ${updated} of ${itemsToUpdate.length} items`, 'info');
           break;
         }
 
@@ -374,7 +310,7 @@ export default function App() {
       }
 
       if (!abortController.signal.aborted) {
-        showToast(`Updated prices for ${updated} of ${itemsToUpdate.length} items`, 'success');
+        ui.showToast(`Updated prices for ${updated} of ${itemsToUpdate.length} items`, 'success');
       }
     } finally {
       setIsUpdatingAllPrices(false);
@@ -418,7 +354,7 @@ export default function App() {
       onRefreshPrice={refreshPrice}
       onAddToCollection={collection.addToCollection}
       onRemoveFromCollection={collection.removeFromCollection}
-      onViewDetails={modals.setSelectedResult}
+      onViewDetails={ui.setSelectedResult}
       themes={themes}
     />
   );
@@ -426,11 +362,11 @@ export default function App() {
   const renderCameraView = () => {
     const handleCapture = () => {
       if (!settings.anthropicToken) {
-        showToast('Please enter your Anthropic API key in Settings to use camera identification', 'error');
+        ui.showToast('Please enter your Anthropic API key in Settings to use camera identification', 'error');
         return;
       }
       if (!camera.isCameraActive) {
-        showToast('Camera is not active. Please allow camera access.', 'error');
+        ui.showToast('Camera is not active. Please allow camera access.', 'error');
         return;
       }
       captureAndAnalyze();
@@ -440,8 +376,8 @@ export default function App() {
       <CameraView
         videoRef={camera.videoRef}
         canvasRef={camera.canvasRef}
-        isAnalyzing={isAnalyzing}
-        cameraError={cameraError}
+        isAnalyzing={camera.isAnalyzing}
+        cameraError={camera.cameraError}
         onCapture={handleCapture}
         themes={themes}
       />
@@ -452,8 +388,8 @@ export default function App() {
     return (
       <CollectionView
         collection={collection.collection}
-        filteredAndSorted={collection.filteredAndSorted}
-        collectionValue={collection.collectionValue}
+        filteredAndSorted={collection.getFilteredAndSorted()}
+        collectionValue={collection.getCollectionValue()}
         collectionSearch={collection.collectionSearch}
         onCollectionSearchChange={collection.setCollectionSearch}
         collectionFilter={collection.collectionFilter}
@@ -475,7 +411,7 @@ export default function App() {
         onToggleFavorite={collection.toggleFavorite}
         onRefreshPrice={refreshPrice}
         onRemove={collection.removeFromCollection}
-        onViewDetails={modals.setSelectedVinyl}
+        onViewDetails={ui.setSelectedVinyl}
         onNavigateToSearch={() => handleViewChange('search')}
         getPriceChange={collection.getPriceChange}
         themes={themes}
@@ -523,35 +459,19 @@ export default function App() {
     return (
       <SettingsView
         discogsToken={settings.discogsToken}
-        onDiscogsTokenChange={(value) => {
-          settings.setDiscogsToken(value);
-          localStorage.setItem('discogsToken', value);
-        }}
-        showDiscogsToken={showDiscogsToken}
-        onToggleShowDiscogsToken={() => setShowDiscogsToken(!showDiscogsToken)}
+        onDiscogsTokenChange={settings.setDiscogsToken}
+        showDiscogsToken={settings.showDiscogsToken}
+        onToggleShowDiscogsToken={() => settings.setShowDiscogsToken(!settings.showDiscogsToken)}
         anthropicToken={settings.anthropicToken}
-        onAnthropicTokenChange={(value) => {
-          settings.setAnthropicToken(value);
-          localStorage.setItem('anthropicApiKey', value);
-        }}
-        showAnthropicToken={showAnthropicToken}
-        onToggleShowAnthropicToken={() => setShowAnthropicToken(!showAnthropicToken)}
+        onAnthropicTokenChange={settings.setAnthropicToken}
+        showAnthropicToken={settings.showAnthropicToken}
+        onToggleShowAnthropicToken={() => settings.setShowAnthropicToken(!settings.showAnthropicToken)}
         theme={settings.theme}
-        onThemeChange={(newTheme) => {
-          settings.setTheme(newTheme);
-          localStorage.setItem('theme', newTheme);
-        }}
+        onThemeChange={settings.setTheme}
         customColors={settings.customColors}
-        onCustomColorChange={(colorKey, value) => {
-          const newColors = { ...customColors, [colorKey]: value };
-          settings.updateCustomColor(colorKey, value);
-          localStorage.setItem('customColors', JSON.stringify(newColors));
-        }}
+        onCustomColorChange={settings.updateCustomColor}
         selectedShops={settings.selectedShops}
-        onSelectedShopsChange={(shops) => {
-          settings.setSelectedShops(shops);
-          localStorage.setItem('selectedShops', JSON.stringify(shops));
-        }}
+        onSelectedShopsChange={settings.setSelectedShops}
         onExportCollection={exportCollection}
         onImportCollection={handleImportCollection}
         appVersion={APP_VERSION}
@@ -573,58 +493,47 @@ return (
     }}>
       <Header themes={themes} />
 
-      {/* View Container with Optimized Rendering - Only render current view */}
+      {/* View Container with Code Splitting and Suspense */}
       <div style={{
         width: '100%',
         minHeight: 'calc(100vh - 140px)',
         opacity: 1,
         animation: 'fadeIn 200ms ease-in'
       }}>
-        {view === 'search' && (
+        <Suspense fallback={
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '50vh',
+            color: themes.text
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: `3px solid ${themes.border}`,
+                borderTopColor: themes.primary,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 16px'
+              }} />
+              <p>Loading...</p>
+            </div>
+          </div>
+        }>
           <ViewErrorBoundary
-            viewName="Search"
+            viewName={view.charAt(0).toUpperCase() + view.slice(1)}
             themes={themes}
             onNavigateHome={() => handleViewChange('search')}
           >
-            {renderSearchView()}
+            {view === 'search' && renderSearchView()}
+            {view === 'camera' && renderCameraView()}
+            {view === 'collection' && renderCollectionView()}
+            {view === 'stats' && renderStatsView()}
+            {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
-        )}
-        {view === 'camera' && (
-          <ViewErrorBoundary
-            viewName="Camera"
-            themes={themes}
-            onNavigateHome={() => handleViewChange('search')}
-          >
-            {renderCameraView()}
-          </ViewErrorBoundary>
-        )}
-        {view === 'collection' && (
-          <ViewErrorBoundary
-            viewName="Collection"
-            themes={themes}
-            onNavigateHome={() => handleViewChange('search')}
-          >
-            {renderCollectionView()}
-          </ViewErrorBoundary>
-        )}
-        {view === 'stats' && (
-          <ViewErrorBoundary
-            viewName="Statistics"
-            themes={themes}
-            onNavigateHome={() => handleViewChange('search')}
-          >
-            {renderStatsView()}
-          </ViewErrorBoundary>
-        )}
-        {view === 'settings' && (
-          <ViewErrorBoundary
-            viewName="Settings"
-            themes={themes}
-            onNavigateHome={() => handleViewChange('search')}
-          >
-            {renderSettingsView()}
-          </ViewErrorBoundary>
-        )}
+        </Suspense>
       </div>
 
       {/* Simple fade-in animation */}
@@ -637,50 +546,50 @@ return (
 
       <Navigation view={view} onViewChange={handleViewChange} themes={themes} />
       <DetailModal
-        selectedResult={selectedResult}
+        selectedResult={ui.selectedResult}
         collection={collection.collection}
-        onClose={() => modals.setSelectedResult(null)}
+        onClose={() => ui.setSelectedResult(null)}
         onAddToCollection={collection.addToCollection}
         onRemoveFromCollection={collection.removeFromCollection}
         themes={themes}
       />
       <ValueHistoryModal
-        showValueModal={showValueModal}
-        selectedResult={selectedResult}
-        valueHistory={valueHistory}
+        showValueModal={ui.showValueModal}
+        selectedResult={ui.selectedResult}
+        valueHistory={ui.valueHistory}
         onClose={() => {
-          setShowValueModal(false);
-          setValueHistory([]);
+          ui.setShowValueModal(false);
+          ui.setValueHistory([]);
         }}
         themes={themes}
       />
       <VinylDetailsModal
-        selectedVinyl={selectedVinyl}
-        onClose={() => modals.setSelectedVinyl(null)}
+        selectedVinyl={ui.selectedVinyl}
+        onClose={() => ui.setSelectedVinyl(null)}
         onToggleFavorite={collection.toggleFavorite}
-        onOpenValueModal={openValueModal}
+        onOpenValueModal={ui.openValueModal}
         onUpdatePrice={(id) => refreshPrice(id, true)}
-        onConfirmDelete={setConfirmDelete}
+        onConfirmDelete={ui.setConfirmDelete}
         themes={themes}
       />
 
       {/* Toast Notification */}
       <Toast
-        toast={toast}
-        onClose={() => modals.closeAllModals()}
+        toast={ui.toast}
+        onClose={() => ui.closeAllModals()}
         themes={themes}
       />
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
-        confirmDelete={confirmDelete}
+        confirmDelete={ui.confirmDelete}
         onConfirm={(id) => {
           collection.removeFromCollection(id);
-          setConfirmDelete(null);
-          modals.setSelectedVinyl(null);
-          showToast('Removed from collection', 'success');
+          ui.setConfirmDelete(null);
+          ui.setSelectedVinyl(null);
+          ui.showToast('Removed from collection', 'success');
         }}
-        onCancel={() => setConfirmDelete(null)}
+        onCancel={() => ui.setConfirmDelete(null)}
         themes={themes}
       />
     </div>
