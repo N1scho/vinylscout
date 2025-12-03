@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { Search, Camera, Grid, BarChart3, Settings, Heart, X, Eye, EyeOff, Star, TrendingUp, TrendingDown, Minus, RefreshCw, Plus, Music, User, ExternalLink, Info, List } from 'lucide-react';
 import { designSystem } from './designsystem';
 
 // Code-split views for better performance
@@ -97,10 +96,10 @@ export default function App() {
   const exportCollection = () => {
     try {
       StorageService.exportCollection(collection.collection);
-      ui.ui.showToast(`Exported ${collection.collection.length} records`, 'success');
+      ui.showToast(`Exported ${collection.collection.length} records`, 'success');
     } catch (error) {
       console.error('Export failed:', error);
-      ui.ui.showToast('Failed to export collection', 'error');
+      ui.showToast('Failed to export collection', 'error');
     }
   };
 
@@ -111,10 +110,10 @@ export default function App() {
     try {
       const imported = await StorageService.importCollection(file);
       collection.setCollection(imported);
-      ui.ui.showToast(`Imported ${imported.length} records`, 'success');
+      ui.showToast(`Imported ${imported.length} records`, 'success');
     } catch (error) {
       console.error('Import failed:', error);
-      ui.ui.showToast('Failed to import collection', 'error');
+      ui.showToast('Failed to import collection', 'error');
     }
 
     event.target.value = '';
@@ -169,7 +168,7 @@ export default function App() {
         }
       },
       onError: (error) => {
-        ui.ui.showToast(error, 'error');
+        ui.showToast(error, 'error');
         if (error.includes('token')) {
           handleViewChange('settings');
         }
@@ -198,7 +197,7 @@ export default function App() {
         // Validate price data comprehensively
         if (!validators.isValidPriceData(priceData)) {
           console.error('Invalid price data received:', priceData);
-          modals.ui.showToast('Received invalid price data from Discogs', 'error');
+          ui.showToast('Received invalid price data from Discogs', 'error');
           return;
         }
 
@@ -223,11 +222,11 @@ export default function App() {
         });
         collection.setCollection(newCollection);
       } else if (isCollectionItem && !priceData) {
-        ui.ui.showToast('No price data available for this item', 'error');
+        ui.showToast('No price data available for this item', 'error');
       }
     } catch (error) {
       console.error('Error refreshing price:', error);
-      ui.ui.showToast(error.message || 'Error refreshing price', 'error');
+      ui.showToast(error.message || 'Error refreshing price', 'error');
     }
   };
 
@@ -238,7 +237,7 @@ export default function App() {
       return;
     }
 
-    setIsAnalyzing(true);
+    camera.setIsAnalyzing(true);
     try {
       const result = await captureAndAnalyzeVinyl(
         camera.videoRef,
@@ -258,7 +257,7 @@ export default function App() {
       console.error('Camera analysis failed:', error);
       ui.showToast(error.message || 'Failed to analyze vinyl', 'error');
     } finally {
-      setIsAnalyzing(false);
+      camera.setIsAnalyzing(false);
     }
   };
 
