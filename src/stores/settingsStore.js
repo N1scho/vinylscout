@@ -6,12 +6,13 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 import { createTheme } from '../designsystem';
 
 export const useSettingsStore = create(
-  persist(
-    (set, get) => ({
+  devtools(
+    persist(
+      (set, get) => ({
       // API Tokens
       discogsToken: '',
       anthropicToken: '',
@@ -101,17 +102,19 @@ export const useSettingsStore = create(
 
       setShowDiscogsToken: (showDiscogsToken) => set({ showDiscogsToken }),
       setShowAnthropicToken: (showAnthropicToken) => set({ showAnthropicToken }),
-    }),
-    {
-      name: 'vinyl-settings-storage',
-      // Persist everything except visibility toggles
-      partialize: (state) => ({
-        discogsToken: state.discogsToken,
-        anthropicToken: state.anthropicToken,
-        theme: state.theme,
-        customColors: state.customColors,
-        selectedShops: state.selectedShops
-      })
-    }
+      }),
+      {
+        name: 'vinyl-settings-storage',
+        // Persist everything except visibility toggles
+        partialize: (state) => ({
+          discogsToken: state.discogsToken,
+          anthropicToken: state.anthropicToken,
+          theme: state.theme,
+          customColors: state.customColors,
+          selectedShops: state.selectedShops
+        })
+      }
+    ),
+    { name: 'SettingsStore' }
   )
 );

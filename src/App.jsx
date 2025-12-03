@@ -23,6 +23,7 @@ import { useCollectionStore } from './stores/collectionStore';
 import { useSearchStore } from './stores/searchStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useUIStore } from './stores/uiStore';
+import { useShallow } from 'zustand/react/shallow';
 
 // Custom Hooks (still needed for some functionality)
 import { useCamera } from './hooks/useCamera';
@@ -57,6 +58,31 @@ export default function App() {
   const search = useSearchStore();
   const settings = useSettingsStore();
   const ui = useUIStore();
+
+  // Memoized selectors for computed values (fixes performance issue)
+  const filteredAndSorted = useCollectionStore(
+    useShallow((s) => {
+      const { sortCollection, filterCollection } = require('./utils/collectionHelpers');
+      return sortCollection(
+        filterCollection(
+          s.collection,
+          s.collectionFilter,
+          s.collectionSearch,
+          s.activeGenreFilter,
+          s.activeDecadeFilter,
+          s.activeFormatFilter
+        ),
+        s.sortBy
+      );
+    })
+  );
+
+  const collectionValue = useCollectionStore(
+    useShallow((s) => {
+      const { calculateCollectionValue } = require('./utils/collectionHelpers');
+      return calculateCollectionValue(s.collection);
+    })
+  );
 
   // Derived values
   const themes = settings.getThemes();
@@ -387,8 +413,8 @@ export default function App() {
     return (
       <CollectionView
         collection={collection.collection}
-        filteredAndSorted={collection.getFilteredAndSorted()}
-        collectionValue={collection.getCollectionValue()}
+        filteredAndSorted={filteredAndSorted}
+        collectionValue={collectionValue}
         collectionSearch={collection.collectionSearch}
         onCollectionSearchChange={collection.setCollectionSearch}
         collectionFilter={collection.collectionFilter}

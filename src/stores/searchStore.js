@@ -6,8 +6,11 @@
  */
 
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
-export const useSearchStore = create((set) => ({
+export const useSearchStore = create(
+  devtools(
+    (set) => ({
   // Search Query State
   searchQuery: '',
   advancedSearch: {
@@ -64,4 +67,7 @@ export const useSearchStore = create((set) => ({
       genre: ''
     }
   })
-}));
+    }),
+    { name: 'SearchStore' }
+  )
+);

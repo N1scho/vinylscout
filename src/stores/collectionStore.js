@@ -6,13 +6,15 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 import { sortCollection, filterCollection, calculateCollectionValue } from '../utils/collectionHelpers';
 import { toggleItemFavorite, removeItemFromCollection, calculatePriceChange } from '../utils/collectionOperations';
+import { VinylSchema, validateData } from '../schemas/vinylSchemas';
 
 export const useCollectionStore = create(
-  persist(
-    (set, get) => ({
+  devtools(
+    persist(
+      (set, get) => ({
       // State
       collection: [],
       sortBy: 'artist-asc',
@@ -48,24 +50,68 @@ export const useCollectionStore = create(
         return calculatePriceChange(item);
       },
 
-      // Actions
-      addToCollection: (newItem) => set((state) => ({
-        collection: [...state.collection, newItem]
-      })),
+      // Actions with validation
+      addToCollection: (newItem) => {
+        const validation = validateData(VinylSchema, newItem);
 
-      removeFromCollection: (id) => set((state) => ({
-        collection: removeItemFromCollection(state.collection, id)
-      })),
+        if (!validation.success) {
+          console.error('Invalid vinyl data:', validation.error);
+          return { success: false, error: validation.error };
+        }
 
-      toggleFavorite: (id) => set((state) => ({
-        collection: toggleItemFavorite(state.collection, id)
-      })),
+        set((state) => ({
+          collection: [...state.collection, validation.data]
+        }));
 
-      updateItemInCollection: (id, updates) => set((state) => ({
-        collection: state.collection.map(item =>
-          item.id === id ? { ...item, ...updates } : item
-        )
-      })),
+        return { success: true };
+      },
+
+      removeFromCollection: (id) => {
+        if (!id) {
+          return { success: false, error: 'ID is required' };
+        }
+
+        set((state) => ({
+          collection: removeItemFromCollection(state.collection, id)
+        }));
+
+        return { success: true };
+      },
+
+      toggleFavorite: (id) => {
+        if (!id) {
+          return { success: false, error: 'ID is required' };
+        }
+
+        set((state) => ({
+          collection: toggleItemFavorite(state.collection, id)
+        }));
+
+        return { success: true };
+      },
+
+      updateItemInCollection: (id, updates) => {
+        if (!id) {
+          return { success: false, error: 'ID is required' };
+        }
+
+        // Validate updates if they contain critical fields
+        if (updates.price) {
+          const validation = validateData(VinylSchema.shape.price, updates.price);
+          if (!validation.success) {
+            console.error('Invalid price data:', validation.error);
+            return { success: false, error: validation.error };
+          }
+        }
+
+        set((state) => ({
+          collection: state.collection.map(item =>
+            item.id === id ? { ...item, ...updates } : item
+          )
+        }));
+
+        return { success: true };
+      },
 
       setCollection: (collection) => set({ collection }),
 
@@ -83,16 +129,18 @@ export const useCollectionStore = create(
         activeDecadeFilter: null,
         activeFormatFilter: null,
         collectionSearch: ''
-      }),
-    }),
-    {
-      name: 'vinyl-collection-storage',
-      // Only persist collection data, not UI state
-      partialize: (state) => ({
-        collection: state.collection,
-        sortBy: state.sortBy,
-        collectionView: state.collectionView
       })
-    }
+      }),
+      {
+        name: 'vinyl-collection-storage',
+        // Only persist collection data, not UI state
+        partialize: (state) => ({
+          collection: state.collection,
+          sortBy: state.sortBy,
+          collectionView: state.collectionView
+        })
+      }
+    ),
+    { name: 'CollectionStore' }
   )
 );

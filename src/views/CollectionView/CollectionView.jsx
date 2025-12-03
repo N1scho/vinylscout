@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { RefreshCw, Grid, List, X, Music } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { designSystem } from '../../designsystem';
 import VinylCard from '../../components/VinylCard';
 import FilterChip from '../../components/FilterChip';
@@ -64,6 +65,8 @@ export default function CollectionView({
   // Theme
   themes
 }) {
+  const parentRef = useRef(null);
+
   const handleClearAllFilters = () => {
     onActiveGenreFilterChange(null);
     onActiveDecadeFilterChange(null);
@@ -72,8 +75,25 @@ export default function CollectionView({
 
   const hasActiveFilters = activeGenreFilter || activeDecadeFilter || activeFormatFilter;
 
+  // Virtual scrolling configuration
+  // For grid view, we calculate columns based on minimum card width (160px + gap)
+  // For list view, each item is full width
+  const columnCount = collectionView === 'grid'
+    ? Math.floor((parentRef.current?.offsetWidth || 800) / (160 + 16)) || 1
+    : 1;
+
+  const rowVirtualizer = useVirtualizer({
+    count: collectionView === 'grid'
+      ? Math.ceil(filteredAndSorted.length / columnCount)
+      : filteredAndSorted.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => collectionView === 'grid' ? 350 : 120,
+    overscan: 5
+  });
+
   return (
     <div
+      ref={parentRef}
       style={{
         width: '100%',
         height: '100vh',
@@ -410,51 +430,73 @@ export default function CollectionView({
       ) : (
         <div
           style={{
-            display: collectionView === 'grid' ? 'grid' : 'flex',
-            gridTemplateColumns:
-              collectionView === 'grid' ? 'repeat(auto-fill, minmax(160px, 1fr))' : 'unset',
-            flexDirection: collectionView === 'list' ? 'column' : 'unset',
-            gap:
-              collectionView === 'list' ? designSystem.spacing.sm : designSystem.spacing.md
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative'
           }}
         >
-          {filteredAndSorted.map((item) => {
-            // Get price change from history (for long-term tracking)
-            const historicalPriceChange = getPriceChange(item);
-            // Get temporary price change from recent refresh (shows for 5 seconds)
-            const tempPriceChange = priceChanges[item.id];
-
-            // Normalize the price change format
-            // tempPriceChange has {amount, currency}
-            // historicalPriceChange has {absolute, value, current, previous, ...}
-            let priceChange = null;
-            if (tempPriceChange) {
-              priceChange = tempPriceChange;
-            } else if (historicalPriceChange) {
-              priceChange = {
-                amount: historicalPriceChange.absolute,
-                currency: item.price?.currency || 'USD'
-              };
-            }
-
-            // Support both price structures for backward compatibility
-            const priceData = item.price || (item.lowestPrice ? { value: item.lowestPrice, currency: 'USD' } : null);
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const startIndex = virtualRow.index * columnCount;
+            const items = filteredAndSorted.slice(startIndex, startIndex + columnCount);
 
             return (
-              <VinylCard
-                key={item.id}
-                vinyl={item}
-                price={priceData}
-                isRefreshing={refreshingPrices[item.id]}
-                priceChange={priceChange}
-                inCollection={true}
-                isFavorite={item.isFavorite}
-                onToggleFavorite={() => onToggleFavorite(item.id)}
-                onRefreshPrice={() => onRefreshPrice(item.id, true)}
-                onRemove={() => onRemove(item.id)}
-                onViewDetails={() => onViewDetails(item)}
-                themes={themes}
-              />
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                  display: collectionView === 'grid' ? 'grid' : 'flex',
+                  gridTemplateColumns:
+                    collectionView === 'grid' ? 'repeat(auto-fill, minmax(160px, 1fr))' : 'unset',
+                  flexDirection: collectionView === 'list' ? 'column' : 'unset',
+                  gap:
+                    collectionView === 'list' ? designSystem.spacing.sm : designSystem.spacing.md
+                }}
+              >
+                {items.map((item) => {
+                  // Get price change from history (for long-term tracking)
+                  const historicalPriceChange = getPriceChange(item);
+                  // Get temporary price change from recent refresh (shows for 5 seconds)
+                  const tempPriceChange = priceChanges[item.id];
+
+                  // Normalize the price change format
+                  // tempPriceChange has {amount, currency}
+                  // historicalPriceChange has {absolute, value, current, previous, ...}
+                  let priceChange = null;
+                  if (tempPriceChange) {
+                    priceChange = tempPriceChange;
+                  } else if (historicalPriceChange) {
+                    priceChange = {
+                      amount: historicalPriceChange.absolute,
+                      currency: item.price?.currency || 'USD'
+                    };
+                  }
+
+                  // Support both price structures for backward compatibility
+                  const priceData = item.price || (item.lowestPrice ? { value: item.lowestPrice, currency: 'USD' } : null);
+
+                  return (
+                    <VinylCard
+                      key={item.id}
+                      vinyl={item}
+                      price={priceData}
+                      isRefreshing={refreshingPrices[item.id]}
+                      priceChange={priceChange}
+                      inCollection={true}
+                      isFavorite={item.isFavorite}
+                      onToggleFavorite={() => onToggleFavorite(item.id)}
+                      onRefreshPrice={() => onRefreshPrice(item.id, true)}
+                      onRemove={() => onRemove(item.id)}
+                      onViewDetails={() => onViewDetails(item)}
+                      themes={themes}
+                    />
+                  );
+                })}
+              </div>
             );
           })}
         </div>

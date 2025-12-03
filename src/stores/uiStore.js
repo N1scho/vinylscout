@@ -6,11 +6,12 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 
 export const useUIStore = create(
-  persist(
-    (set, get) => ({
+  devtools(
+    persist(
+      (set) => ({
       // Navigation State
       currentView: 'search',
       viewHistory: ['search'],
@@ -103,14 +104,16 @@ export const useUIStore = create(
           show: false
         }
       })),
-    }),
-    {
-      name: 'vinyl-ui-storage',
-      // Only persist view state
-      partialize: (state) => ({
-        currentView: state.currentView,
-        viewHistory: state.viewHistory
-      })
-    }
+      }),
+      {
+        name: 'vinyl-ui-storage',
+        // Only persist view state
+        partialize: (state) => ({
+          currentView: state.currentView,
+          viewHistory: state.viewHistory
+        })
+      }
+    ),
+    { name: 'UIStore' }
   )
 );
