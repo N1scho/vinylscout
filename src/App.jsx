@@ -10,7 +10,7 @@ const SettingsView = lazy(() => import('./views/SettingsView'));
 
 // Utilities
 import { calculateCollectionStats } from './utils/statistics';
-import { formatPrice } from './utils/collectionHelpers';
+import { formatPrice, sortCollection, filterCollection, calculateCollectionValue } from './utils/collectionHelpers';
 import { captureAndAnalyzeVinyl } from './utils/cameraHelpers';
 import { validators } from './utils/validators';
 
@@ -61,9 +61,8 @@ export default function App() {
 
   // Memoized selectors for computed values (fixes performance issue)
   const filteredAndSorted = useCollectionStore(
-    useShallow((s) => {
-      const { sortCollection, filterCollection } = require('./utils/collectionHelpers');
-      return sortCollection(
+    useShallow((s) =>
+      sortCollection(
         filterCollection(
           s.collection,
           s.collectionFilter,
@@ -73,15 +72,12 @@ export default function App() {
           s.activeFormatFilter
         ),
         s.sortBy
-      );
-    })
+      )
+    )
   );
 
   const collectionValue = useCollectionStore(
-    useShallow((s) => {
-      const { calculateCollectionValue } = require('./utils/collectionHelpers');
-      return calculateCollectionValue(s.collection);
-    })
+    useShallow((s) => calculateCollectionValue(s.collection))
   );
 
   // Derived values
