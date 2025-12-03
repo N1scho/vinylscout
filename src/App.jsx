@@ -30,7 +30,7 @@ import { useCamera } from './hooks/useCamera';
 import { useDiscogsSearch } from './hooks/useDiscogsSearch';
 
 // Components
-import DetailModal from './components/DetailModal';
+import EnhancedDetailModal from './components/DetailModal/EnhancedDetailModal';
 import ValueHistoryModal from './components/ValueHistoryModal';
 import VinylDetailsModal from './components/VinylDetailsModal';
 import ConfirmDialog from './components/ConfirmDialog';
@@ -545,9 +545,10 @@ return (
       `}</style>
 
       <Navigation view={view} onViewChange={handleViewChange} themes={themes} />
-      <DetailModal
+      <EnhancedDetailModal
         selectedResult={ui.selectedResult}
         collection={collection.collection}
+        discogsToken={settings.discogsToken}
         onClose={() => ui.setSelectedResult(null)}
         onAddToCollection={collection.addToCollection}
         onRemoveFromCollection={collection.removeFromCollection}
