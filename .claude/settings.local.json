@@ -30,7 +30,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: Modernize architecture with Zustand and code splitting\n\nMajor improvements to codebase quality and performance:\n\n## State Management\n- Migrate to Zustand from custom hooks\n- Create 4 stores: collection, search, settings, ui\n- Eliminate prop drilling (15+ props → 4 store imports)\n- Add built-in persistence with zustand/middleware\n- Reduce App.jsx from 688 → 596 lines\n\n## Performance\n- Implement React.lazy code splitting for all views\n- Add Suspense boundaries with loading states\n- Reduce main bundle: 409.82 kB → 360.06 kB (-12%)\n- Split into 19 optimized chunks\n- Improve initial load time significantly\n\n## Code Quality\n- Fix ESLint configuration for Vite environment\n- Replace process.env.NODE_ENV with import.meta.env.DEV\n- Remove unused dependencies (tesseract.js, express, cors)\n- Update to modern React patterns (2024)\n- Better separation of concerns\n\n## Developer Experience\n- Cleaner component interfaces\n- Easier debugging with Zustand DevTools\n- Better IDE autocomplete\n- Simplified navigation management\n- Centralized UI state\n\nBuild status: ✅ SUCCESS\nBreaking changes: None\nTests: Passing\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(git push)"
     ],
     "deny": [],
     "ask": []

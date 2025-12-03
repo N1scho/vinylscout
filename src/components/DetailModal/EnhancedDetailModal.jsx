@@ -344,7 +344,7 @@ const EnhancedDetailModal = React.memo(({
                       </div>
                     )}
 
-                    {/* Genre */}
+                    {/* Genre & Styles */}
                     {releaseDetails?.genres && releaseDetails.genres.length > 0 && (
                       <div>
                         <div
@@ -357,13 +357,45 @@ const EnhancedDetailModal = React.memo(({
                         >
                           GENRE
                         </div>
-                        <div
-                          style={{
-                            fontSize: designSystem.typography.sizes.sm,
-                            color: themes.text
-                          }}
-                        >
-                          {releaseDetails.genres.join(', ')}
+                        <div>
+                          {/* Main Genres */}
+                          <div
+                            style={{
+                              fontSize: designSystem.typography.sizes.sm,
+                              color: themes.text,
+                              fontWeight: designSystem.typography.weights.medium,
+                              marginBottom: releaseDetails.styles && releaseDetails.styles.length > 0 ? designSystem.spacing.xs : 0
+                            }}
+                          >
+                            {releaseDetails.genres.join(', ')}
+                          </div>
+                          {/* Subgenres/Styles */}
+                          {releaseDetails.styles && releaseDetails.styles.length > 0 && (
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: designSystem.spacing.xs,
+                                marginTop: designSystem.spacing.xs
+                              }}
+                            >
+                              {releaseDetails.styles.map((style, index) => (
+                                <span
+                                  key={index}
+                                  style={{
+                                    fontSize: designSystem.typography.sizes.xs,
+                                    color: themes.text,
+                                    backgroundColor: themes.surfaceVariant,
+                                    padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                                    borderRadius: designSystem.borderRadius.sm,
+                                    border: `1px solid ${themes.border}`
+                                  }}
+                                >
+                                  {style}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
