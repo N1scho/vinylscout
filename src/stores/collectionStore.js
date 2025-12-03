@@ -11,6 +11,37 @@ import { sortCollection, filterCollection, calculateCollectionValue } from '../u
 import { toggleItemFavorite, removeItemFromCollection, calculatePriceChange } from '../utils/collectionOperations';
 import { VinylSchema, validateData } from '../schemas/vinylSchemas';
 
+// Migration: Load collection from old storage key if new one doesn't exist
+const migrateOldCollection = () => {
+  try {
+    // Check if new storage exists
+    const newStorage = localStorage.getItem('vinyl-collection-storage');
+    if (newStorage) return; // Already migrated
+
+    // Try to load from old key
+    const oldCollection = localStorage.getItem('vinylCollection');
+    if (oldCollection) {
+      const collection = JSON.parse(oldCollection);
+      // Write to new format
+      const newFormat = {
+        state: {
+          collection: collection,
+          sortBy: 'artist-asc',
+          collectionView: 'grid'
+        },
+        version: 0
+      };
+      localStorage.setItem('vinyl-collection-storage', JSON.stringify(newFormat));
+      console.log(`Migrated ${collection.length} vinyl records from old storage`);
+    }
+  } catch (error) {
+    console.error('Collection migration failed:', error);
+  }
+};
+
+// Run migration before creating store
+migrateOldCollection();
+
 export const useCollectionStore = create(
   devtools(
     persist(
