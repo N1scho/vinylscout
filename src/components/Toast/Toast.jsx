@@ -15,7 +15,7 @@ const Toast = React.memo(({
   onClose,
   themes
 }) => {
-  if (!toast) return null;
+  if (!toast || !toast.show) return null;
 
   return (
     <div style={{
@@ -46,6 +46,7 @@ const Toast = React.memo(({
 
 Toast.propTypes = {
   toast: PropTypes.shape({
+    show: PropTypes.bool.isRequired,
     message: PropTypes.string.isRequired,
     type: PropTypes.oneOf(['error', 'success', 'info']).isRequired
   }),

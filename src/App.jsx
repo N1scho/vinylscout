@@ -602,7 +602,7 @@ return (
       {/* Toast Notification */}
       <Toast
         toast={ui.toast}
-        onClose={() => ui.closeAllModals()}
+        onClose={() => ui.hideToast()}
         themes={themes}
       />
 
