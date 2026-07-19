@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { designSystem } from './designsystem';
+import { version as APP_VERSION } from '../package.json';
 
 // Code-split views for better performance
 const SearchView = lazy(() => import('./views/SearchView'));
@@ -38,9 +39,6 @@ import Toast from './components/Toast';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import ViewErrorBoundary from './components/ViewErrorBoundary';
-
-// App Version
-const APP_VERSION = '2.12.1';
 
 export default function App() {
   // SECURITY: Migrate existing plain tokens to encrypted storage (runs once)
