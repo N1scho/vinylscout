@@ -85,6 +85,38 @@ describe('discogs-proxy handler', () => {
     expect(res.body.retryAfter).toBe(42);
   });
 
+  it('falls back to 60 when Retry-After header is missing', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: () => null },
+      text: async () => 'rate limited',
+    });
+    const res = createRes();
+    await handler(
+      { method: 'POST', body: { endpoint: '/marketplace/stats/123' } },
+      res
+    );
+    expect(res.statusCode).toBe(429);
+    expect(res.body.retryAfter).toBe(60);
+  });
+
+  it('falls back to 60 when Retry-After header is a non-numeric date', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: { get: (h) => (h === 'Retry-After' ? 'Wed, 21 Oct 2026 07:28:00 GMT' : null) },
+      text: async () => 'rate limited',
+    });
+    const res = createRes();
+    await handler(
+      { method: 'POST', body: { endpoint: '/marketplace/stats/123' } },
+      res
+    );
+    expect(res.statusCode).toBe(429);
+    expect(res.body.retryAfter).toBe(60);
+  });
+
   it('maps upstream errors to same status with details', async () => {
     global.fetch.mockResolvedValue({
       ok: false,

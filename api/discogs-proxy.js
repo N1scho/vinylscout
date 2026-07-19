@@ -52,7 +52,8 @@ export default async function handler(req, res) {
     });
 
     if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
+      const parsed = parseInt(response.headers.get('Retry-After') || '', 10);
+      const retryAfter = Number.isFinite(parsed) ? parsed : 60;
       return res.status(429).json({ error: 'Rate limit exceeded', retryAfter });
     }
 
