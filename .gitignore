@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dev-dist
 *.local
 
 # Environment variables - CRITICAL: Never commit these!
@@ -36,3 +37,7 @@ dist-ssr
 
 # Vercel
 .vercel
+
+# Local-only
+vinylscout-education/
+.claude/settings.local.json
