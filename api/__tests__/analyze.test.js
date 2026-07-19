@@ -70,6 +70,15 @@ describe('analyze handler', () => {
     const params = createMock.mock.calls[0][0];
     expect(params.model).toBe('claude-opus-4-8');
     expect(params.output_config.format.type).toBe('json_schema');
+    expect(params.output_config.format.schema).toEqual({
+      type: 'object',
+      properties: {
+        artist: { type: 'string' },
+        album: { type: 'string' },
+      },
+      required: ['artist', 'album'],
+      additionalProperties: false,
+    });
   });
 
   it('maps SDK errors to their status', async () => {
