@@ -27,7 +27,6 @@ import LoadingSpinner from '../LoadingSpinner';
 const EnhancedDetailModal = React.memo(({
   selectedResult,
   collection,
-  discogsToken,
   onClose,
   onAddToCollection,
   onRemoveFromCollection,
@@ -49,16 +48,16 @@ const EnhancedDetailModal = React.memo(({
   // Fetch detailed release data
   useEffect(() => {
     const loadReleaseData = async () => {
-      if (!selectedResult || !discogsToken) return;
+      if (!selectedResult) return;
 
       setIsLoading(true);
       try {
         // Fetch detailed release info
-        const details = await fetchVinylDetails(selectedResult.id, discogsToken);
+        const details = await fetchVinylDetails(selectedResult.id);
         setReleaseDetails(details);
 
         // Fetch price data
-        const price = await fetchPriceInfo(selectedResult.id, discogsToken);
+        const price = await fetchPriceInfo(selectedResult.id);
         setPriceData(price);
       } catch (error) {
         console.error('Failed to load release data:', error);
@@ -68,7 +67,7 @@ const EnhancedDetailModal = React.memo(({
     };
 
     loadReleaseData();
-  }, [selectedResult, discogsToken]);
+  }, [selectedResult]);
 
   if (!selectedResult) return null;
 
@@ -867,7 +866,6 @@ EnhancedDetailModal.propTypes = {
     thumb: PropTypes.string
   }),
   collection: PropTypes.arrayOf(PropTypes.object).isRequired,
-  discogsToken: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   onAddToCollection: PropTypes.func.isRequired,
   onRemoveFromCollection: PropTypes.func.isRequired,

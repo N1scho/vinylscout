@@ -84,7 +84,7 @@ export default function App() {
 
   // Hooks that still need local state
   const camera = useCamera(view === 'camera');
-  const discogsApi = useDiscogsSearch(settings.discogsToken);
+  const discogsApi = useDiscogsSearch();
 
   // Price update state (still managed here for now)
   const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false);
@@ -567,7 +567,6 @@ return (
       <EnhancedDetailModal
         selectedResult={ui.selectedResult}
         collection={collection.collection}
-        discogsToken={settings.discogsToken}
         onClose={() => ui.setSelectedResult(null)}
         onAddToCollection={collection.addToCollection}
         onRemoveFromCollection={collection.removeFromCollection}
