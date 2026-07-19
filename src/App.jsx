@@ -252,30 +252,22 @@ export default function App() {
 
   // Camera capture and analyze function
   const captureAndAnalyze = async () => {
-    if (!settings.anthropicToken) {
-      ui.showToast('Please enter your Anthropic API key in Settings', 'error');
-      return;
-    }
-
     camera.setIsAnalyzing(true);
     try {
-      const result = await captureAndAnalyzeVinyl(
-        camera.videoRef,
-        camera.canvasRef,
-        settings.anthropicToken
-      );
+      const result = await captureAndAnalyzeVinyl(camera.videoRef, camera.canvasRef);
 
-      if (result && result.searchTerms) {
-        // Search for the vinyl
-        search.setSearchQuery(result.searchTerms);
-        await searchDiscogs(false, result.searchTerms, 1);
+      const parts = [result.artist, result.album].filter((p) => p && p !== 'Unknown');
+      if (parts.length > 0) {
+        const query = parts.join(' ');
+        search.setSearchQuery(query);
+        await searchDiscogs(false, query, 1);
         handleViewChange('search');
       } else {
-        ui.showToast('Could not identify vinyl. Please try again.', 'error');
+        ui.showToast('Vinyl nicht erkannt. Bitte erneut versuchen.', 'error');
       }
     } catch (error) {
       console.error('Camera analysis failed:', error);
-      ui.showToast(error.message || 'Failed to analyze vinyl', 'error');
+      ui.showToast(error.message || 'Analyse fehlgeschlagen', 'error');
     } finally {
       camera.setIsAnalyzing(false);
     }
@@ -380,10 +372,6 @@ export default function App() {
 
   const renderCameraView = () => {
     const handleCapture = () => {
-      if (!settings.anthropicToken) {
-        ui.showToast('Please enter your Anthropic API key in Settings to use camera identification', 'error');
-        return;
-      }
       if (!camera.isCameraActive) {
         ui.showToast('Camera is not active. Please allow camera access.', 'error');
         return;

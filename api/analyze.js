@@ -1,69 +1,79 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic from '@anthropic-ai/sdk';
+
+const MAX_IMAGE_CHARS = 5 * 1024 * 1024; // ~3,7 MB Bilddaten als base64
 
 export default async function handler(req, res) {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY not configured');
+    return res.status(500).json({
+      error: 'Server configuration error',
+      details: 'ANTHROPIC_API_KEY not configured on server',
+    });
+  }
+
+  const { image } = req.body || {};
+  if (!image || typeof image !== 'string') {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+  if (image.length > MAX_IMAGE_CHARS) {
+    return res.status(413).json({ error: 'Image too large' });
+  }
+
   try {
-    const { image, apiKey } = req.body;
+    const anthropic = new Anthropic({ apiKey });
 
-    if (!image) {
-      return res.status(400).json({ error: 'No image provided' });
-    }
-
-    if (!apiKey) {
-      return res.status(400).json({ error: 'No API key provided' });
-    }
-
-    // Use API key from request body (user's key from settings)
-    const anthropic = new Anthropic({
-      apiKey: apiKey,
-    });
-
-    const base64Data = image;
-    
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/jpeg',
-              data: base64Data
-            }
+      model: 'claude-opus-4-8',
+      max_tokens: 256,
+      output_config: {
+        format: {
+          type: 'json_schema',
+          schema: {
+            type: 'object',
+            properties: {
+              artist: { type: 'string' },
+              album: { type: 'string' },
+            },
+            required: ['artist', 'album'],
+            additionalProperties: false,
           },
-          {
-            type: 'text',
-            text: 'Analyze this vinyl record cover. Provide ONLY a JSON response with: {"artist": "artist name", "album": "album name"}. If you cannot identify it clearly, use "Unknown" for that field.'
-          }
-        ]
-      }]
+        },
+      },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/jpeg', data: image },
+            },
+            {
+              type: 'text',
+              text: 'Identify this vinyl record cover. Return the artist name and album name. If a field cannot be identified clearly, use "Unknown" for it.',
+            },
+          ],
+        },
+      ],
     });
 
-    let responseText = message.content[0].text;
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const vinylData = JSON.parse(responseText);
-    
+    const text = message.content.find((b) => b.type === 'text')?.text ?? '{}';
+    const vinylData = JSON.parse(text);
     return res.status(200).json(vinylData);
-
   } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Analyze error:', error);
+    const status = typeof error?.status === 'number' ? error.status : 500;
+    return res.status(status).json({
+      error: 'Vinyl analysis failed',
+      details: error.message,
+    });
   }
 }
