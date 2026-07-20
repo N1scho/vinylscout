@@ -91,7 +91,7 @@ export const captureImageFromVideo = (videoElement, canvasElement, quality = 0.8
  * Analyze vinyl cover image via server-side API (key stays on server)
  *
  * @param {string} base64Image - Base64 encoded image
- * @returns {Promise<{artist: string, album: string}>}
+ * @returns {Promise<{artist: string, album: string, year?: string, genre?: string, labelAndCatalog?: string, format?: string}>}
  */
 export const analyzeVinylCover = async (base64Image) => {
   const response = await fetch('/api/analyze', {
@@ -111,7 +111,14 @@ export const analyzeVinylCover = async (base64Image) => {
     throw new Error('Album nicht erkannt. Bitte mit besserem Licht erneut versuchen.');
   }
 
-  return { artist: data.artist, album: data.album };
+  return {
+    artist: data.artist,
+    album: data.album,
+    year: data.year,
+    genre: data.genre,
+    labelAndCatalog: data.labelAndCatalog,
+    format: data.format,
+  };
 };
 
 export const captureAndAnalyzeVinyl = async (videoElement, canvasElement) => {

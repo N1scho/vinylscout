@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
     const message = await anthropic.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 80,
+      max_tokens: 200,
       output_config: {
         format: {
           type: 'json_schema',
@@ -42,6 +42,10 @@ export default async function handler(req, res) {
             properties: {
               artist: { type: 'string' },
               album: { type: 'string' },
+              year: { type: 'string' },
+              genre: { type: 'string' },
+              labelAndCatalog: { type: 'string' },
+              format: { type: 'string' },
             },
             required: ['artist', 'album'],
             additionalProperties: false,
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
             },
             {
               type: 'text',
-              text: 'Identify this vinyl record cover. Return the artist name and album name. If a field cannot be identified clearly, use "Unknown" for it.',
+              text: 'Identify this vinyl record cover. Return: artist name, album name, release year (if visible), primary genre, label and catalog number (combined if both visible), and format (vinyl/CD/other). Use "Unknown" for any field you cannot identify clearly.',
             },
           ],
         },

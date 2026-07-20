@@ -59,26 +59,28 @@ describe('analyze handler', () => {
     expect(res.statusCode).toBe(413);
   });
 
-  it('returns parsed artist/album from structured output', async () => {
+  it('returns parsed vinyl details from structured output', async () => {
     createMock.mockResolvedValue({
-      content: [{ type: 'text', text: '{"artist":"Nirvana","album":"Nevermind"}' }],
+      content: [{ type: 'text', text: '{"artist":"Nirvana","album":"Nevermind","year":"1991","genre":"Grunge","labelAndCatalog":"DGC DGC-24425","format":"vinyl"}' }],
     });
     const res = createRes();
     await handler({ method: 'POST', body: { image: 'aGVsbG8=' } }, res);
     expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual({ artist: 'Nirvana', album: 'Nevermind' });
+    expect(res.body.artist).toBe('Nirvana');
+    expect(res.body.album).toBe('Nevermind');
     const params = createMock.mock.calls[0][0];
     expect(params.model).toBe('claude-opus-4-8');
+    expect(params.max_tokens).toBe(200);
     expect(params.output_config.format.type).toBe('json_schema');
-    expect(params.output_config.format.schema).toEqual({
-      type: 'object',
-      properties: {
-        artist: { type: 'string' },
-        album: { type: 'string' },
-      },
-      required: ['artist', 'album'],
-      additionalProperties: false,
+    expect(params.output_config.format.schema.properties).toEqual({
+      artist: { type: 'string' },
+      album: { type: 'string' },
+      year: { type: 'string' },
+      genre: { type: 'string' },
+      labelAndCatalog: { type: 'string' },
+      format: { type: 'string' },
     });
+    expect(params.output_config.format.schema.required).toEqual(['artist', 'album']);
   });
 
   it('maps SDK errors to their status', async () => {
