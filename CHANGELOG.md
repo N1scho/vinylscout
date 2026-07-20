@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-07-20
+
+### Added
+- Server-side API proxies for Discogs and Claude (all auth keys server-only)
+- Rolling backup system for collection storage (vinyl-collection-backup-1..3)
+- Expanded vinyl cover analysis: artist, album, year, genre, label/catalog, format
+- Structured JSON output from Claude vision for reliable vinyl identification
+- Typed error classes for robust API error handling
+
+### Changed
+- All Discogs API calls now route through `/api/discogs-proxy` (endpoint allowlist)
+- Camera analysis now routes through `/api/analyze` (server-side Claude key)
+- Client-side token management completely removed
+- Image downscaling (768px max) for reduced API costs
+- Collection storage adapter with validation and quota handling
+
+### Fixed
+- Camera recognition chain: structured output prevents parsing failures
+- Discogs rate-limit handling with proper Retry-After header parsing
+- Collection data loss prevention via automatic backup rotation
+
+### Security
+- API keys no longer transmitted to or stored on client
+- SecureStorage/encrypted token system replaced with server proxies
+- Endpoint allowlist prevents Discogs API abuse
+
 ## [2.4.0] - 2025-11-17
 
 ### Fixed
