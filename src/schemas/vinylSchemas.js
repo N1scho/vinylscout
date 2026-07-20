@@ -45,8 +45,8 @@ export const VinylSchema = z.object({
   lowestPrice: z.number().optional().nullable(),
   priceHistory: z.array(PriceHistoryEntrySchema).optional(),
   favorite: z.boolean().optional(),
-  format: z.string().optional(),
-  label: z.string().optional(),
+  format: z.union([z.string(), z.array(z.any())]).optional(),
+  label: z.union([z.string(), z.array(z.any())]).optional(),
   country: z.string().optional(),
   genres: z.array(z.string()).optional(),
   tracklist: z.array(z.any()).optional()
