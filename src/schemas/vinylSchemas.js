@@ -94,12 +94,21 @@ export function validateData(schema, data) {
   try {
     if (result.error?.errors?.length > 0) {
       errorMessage = result.error.errors.map(err =>
-        `${err.path.join('.')}: ${err.message}`
+        `${err.path?.length > 0 ? err.path.join('.') : 'unknown'}: ${err.message}`
       ).join(', ');
+    } else if (result.error?.message) {
+      errorMessage = result.error.message;
     }
   } catch (e) {
-    errorMessage = result.error?.message || 'Validation failed';
+    console.error('[validateData] error formatting message:', e, result.error);
+    errorMessage = 'Validation failed';
   }
+
+  console.error('[validateData] error details:', {
+    errorMessage,
+    errors: result.error?.errors,
+    fullError: result.error
+  });
 
   return {
     success: false,
