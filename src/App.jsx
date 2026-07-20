@@ -170,9 +170,10 @@ export default function App() {
 
   // Discogs API wrapper functions - Now with stores!
   const searchDiscogs = async (isAdvanced = false, queryOverride = null, page = 1) => {
+    const query = queryOverride || search.searchQuery;
     await discogsApi.performSearch({
       isAdvanced,
-      query: queryOverride || search.searchQuery,
+      query,
       advancedSearch: search.advancedSearch,
       page,
       perPage: 50,
@@ -181,6 +182,7 @@ export default function App() {
         search.setSearchResults(results);
         search.setCurrentPage(data.pagination?.page || page);
         search.setTotalPages(data.pagination?.pages || 1);
+        if (!isAdvanced && query) search.addToSearchHistory(query);
 
         if (results.length > 0) {
           discogsApi.fetchAllPrices(results);

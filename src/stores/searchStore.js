@@ -26,8 +26,19 @@ export const useSearchStore = create(
   currentPage: 1,
   totalPages: 1,
 
+  // Search History
+  searchHistory: [],
+
   // Actions
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+
+  addToSearchHistory: (query) => set((state) => {
+    if (!query.trim()) return state;
+    const filtered = state.searchHistory.filter(q => q !== query);
+    return { searchHistory: [query, ...filtered].slice(0, 10) };
+  }),
+
+  clearSearchHistory: () => set({ searchHistory: [] }),
 
   setAdvancedSearch: (advancedSearch) => set({ advancedSearch }),
 
