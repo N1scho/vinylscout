@@ -13,13 +13,11 @@ import { z } from 'zod';
 export const BACKUP_PREFIX = 'vinyl-collection-backup-';
 export const MAX_BACKUPS = 3;
 
-const PersistedShape = z.object({
-  state: z.object({ collection: z.array(z.unknown()) }).passthrough(),
-}).passthrough();
-
 function isValidPersistedValue(raw) {
   try {
-    return PersistedShape.safeParse(JSON.parse(raw)).success;
+    const parsed = JSON.parse(raw);
+    // Just check that it's an object with a state property
+    return typeof parsed === 'object' && parsed !== null && 'state' in parsed;
   } catch {
     return false;
   }
