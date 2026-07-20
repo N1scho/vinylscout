@@ -87,13 +87,15 @@ export const useCollectionStore = create(
         const validation = validateData(VinylSchema, newItem);
 
         if (!validation.success) {
-          console.error('Invalid vinyl data:', validation.error);
-          return { success: false, error: validation.error };
+          const errorMsg = validation.error?.split(',')[0] || 'Invalid vinyl data';
+          console.error('[addToCollection] validation failed:', errorMsg, newItem);
+          return { success: false, error: errorMsg };
         }
 
         set((state) => ({
           collection: [...state.collection, validation.data]
         }));
+        console.log('[addToCollection] added', validation.data.id, validation.data.title);
 
         return { success: true };
       },

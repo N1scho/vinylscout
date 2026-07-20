@@ -537,7 +537,14 @@ return (
         selectedResult={ui.selectedResult}
         collection={collection.collection}
         onClose={() => ui.setSelectedResult(null)}
-        onAddToCollection={collection.addToCollection}
+        onAddToCollection={(item) => {
+          const result = collection.addToCollection(item);
+          if (!result.success) {
+            ui.showToast(`Cannot add: ${result.error}`, 'error');
+          } else {
+            ui.showToast('Added to collection', 'success');
+          }
+        }}
         onRemoveFromCollection={collection.removeFromCollection}
         themes={themes}
       />
