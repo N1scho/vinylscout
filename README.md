@@ -1,16 +1,39 @@
-# React + Vite
+# VinylScout
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Vinyl-Sammlung verwalten: Discogs-Suche mit Marktpreisen, KI-Cover-Erkennung
+per Kamera, Sammlungs-Statistiken. React-PWA, deployt auf Vercel.
 
-Currently, two official plugins are available:
+## Entwicklung
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Voraussetzungen: Node 20+, Vercel CLI (`npm i -g vercel`), einmalig `vercel login` + `vercel link`.
 
-## React Compiler
+```bash
+npm install
+cp .env.example .env.local   # Keys eintragen (DISCOGS_TOKEN, ANTHROPIC_API_KEY)
+vercel dev                   # startet Vite UND die api/-Functions
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Wichtig: `npm run dev` startet nur das Frontend — Suche und Kamera-Erkennung
+brauchen die Serverless Functions und funktionieren nur unter `vercel dev`.
 
-## Expanding the ESLint configuration
+## Tests & Build
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npx vitest run    # Tests
+npm run lint      # ESLint
+npm run build     # Produktions-Build
+```
+
+## Deployment
+
+Push auf `master` → Vercel baut automatisch. Die Env-Variablen `DISCOGS_TOKEN`
+und `ANTHROPIC_API_KEY` müssen im Vercel-Dashboard gesetzt sein
+(Project → Settings → Environment Variables).
+
+## Architektur
+
+- `src/` — React-App (Zustand-Stores, Views, Services)
+- `api/discogs-proxy.js` — einziger Weg zur Discogs-API (Server-Token)
+- `api/analyze.js` — Cover-Erkennung via Claude (Server-Key)
+- Sammlung liegt in localStorage mit rollierenden Backups
+  (`vinyl-collection-backup-1..3`)
