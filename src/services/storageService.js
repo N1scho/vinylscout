@@ -2,18 +2,12 @@
  * Storage Service Module
  *
  * Handles all localStorage operations for VinylScout
- * SECURITY UPDATE: API tokens now use encrypted secure storage
  * Extracted from App.jsx v2.8.0
- * Updated: v2.13.0 - Added secure token storage
  */
-
-import { SecureStorage } from './secureStorage';
 
 // Storage keys
 const STORAGE_KEYS = {
   COLLECTION: 'vinylCollection',
-  DISCOGS_TOKEN: 'discogsToken', // Now stored in SecureStorage
-  ANTHROPIC_TOKEN: 'anthropicToken', // Now stored in SecureStorage
   THEME: 'theme',
   CUSTOM_COLORS: 'customColors',
   SELECTED_SHOPS: 'selectedShops',
@@ -107,54 +101,6 @@ export const importCollection = async (file) => {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
-};
-
-/**
- * Save Discogs token (SECURE)
- * Now uses encrypted storage to prevent XSS token theft
- *
- * @param {string} token - Discogs API token
- */
-export const saveDiscogsToken = (token) => {
-  if (!token || token.trim() === '') {
-    SecureStorage.removeToken(STORAGE_KEYS.DISCOGS_TOKEN);
-    return;
-  }
-  SecureStorage.setToken(STORAGE_KEYS.DISCOGS_TOKEN, token);
-};
-
-/**
- * Load Discogs token (SECURE)
- * Retrieves token from encrypted storage
- *
- * @returns {string} Discogs API token
- */
-export const loadDiscogsToken = () => {
-  return SecureStorage.getToken(STORAGE_KEYS.DISCOGS_TOKEN) || '';
-};
-
-/**
- * Save Anthropic token (SECURE)
- * Now uses encrypted storage to prevent XSS token theft
- *
- * @param {string} token - Anthropic API token
- */
-export const saveAnthropicToken = (token) => {
-  if (!token || token.trim() === '') {
-    SecureStorage.removeToken(STORAGE_KEYS.ANTHROPIC_TOKEN);
-    return;
-  }
-  SecureStorage.setToken(STORAGE_KEYS.ANTHROPIC_TOKEN, token);
-};
-
-/**
- * Load Anthropic token (SECURE)
- * Retrieves token from encrypted storage
- *
- * @returns {string} Anthropic API token
- */
-export const loadAnthropicToken = () => {
-  return SecureStorage.getToken(STORAGE_KEYS.ANTHROPIC_TOKEN) || '';
 };
 
 /**
@@ -263,36 +209,3 @@ export const clearAllData = () => {
   });
 };
 
-/**
- * Check if V1 migration is needed
- *
- * @returns {boolean} True if V1 data exists
- */
-export const needsV1Migration = () => {
-  return localStorage.getItem('discogsToken') !== null &&
-         localStorage.getItem('vinylCollection') === null;
-};
-
-/**
- * Migrate from V1 to V2 storage format
- *
- * @returns {Object} Migrated data { token, collection }
- */
-export const migrateFromV1 = () => {
-  const migrated = {
-    token: localStorage.getItem('discogsToken') || '',
-    collection: []
-  };
-
-  // Try to load V1 collection format
-  try {
-    const v1Collection = localStorage.getItem('collection');
-    if (v1Collection) {
-      migrated.collection = JSON.parse(v1Collection);
-    }
-  } catch (error) {
-    console.error('V1 migration failed:', error);
-  }
-
-  return migrated;
-};

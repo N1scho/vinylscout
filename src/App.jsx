@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { designSystem } from './designsystem';
+import { version as APP_VERSION } from '../package.json';
 
 // Code-split views for better performance
 const SearchView = lazy(() => import('./views/SearchView'));
@@ -16,7 +17,6 @@ import { validators } from './utils/validators';
 
 // Services
 import * as StorageService from './services/storageService';
-import { migrateExistingTokens } from './services/secureStorage';
 
 // Zustand Stores
 import { useCollectionStore } from './stores/collectionStore';
@@ -39,20 +39,7 @@ import Header from './components/Header';
 import Navigation from './components/Navigation';
 import ViewErrorBoundary from './components/ViewErrorBoundary';
 
-// App Version
-const APP_VERSION = '2.12.1';
-
 export default function App() {
-  // SECURITY: Migrate existing plain tokens to encrypted storage (runs once)
-  useEffect(() => {
-    try {
-      migrateExistingTokens();
-    } catch (error) {
-      console.error('Token migration failed:', error);
-      // Non-blocking - app can still function
-    }
-  }, []); // Run only once on mount
-
   // Zustand Stores - Much cleaner than before!
   const collection = useCollectionStore();
   const search = useSearchStore();
@@ -86,7 +73,7 @@ export default function App() {
 
   // Hooks that still need local state
   const camera = useCamera(view === 'camera');
-  const discogsApi = useDiscogsSearch(settings.discogsToken);
+  const discogsApi = useDiscogsSearch();
 
   // Price update state (still managed here for now)
   const [isUpdatingAllPrices, setIsUpdatingAllPrices] = useState(false);
@@ -254,30 +241,22 @@ export default function App() {
 
   // Camera capture and analyze function
   const captureAndAnalyze = async () => {
-    if (!settings.anthropicToken) {
-      ui.showToast('Please enter your Anthropic API key in Settings', 'error');
-      return;
-    }
-
     camera.setIsAnalyzing(true);
     try {
-      const result = await captureAndAnalyzeVinyl(
-        camera.videoRef,
-        camera.canvasRef,
-        settings.anthropicToken
-      );
+      const result = await captureAndAnalyzeVinyl(camera.videoRef, camera.canvasRef);
 
-      if (result && result.searchTerms) {
-        // Search for the vinyl
-        search.setSearchQuery(result.searchTerms);
-        await searchDiscogs(false, result.searchTerms, 1);
+      const parts = [result.artist, result.album].filter((p) => p && p !== 'Unknown');
+      if (parts.length > 0) {
+        const query = parts.join(' ');
+        search.setSearchQuery(query);
+        await searchDiscogs(false, query, 1);
         handleViewChange('search');
       } else {
-        ui.showToast('Could not identify vinyl. Please try again.', 'error');
+        ui.showToast('Vinyl nicht erkannt. Bitte erneut versuchen.', 'error');
       }
     } catch (error) {
       console.error('Camera analysis failed:', error);
-      ui.showToast(error.message || 'Failed to analyze vinyl', 'error');
+      ui.showToast(error.message || 'Analyse fehlgeschlagen', 'error');
     } finally {
       camera.setIsAnalyzing(false);
     }
@@ -382,10 +361,6 @@ export default function App() {
 
   const renderCameraView = () => {
     const handleCapture = () => {
-      if (!settings.anthropicToken) {
-        ui.showToast('Please enter your Anthropic API key in Settings to use camera identification', 'error');
-        return;
-      }
       if (!camera.isCameraActive) {
         ui.showToast('Camera is not active. Please allow camera access.', 'error');
         return;
@@ -479,14 +454,6 @@ export default function App() {
   const renderSettingsView = () => {
     return (
       <SettingsView
-        discogsToken={settings.discogsToken}
-        onDiscogsTokenChange={settings.setDiscogsToken}
-        showDiscogsToken={settings.showDiscogsToken}
-        onToggleShowDiscogsToken={() => settings.setShowDiscogsToken(!settings.showDiscogsToken)}
-        anthropicToken={settings.anthropicToken}
-        onAnthropicTokenChange={settings.setAnthropicToken}
-        showAnthropicToken={settings.showAnthropicToken}
-        onToggleShowAnthropicToken={() => settings.setShowAnthropicToken(!settings.showAnthropicToken)}
         theme={settings.theme}
         onThemeChange={settings.setTheme}
         customColors={settings.customColors}
@@ -569,7 +536,6 @@ return (
       <EnhancedDetailModal
         selectedResult={ui.selectedResult}
         collection={collection.collection}
-        discogsToken={settings.discogsToken}
         onClose={() => ui.setSelectedResult(null)}
         onAddToCollection={collection.addToCollection}
         onRemoveFromCollection={collection.removeFromCollection}

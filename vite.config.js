@@ -49,17 +49,6 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.discogs\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'discogs-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7
-              }
-            }
-          },
-          {
             urlPattern: /^https:\/\/i\.discogs\.com\/.*/i,
             handler: 'CacheFirst',
             options: {

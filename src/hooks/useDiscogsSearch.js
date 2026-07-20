@@ -8,7 +8,7 @@
 import { useState, useCallback } from 'react';
 import * as DiscogsService from '../services/discogsService';
 
-export const useDiscogsSearch = (discogsToken) => {
+export const useDiscogsSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [resultPrices, setResultPrices] = useState({});
   const [refreshingPrices, setRefreshingPrices] = useState({});
@@ -26,15 +26,9 @@ export const useDiscogsSearch = (discogsToken) => {
     onSuccess,
     onError
   }) => {
-    if (!discogsToken) {
-      onError?.('Please set your Discogs API token in Settings');
-      return null;
-    }
-
     setIsLoading(true);
     try {
       const result = await DiscogsService.searchDiscogs({
-        token: discogsToken,
         isAdvanced,
         query,
         advancedSearch,
@@ -46,12 +40,12 @@ export const useDiscogsSearch = (discogsToken) => {
       return result;
     } catch (err) {
       console.error('Search failed:', err);
-      onError?.(err.message || 'Search failed. Please check your API token.');
+      onError?.(err.message || 'Suche fehlgeschlagen.');
       return null;
     } finally {
       setIsLoading(false);
     }
-  }, [discogsToken]);
+  }, []);
 
   /**
    * Fetch prices for multiple results with incremental UI updates
@@ -67,7 +61,7 @@ export const useDiscogsSearch = (discogsToken) => {
       const result = itemsToFetch[i];
 
       try {
-        const priceData = await DiscogsService.fetchPriceInfo(result.id, discogsToken);
+        const priceData = await DiscogsService.fetchPriceInfo(result.id);
 
         if (priceData) {
           fetchedPrices[result.id] = priceData;
@@ -87,21 +81,17 @@ export const useDiscogsSearch = (discogsToken) => {
         await DiscogsService.waitForRateLimit();
       }
     }
-  }, [discogsToken]);
+  }, []);
 
   /**
    * Refresh price for a single item
    */
   const refreshPrice = useCallback(async (itemId, currentPrice = null) => {
-    if (!discogsToken) {
-      throw new Error('Please add your Discogs API token in Settings');
-    }
-
     const oldPrice = currentPrice || resultPrices[itemId]?.value;
     setRefreshingPrices(prev => ({ ...prev, [itemId]: true }));
 
     try {
-      const priceData = await DiscogsService.fetchPriceInfo(itemId, discogsToken);
+      const priceData = await DiscogsService.fetchPriceInfo(itemId);
 
       if (priceData) {
         // Calculate price change if we have old price
@@ -139,21 +129,19 @@ export const useDiscogsSearch = (discogsToken) => {
     } finally {
       setRefreshingPrices(prev => ({ ...prev, [itemId]: false }));
     }
-  }, [discogsToken, resultPrices]);
+  }, [resultPrices]);
 
   /**
    * Fetch full vinyl details
    */
   const fetchDetails = useCallback(async (id) => {
-    if (!discogsToken) return null;
-
     try {
-      return await DiscogsService.fetchVinylDetails(id, discogsToken);
+      return await DiscogsService.fetchVinylDetails(id);
     } catch (err) {
       console.error('Failed to fetch details:', err);
       return null;
     }
-  }, [discogsToken]);
+  }, []);
 
   return {
     // State

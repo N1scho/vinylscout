@@ -1,5 +1,4 @@
 import React from 'react';
-import { Eye, EyeOff } from 'lucide-react';
 import { designSystem, themeDefinitions } from '../../designsystem';
 
 /**
@@ -8,7 +7,6 @@ import { designSystem, themeDefinitions } from '../../designsystem';
  * Application settings and configuration interface
  *
  * Features:
- * - API token management (Discogs, Anthropic)
  * - Theme selection and customization
  * - Custom color picker
  * - Shop selection for price fetching
@@ -18,16 +16,6 @@ import { designSystem, themeDefinitions } from '../../designsystem';
  * @component
  */
 export default function SettingsView({
-  // Token State
-  discogsToken,
-  onDiscogsTokenChange,
-  showDiscogsToken,
-  onToggleShowDiscogsToken,
-  anthropicToken,
-  onAnthropicTokenChange,
-  showAnthropicToken,
-  onToggleShowAnthropicToken,
-
   // Theme State
   theme,
   onThemeChange,
@@ -87,120 +75,6 @@ export default function SettingsView({
       </h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.lg }}>
-        {/* Discogs Token */}
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: designSystem.typography.sizes.sm,
-              fontWeight: designSystem.typography.weights.medium,
-              color: themes.text,
-              marginBottom: designSystem.spacing.sm
-            }}
-          >
-            Discogs Token
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showDiscogsToken ? 'text' : 'password'}
-              value={discogsToken}
-              onChange={(e) => onDiscogsTokenChange(e.target.value)}
-              placeholder="Enter your Discogs token"
-              style={{
-                width: '100%',
-                padding: designSystem.spacing.md,
-                paddingRight: designSystem.spacing.xxl,
-                fontSize: designSystem.typography.sizes.xs,
-                fontFamily: 'monospace',
-                backgroundColor: themes.surface,
-                color: themes.text,
-                border: `1px solid ${themes.border}`,
-                borderRadius: designSystem.borderRadius.md,
-                outline: 'none'
-              }}
-            />
-            <button
-              onClick={onToggleShowDiscogsToken}
-              style={{
-                position: 'absolute',
-                right: designSystem.spacing.sm,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                padding: designSystem.spacing.sm,
-                minWidth: designSystem.touchTarget.min,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: themes.textSecondary,
-                cursor: 'pointer'
-              }}
-            >
-              {showDiscogsToken ? (
-                <EyeOff size={designSystem.iconSize.sm} />
-              ) : (
-                <Eye size={designSystem.iconSize.sm} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Anthropic Token */}
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: designSystem.typography.sizes.sm,
-              fontWeight: designSystem.typography.weights.medium,
-              color: themes.text,
-              marginBottom: designSystem.spacing.sm
-            }}
-          >
-            Anthropic API Key
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type={showAnthropicToken ? 'text' : 'password'}
-              value={anthropicToken}
-              onChange={(e) => onAnthropicTokenChange(e.target.value)}
-              placeholder="Enter your Anthropic API key"
-              style={{
-                width: '100%',
-                padding: designSystem.spacing.md,
-                paddingRight: designSystem.spacing.xxl,
-                fontSize: designSystem.typography.sizes.xs,
-                fontFamily: 'monospace',
-                backgroundColor: themes.surface,
-                color: themes.text,
-                border: `1px solid ${themes.border}`,
-                borderRadius: designSystem.borderRadius.md,
-                outline: 'none'
-              }}
-            />
-            <button
-              onClick={onToggleShowAnthropicToken}
-              style={{
-                position: 'absolute',
-                right: designSystem.spacing.sm,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                padding: designSystem.spacing.sm,
-                minWidth: designSystem.touchTarget.min,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: themes.textSecondary,
-                cursor: 'pointer'
-              }}
-            >
-              {showAnthropicToken ? (
-                <EyeOff size={designSystem.iconSize.sm} />
-              ) : (
-                <Eye size={designSystem.iconSize.sm} />
-              )}
-            </button>
-          </div>
-        </div>
-
         {/* Theme Selection */}
         <div>
           <label

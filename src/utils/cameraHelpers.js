@@ -61,11 +61,25 @@ export const captureImageFromVideo = (videoElement, canvasElement, quality = 0.8
   }
 
   const canvas = canvasElement;
-  canvas.width = videoElement.videoWidth;
-  canvas.height = videoElement.videoHeight;
+  const maxDimension = 768;
+  const videoWidth = videoElement.videoWidth;
+  const videoHeight = videoElement.videoHeight;
+
+  let width = videoWidth;
+  let height = videoHeight;
+
+  // Scale down if larger than max dimension
+  if (videoWidth > maxDimension || videoHeight > maxDimension) {
+    const scale = Math.min(maxDimension / videoWidth, maxDimension / videoHeight);
+    width = Math.round(videoWidth * scale);
+    height = Math.round(videoHeight * scale);
+  }
+
+  canvas.width = width;
+  canvas.height = height;
 
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(videoElement, 0, 0);
+  ctx.drawImage(videoElement, 0, 0, width, height);
 
   const imageData = canvas.toDataURL('image/jpeg', quality);
   const base64Image = imageData.split(',')[1];
@@ -74,57 +88,40 @@ export const captureImageFromVideo = (videoElement, canvasElement, quality = 0.8
 };
 
 /**
- * Analyze vinyl cover image using Anthropic API
+ * Analyze vinyl cover image via server-side API (key stays on server)
  *
  * @param {string} base64Image - Base64 encoded image
- * @param {string} apiKey - Anthropic API key
- * @returns {Promise<Object>} Analysis result { artist, album }
+ * @returns {Promise<{artist: string, album: string, year?: string, genre?: string, labelAndCatalog?: string, format?: string}>}
  */
-export const analyzeVinylCover = async (base64Image, apiKey) => {
-  if (!apiKey) {
-    throw new Error('Anthropic API key required');
-  }
-
+export const analyzeVinylCover = async (base64Image) => {
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      image: base64Image,
-      apiKey: apiKey
-    })
+    body: JSON.stringify({ image: base64Image }),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.details || `HTTP ${response.status}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.details || errorData.error || `HTTP ${response.status}`);
   }
 
   const data = await response.json();
 
-  if (!data.artist || !data.album) {
-    throw new Error('Could not identify album. Try again with better lighting.');
+  if ((!data.artist || data.artist === 'Unknown') && (!data.album || data.album === 'Unknown')) {
+    throw new Error('Album nicht erkannt. Bitte mit besserem Licht erneut versuchen.');
   }
 
   return {
     artist: data.artist,
-    album: data.album
+    album: data.album,
+    year: data.year,
+    genre: data.genre,
+    labelAndCatalog: data.labelAndCatalog,
+    format: data.format,
   };
 };
 
-/**
- * Capture and analyze vinyl cover (combines capture + analysis)
- *
- * @param {HTMLVideoElement} videoElement - Video element
- * @param {HTMLCanvasElement} canvasElement - Canvas element
- * @param {string} apiKey - Anthropic API key
- * @returns {Promise<Object>} Analysis result { artist, album }
- */
-export const captureAndAnalyzeVinyl = async (videoElement, canvasElement, apiKey) => {
-  // Capture image
+export const captureAndAnalyzeVinyl = async (videoElement, canvasElement) => {
   const base64Image = captureImageFromVideo(videoElement, canvasElement, 0.8);
-
-  // Analyze
-  const result = await analyzeVinylCover(base64Image, apiKey);
-
-  return result;
+  return analyzeVinylCover(base64Image);
 };
