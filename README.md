@@ -3,6 +3,9 @@
 Vinyl-Sammlung verwalten: Discogs-Suche mit Marktpreisen, KI-Cover-Erkennung
 per Kamera, Sammlungs-Statistiken. React-PWA, deployt auf Vercel.
 
+**Current Version:** 3.1.1  
+**Status:** ✅ Phase 1 (stabilization) + Phase 2 (data management) complete
+
 ## Entwicklung
 
 Voraussetzungen: Node 20+, Vercel CLI (`npm i -g vercel`), einmalig `vercel login` + `vercel link`.
