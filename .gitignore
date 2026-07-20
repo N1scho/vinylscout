@@ -41,3 +41,6 @@ dev-dist
 # Local-only
 vinylscout-education/
 .claude/settings.local.json
+
+.vercel
+.env*

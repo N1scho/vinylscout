@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-9dc17825'], (function (workbox) { 'use strict';
+define(['./workbox-d9a5ed57'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -82,19 +82,12 @@ define(['./workbox-9dc17825'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.19vmu77kt2o"
+    "revision": "0.9jf5gigpnug"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/api\.discogs\.com\/.*/i, new workbox.NetworkFirst({
-    "cacheName": "discogs-api-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 100,
-      maxAgeSeconds: 604800
-    })]
-  }), 'GET');
   workbox.registerRoute(/^https:\/\/i\.discogs\.com\/.*/i, new workbox.CacheFirst({
     "cacheName": "discogs-images-cache",
     plugins: [new workbox.ExpirationPlugin({

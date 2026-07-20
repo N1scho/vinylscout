@@ -243,7 +243,7 @@ export default function App() {
   const captureAndAnalyze = async () => {
     camera.setIsAnalyzing(true);
     try {
-      const result = await captureAndAnalyzeVinyl(camera.videoRef, camera.canvasRef);
+      const result = await captureAndAnalyzeVinyl(camera.videoRef.current, camera.canvasRef.current);
 
       const parts = [result.artist, result.album].filter((p) => p && p !== 'Unknown');
       if (parts.length > 0) {
