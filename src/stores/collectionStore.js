@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { persist, devtools, createJSONStorage } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 import { sortCollection, filterCollection, calculateCollectionValue } from '../utils/collectionHelpers';
 import { backupStorage } from '../services/collectionStorage';
 import { toggleItemFavorite, removeItemFromCollection, calculatePriceChange } from '../utils/collectionOperations';
@@ -165,7 +165,7 @@ export const useCollectionStore = create(
       }),
       {
         name: 'vinyl-collection-storage',
-        storage: createJSONStorage(() => backupStorage),
+        storage: backupStorage,
         partialize: (state) => ({
           collection: state.collection,
           sortBy: state.sortBy,
