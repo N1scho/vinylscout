@@ -57,15 +57,17 @@ export const backupStorage = {
   },
 
   setItem: (name, value) => {
-    rotateBackups(localStorage.getItem(name));
     try {
+      rotateBackups(localStorage.getItem(name));
       localStorage.setItem(name, value);
+      console.log(`[backupStorage] saved ${name}, size: ${value.length} bytes`);
     } catch (error) {
       if (error && error.name === 'QuotaExceededError') {
-        // Ältestes Backup opfern, dann erneut versuchen
+        console.warn('[backupStorage] quota exceeded, freeing space');
         localStorage.removeItem(`${BACKUP_PREFIX}${MAX_BACKUPS}`);
         localStorage.setItem(name, value);
       } else {
+        console.error('[backupStorage] error:', error);
         throw error;
       }
     }
