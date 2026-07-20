@@ -61,11 +61,25 @@ export const captureImageFromVideo = (videoElement, canvasElement, quality = 0.8
   }
 
   const canvas = canvasElement;
-  canvas.width = videoElement.videoWidth;
-  canvas.height = videoElement.videoHeight;
+  const maxDimension = 768;
+  const videoWidth = videoElement.videoWidth;
+  const videoHeight = videoElement.videoHeight;
+
+  let width = videoWidth;
+  let height = videoHeight;
+
+  // Scale down if larger than max dimension
+  if (videoWidth > maxDimension || videoHeight > maxDimension) {
+    const scale = Math.min(maxDimension / videoWidth, maxDimension / videoHeight);
+    width = Math.round(videoWidth * scale);
+    height = Math.round(videoHeight * scale);
+  }
+
+  canvas.width = width;
+  canvas.height = height;
 
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(videoElement, 0, 0);
+  ctx.drawImage(videoElement, 0, 0, width, height);
 
   const imageData = canvas.toDataURL('image/jpeg', quality);
   const base64Image = imageData.split(',')[1];

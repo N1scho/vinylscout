@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
     const message = await anthropic.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 256,
+      max_tokens: 80,
       output_config: {
         format: {
           type: 'json_schema',
