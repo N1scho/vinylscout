@@ -28,6 +28,7 @@ export default function SettingsView({
 
   // Actions
   onExportCollection,
+  onExportCollectionAsCSV,
   onImportCollection,
 
   // App Info
@@ -243,7 +244,24 @@ export default function SettingsView({
                 fontWeight: designSystem.typography.weights.medium
               }}
             >
-              Export Collection
+              Export JSON
+            </button>
+            <button
+              onClick={onExportCollectionAsCSV}
+              style={{
+                flex: 1,
+                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: themes.primary,
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: designSystem.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: designSystem.typography.sizes.base,
+                fontWeight: designSystem.typography.weights.medium
+              }}
+            >
+              Export CSV
             </button>
             <label
               style={{

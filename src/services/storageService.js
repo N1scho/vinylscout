@@ -104,6 +104,49 @@ export const importCollection = async (file) => {
 };
 
 /**
+ * Export collection as CSV
+ *
+ * @param {Array} collection - The vinyl collection
+ * @param {string} filename - Export filename
+ */
+export const exportCollectionAsCSV = (collection, filename = null) => {
+  if (!collection || collection.length === 0) {
+    alert('Collection is empty');
+    return;
+  }
+
+  const headers = ['ID', 'Title', 'Artist', 'Year', 'Format', 'Genre', 'Label', 'Price', 'Currency', 'Favorite'];
+  const rows = collection.map(item => [
+    item.id || '',
+    (item.title || '').replace(/"/g, '""'),
+    (item.artist || '').replace(/"/g, '""'),
+    item.year || '',
+    Array.isArray(item.format) ? item.format.join('; ') : (item.format || ''),
+    Array.isArray(item.genres) ? item.genres.join('; ') : (item.genre || ''),
+    Array.isArray(item.label) ? item.label.join('; ') : (item.label || ''),
+    item.lowestPrice || item.price?.value || '',
+    item.price?.currency || '',
+    item.favorite ? 'Yes' : 'No'
+  ]);
+
+  const csvContent = [
+    headers.map(h => `"${h}"`).join(','),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n');
+
+  const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename || `collection-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+/**
  * Save theme
  *
  * @param {string} theme - Theme name

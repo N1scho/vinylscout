@@ -105,9 +105,19 @@ export default function App() {
   const exportCollection = () => {
     try {
       StorageService.exportCollection(collection.collection);
-      ui.showToast(`Exported ${collection.collection.length} records`, 'success');
+      ui.showToast(`Exported ${collection.collection.length} records as JSON`, 'success');
     } catch (error) {
       console.error('Export failed:', error);
+      ui.showToast('Failed to export collection', 'error');
+    }
+  };
+
+  const exportCollectionAsCSV = () => {
+    try {
+      StorageService.exportCollectionAsCSV(collection.collection);
+      ui.showToast(`Exported ${collection.collection.length} records as CSV`, 'success');
+    } catch (error) {
+      console.error('CSV export failed:', error);
       ui.showToast('Failed to export collection', 'error');
     }
   };
@@ -461,6 +471,7 @@ export default function App() {
         selectedShops={settings.selectedShops}
         onSelectedShopsChange={settings.setSelectedShops}
         onExportCollection={exportCollection}
+        onExportCollectionAsCSV={exportCollectionAsCSV}
         onImportCollection={handleImportCollection}
         appVersion={APP_VERSION}
         themes={themes}
