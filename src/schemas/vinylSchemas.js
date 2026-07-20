@@ -90,9 +90,16 @@ export function validateData(schema, data) {
   }
 
   // Format error message nicely
-  const errorMessage = result.error.errors.map(err =>
-    `${err.path.join('.')}: ${err.message}`
-  ).join(', ');
+  let errorMessage = 'Validation failed';
+  try {
+    if (result.error?.errors?.length > 0) {
+      errorMessage = result.error.errors.map(err =>
+        `${err.path.join('.')}: ${err.message}`
+      ).join(', ');
+    }
+  } catch (e) {
+    errorMessage = result.error?.message || 'Validation failed';
+  }
 
   return {
     success: false,

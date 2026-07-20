@@ -87,7 +87,7 @@ export const useCollectionStore = create(
         const validation = validateData(VinylSchema, newItem);
 
         if (!validation.success) {
-          const errorMsg = validation.error?.split(',')[0] || 'Invalid vinyl data';
+          const errorMsg = String(validation.error || 'Invalid vinyl data').split(',')[0];
           console.error('[addToCollection] validation failed:', errorMsg, newItem);
           return { success: false, error: errorMsg };
         }
