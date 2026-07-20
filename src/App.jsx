@@ -17,7 +17,6 @@ import { validators } from './utils/validators';
 
 // Services
 import * as StorageService from './services/storageService';
-import { migrateExistingTokens } from './services/secureStorage';
 
 // Zustand Stores
 import { useCollectionStore } from './stores/collectionStore';
@@ -41,16 +40,6 @@ import Navigation from './components/Navigation';
 import ViewErrorBoundary from './components/ViewErrorBoundary';
 
 export default function App() {
-  // SECURITY: Migrate existing plain tokens to encrypted storage (runs once)
-  useEffect(() => {
-    try {
-      migrateExistingTokens();
-    } catch (error) {
-      console.error('Token migration failed:', error);
-      // Non-blocking - app can still function
-    }
-  }, []); // Run only once on mount
-
   // Zustand Stores - Much cleaner than before!
   const collection = useCollectionStore();
   const search = useSearchStore();
@@ -465,14 +454,6 @@ export default function App() {
   const renderSettingsView = () => {
     return (
       <SettingsView
-        discogsToken={settings.discogsToken}
-        onDiscogsTokenChange={settings.setDiscogsToken}
-        showDiscogsToken={settings.showDiscogsToken}
-        onToggleShowDiscogsToken={() => settings.setShowDiscogsToken(!settings.showDiscogsToken)}
-        anthropicToken={settings.anthropicToken}
-        onAnthropicTokenChange={settings.setAnthropicToken}
-        showAnthropicToken={settings.showAnthropicToken}
-        onToggleShowAnthropicToken={() => settings.setShowAnthropicToken(!settings.showAnthropicToken)}
         theme={settings.theme}
         onThemeChange={settings.setTheme}
         customColors={settings.customColors}

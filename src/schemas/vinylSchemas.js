@@ -63,8 +63,6 @@ export const AdvancedSearchSchema = z.object({
 
 // Settings schema
 export const SettingsSchema = z.object({
-  discogsToken: z.string().optional(),
-  anthropicToken: z.string().optional(),
   theme: z.string().min(1, 'Theme is required'),
   customColors: z.object({
     background: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),

@@ -9,14 +9,24 @@ import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import { createTheme } from '../designsystem';
 
+const cleanupLegacyTokenKeys = () => {
+  try {
+    ['discogsToken', 'anthropicApiKey', 'anthropicToken'].forEach((k) =>
+      localStorage.removeItem(k)
+    );
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('sec_'))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* localStorage nicht verfügbar (SSR/Test) */
+  }
+};
+cleanupLegacyTokenKeys();
+
 export const useSettingsStore = create(
   devtools(
     persist(
       (set, get) => ({
-      // API Tokens
-      discogsToken: '',
-      anthropicToken: '',
-
       // UI Settings
       theme: 'orange',
       customColors: {
@@ -33,10 +43,6 @@ export const useSettingsStore = create(
       },
       selectedShops: ['Discogs Marketplace'],
 
-      // Visibility toggles
-      showDiscogsToken: false,
-      showAnthropicToken: false,
-
       // Computed: Get current theme object
       getThemes: () => {
         const state = get();
@@ -44,25 +50,6 @@ export const useSettingsStore = create(
       },
 
       // Actions
-      setDiscogsToken: (discogsToken) => {
-        set({ discogsToken });
-        // Also save to localStorage for backward compatibility
-        try {
-          localStorage.setItem('discogsToken', discogsToken);
-        } catch (e) {
-          console.error('Failed to save token:', e);
-        }
-      },
-
-      setAnthropicToken: (anthropicToken) => {
-        set({ anthropicToken });
-        try {
-          localStorage.setItem('anthropicApiKey', anthropicToken);
-        } catch (e) {
-          console.error('Failed to save token:', e);
-        }
-      },
-
       setTheme: (theme) => {
         set({ theme });
         try {
@@ -99,20 +86,20 @@ export const useSettingsStore = create(
           console.error('Failed to save shops:', e);
         }
       },
-
-      setShowDiscogsToken: (showDiscogsToken) => set({ showDiscogsToken }),
-      setShowAnthropicToken: (showAnthropicToken) => set({ showAnthropicToken }),
       }),
       {
         name: 'vinyl-settings-storage',
-        // Persist everything except visibility toggles
+        version: 1,
+        migrate: (persistedState) => {
+          if (!persistedState) return persistedState;
+          const { discogsToken, anthropicToken, ...rest } = persistedState;
+          return rest;
+        },
         partialize: (state) => ({
-          discogsToken: state.discogsToken,
-          anthropicToken: state.anthropicToken,
           theme: state.theme,
           customColors: state.customColors,
-          selectedShops: state.selectedShops
-        })
+          selectedShops: state.selectedShops,
+        }),
       }
     ),
     { name: 'SettingsStore' }
