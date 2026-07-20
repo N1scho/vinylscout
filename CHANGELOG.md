@@ -31,6 +31,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SecureStorage/encrypted token system replaced with server proxies
 - Endpoint allowlist prevents Discogs API abuse
 
+## [3.0.1] - 2026-07-20
+
+### Fixed
+- Camera capture: pass canvas and video element refs correctly (`.current` property)
+
+## [3.0.2] - 2026-07-20
+
+### Added
+- Debug logging for collection storage save operations
+
+## [3.0.3] - 2026-07-20
+
+### Changed
+- Simplified storage adapter configuration
+
+## [3.0.4] - 2026-07-20
+
+### Changed
+- Lenient backupStorage validation to handle edge cases
+
+## [3.0.5] - 2026-07-20
+
+### Added
+- Toast notifications for collection add/remove success and validation errors
+
+### Fixed
+- Show validation errors when adding items to collection fails
+
+## [3.0.6] - 2026-07-20
+
+### Fixed
+- Handle Zod error objects safely in validateData function
+
+## [3.0.7] - 2026-07-20
+
+### Added
+- Detailed validation error logging for debugging
+
+## [3.0.8] - 2026-07-20
+
+### Fixed
+- Allow `format` and `label` fields to accept both string and array types (Discogs API compatibility)
+
 ## [2.4.0] - 2025-11-17
 
 ### Fixed
