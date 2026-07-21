@@ -177,7 +177,7 @@ export default function App() {
       advancedSearch: search.advancedSearch,
       page,
       perPage: 50,
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         const results = data.results || [];
         search.setSearchResults(results);
         search.setCurrentPage(data.pagination?.page || page);
@@ -185,7 +185,7 @@ export default function App() {
         if (!isAdvanced && query) search.addToSearchHistory(query);
 
         if (results.length > 0) {
-          discogsApi.fetchAllPrices(results);
+          await discogsApi.fetchAllPrices(results);
         }
       },
       onError: (error) => {
