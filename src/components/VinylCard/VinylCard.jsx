@@ -218,17 +218,19 @@ const VinylCard = React.memo(function VinylCard({
           {vinyl.title}
         </h3>
 
-        {/* Year */}
-        {vinyl.year && (
-          <div
-            style={{
-              fontSize: designSystem.typography.sizes.sm,
-              color: themes.textSecondary
-            }}
-          >
-            {vinyl.year}
-          </div>
-        )}
+        {/* Year & Country */}
+        <div
+          style={{
+            display: 'flex',
+            gap: designSystem.spacing.md,
+            fontSize: designSystem.typography.sizes.sm,
+            color: themes.textSecondary
+          }}
+        >
+          {vinyl.year && <span>{vinyl.year}</span>}
+          {vinyl.country && <span>•</span>}
+          {vinyl.country && <span>{vinyl.country}</span>}
+        </div>
 
         {/* Price */}
         <div style={{ marginTop: 'auto', paddingTop: designSystem.spacing.md }}>
