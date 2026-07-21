@@ -46,7 +46,7 @@ export default function AdvancedSearch({
         padding: designSystem.spacing.lg,
         backgroundColor: themes?.surface || '#ffffff',
         border: `1px solid ${themes?.border || '#e2e8f0'}`,
-        borderRadius: designSystem.borderRadius.md,
+        borderRadius: '12px',
         marginBottom: designSystem.spacing.lg
       }}
     >

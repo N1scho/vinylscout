@@ -79,8 +79,9 @@ export default function Modal({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
           animation: 'fadeIn 200ms ease'
         }}
       />
@@ -93,12 +94,13 @@ export default function Modal({
           maxWidth,
           maxHeight: '90vh',
           backgroundColor: themes?.surface || '#ffffff',
-          borderRadius: designSystem.borderRadius.lg,
+          borderRadius: '16px',
           boxShadow: designSystem.shadows.xl,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          animation: 'slideUp 200ms ease'
+          animation: 'slideUp 200ms ease',
+          border: `1px solid ${themes?.border || '#e2e8f0'}`
         }}
         onClick={(e) => e.stopPropagation()}
       >

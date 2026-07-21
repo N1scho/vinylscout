@@ -132,14 +132,12 @@ export default function Pagination({
               minWidth: designSystem.touchTarget.min,
               minHeight: designSystem.touchTarget.min,
               backgroundColor: isActive ? themes.primary : themes.surface,
-              color: isActive ? 'white' : themes.text,
+              color: isActive ? '#0f0f0f' : themes.text,
               border: `1px solid ${isActive ? themes.primary : themes.border}`,
-              borderRadius: designSystem.borderRadius.sm,
+              borderRadius: '8px',
               cursor: isActive ? 'default' : 'pointer',
               fontSize: designSystem.typography.sizes.base,
-              fontWeight: isActive
-                ? designSystem.typography.weights.semibold
-                : designSystem.typography.weights.normal,
+              fontWeight: isActive ? 600 : 400,
               transition: designSystem.transitions.fast
             }}
             onMouseEnter={(e) => {

@@ -70,17 +70,18 @@ export default function EmptyState({
       {/* Icon */}
       <div
         style={{
-          width: '80px',
-          height: '80px',
+          width: '100px',
+          height: '100px',
           borderRadius: designSystem.borderRadius.circle,
-          backgroundColor: themes?.primary10 || 'rgba(37, 99, 235, 0.1)',
+          backgroundColor: `rgba(212, 175, 55, 0.1)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: designSystem.spacing.xl
+          marginBottom: designSystem.spacing.xxl,
+          border: `1px solid rgba(212, 175, 55, 0.2)`
         }}
       >
-        <Icon size={40} color={themes?.textSecondary || '#64748b'} strokeWidth={1.5} />
+        <Icon size={48} color={themes?.primary || '#d4af37'} strokeWidth={1.5} />
       </div>
 
       {/* Title */}
@@ -116,23 +117,23 @@ export default function EmptyState({
           onClick={action}
           style={{
             padding: `${designSystem.spacing.md} ${designSystem.spacing.xl}`,
-            backgroundColor: themes?.primary || '#2563eb',
-            color: 'white',
+            backgroundColor: themes?.primary || '#d4af37',
+            color: '#0f0f0f',
             border: 'none',
-            borderRadius: designSystem.borderRadius.md,
+            borderRadius: '8px',
             fontSize: designSystem.typography.sizes.base,
-            fontWeight: designSystem.typography.weights.medium,
+            fontWeight: 600,
             cursor: 'pointer',
-            transition: designSystem.transitions.fast,
+            transition: designSystem.transitions.base,
             boxShadow: designSystem.shadows.sm
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = themes?.primaryHover || '#1d4ed8';
+            e.currentTarget.style.backgroundColor = themes?.primaryHover || '#b8860b';
             e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = designSystem.shadows.md;
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = themes?.primary || '#2563eb';
+            e.currentTarget.style.backgroundColor = themes?.primary || '#d4af37';
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = designSystem.shadows.sm;
           }}

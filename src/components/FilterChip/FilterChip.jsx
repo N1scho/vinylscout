@@ -21,9 +21,9 @@ export default function FilterChip({
       border: themes?.border || '#e2e8f0'
     },
     primary: {
-      bg: themes?.primary || '#2563eb',
-      color: '#ffffff',
-      border: themes?.primary || '#2563eb'
+      bg: themes?.primary || '#d4af37',
+      color: '#0f0f0f',
+      border: themes?.primary || '#d4af37'
     },
     success: {
       bg: themes?.success || '#22c55e',
@@ -40,13 +40,13 @@ export default function FilterChip({
         display: 'inline-flex',
         alignItems: 'center',
         gap: designSystem.spacing.xs,
-        padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+        padding: `${designSystem.spacing.xs} ${designSystem.spacing.md}`,
         backgroundColor: style.bg,
         color: style.color,
         border: `1px solid ${style.border}`,
-        borderRadius: designSystem.borderRadius.sm,
+        borderRadius: '16px',
         fontSize: designSystem.typography.sizes.sm,
-        fontWeight: designSystem.typography.weights.medium,
+        fontWeight: 500,
         maxWidth: '200px'
       }}
     >

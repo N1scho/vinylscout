@@ -4,16 +4,17 @@
 
 export const designSystem = {
   // ============================================
-  // TYPOGRAPHY - 6-size scale with 1.5 line-height
+  // TYPOGRAPHY - Professional sans-serif
   // ============================================
   typography: {
     sizes: {
       xs: '12px',
       sm: '14px',
       base: '16px',
-      lg: '20px',
-      xl: '24px',
-      xxl: '32px',
+      lg: '18px',
+      xl: '22px',
+      xxl: '28px',
+      xxxl: '36px',
     },
     weights: {
       normal: 400,
@@ -21,8 +22,8 @@ export const designSystem = {
       semibold: 600,
       bold: 700,
     },
-    lineHeight: 1.5,
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    lineHeight: 1.6,
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif",
   },
 
   // ============================================
@@ -51,13 +52,14 @@ export const designSystem = {
   },
 
   // ============================================
-  // SHADOWS - Consistent elevation system
+  // SHADOWS - Sophisticated elevation
   // ============================================
   shadows: {
-    sm: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
-    md: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
-    lg: '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)',
-    xl: '0 20px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.04)',
+    sm: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    md: '0 4px 12px rgba(0, 0, 0, 0.25)',
+    lg: '0 8px 24px rgba(0, 0, 0, 0.3)',
+    xl: '0 16px 40px rgba(0, 0, 0, 0.35)',
+    inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
   },
 
   // ============================================
@@ -107,8 +109,7 @@ export const withOpacity = (hexColor, opacity) => {
 };
 
 // ============================================
-// THEME DEFINITIONS - 6 Simple Presets
-// Each theme has 3 colors: primary, background, accent
+// THEME DEFINITIONS - Expanded color schemes
 // ============================================
 export const themeDefinitions = {
   classic: {
@@ -146,6 +147,36 @@ export const themeDefinitions = {
     primary: '#3b82f6',      // Blue
     background: '#030712',   // Almost black
     accent: '#a855f7',       // Purple
+  },
+  gold: {
+    name: 'Gold',
+    primary: '#d4af37',      // Warm gold
+    background: '#ffffff',   // White
+    accent: '#b8860b',       // Darker gold
+  },
+  deepVinyl: {
+    name: 'Deep Vinyl',
+    primary: '#d4af37',      // Warm gold
+    background: '#0f0f0f',   // Deep warm black
+    accent: '#f5deb3',       // Wheat
+  },
+  rosewood: {
+    name: 'Rosewood',
+    primary: '#d946ef',      // Magenta
+    background: '#1a0f1f',   // Deep burgundy-black
+    accent: '#ec4899',       // Pink
+  },
+  slate: {
+    name: 'Slate',
+    primary: '#64748b',      // Slate
+    background: '#0f172a',   // Dark slate
+    accent: '#94a3b8',       // Light slate
+  },
+  ocean: {
+    name: 'Ocean',
+    primary: '#0ea5e9',      // Sky blue
+    background: '#001f3f',   // Navy
+    accent: '#06b6d4',       // Cyan
   },
 };
 

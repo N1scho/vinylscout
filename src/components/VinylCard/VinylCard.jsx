@@ -31,14 +31,16 @@ const VinylCard = React.memo(function VinylCard({
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((e) => {
-    e.currentTarget.style.transform = 'translateY(-4px)';
+    e.currentTarget.style.transform = 'translateY(-2px)';
     e.currentTarget.style.boxShadow = designSystem.shadows.lg;
-  }, []);
+    e.currentTarget.style.borderColor = themes.primary;
+  }, [themes.primary]);
 
   const handleMouseLeave = useCallback((e) => {
     e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = designSystem.shadows.sm;
-  }, []);
+    e.currentTarget.style.boxShadow = designSystem.shadows.md;
+    e.currentTarget.style.borderColor = themes.border;
+  }, [themes.border]);
 
   const handleViewDetails = useCallback(() => {
     if (onViewDetails) {
@@ -96,12 +98,12 @@ const VinylCard = React.memo(function VinylCard({
     <div
       style={{
         backgroundColor: themes.surface,
-        borderRadius: designSystem.borderRadius.md,
+        borderRadius: '12px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        transition: designSystem.transitions.base,
-        boxShadow: designSystem.shadows.sm,
+        transition: `all ${designSystem.transitions.base}`,
+        boxShadow: designSystem.shadows.md,
         cursor: 'pointer',
         border: `1px solid ${themes.border}`
       }}
@@ -190,10 +192,10 @@ const VinylCard = React.memo(function VinylCard({
       {/* Content */}
       <div
         style={{
-          padding: designSystem.spacing.md,
+          padding: designSystem.spacing.lg,
           display: 'flex',
           flexDirection: 'column',
-          gap: designSystem.spacing.sm,
+          gap: designSystem.spacing.md,
           flex: 1
         }}
       >
@@ -202,7 +204,7 @@ const VinylCard = React.memo(function VinylCard({
           onClick={() => onViewDetails && onViewDetails(vinyl)}
           style={{
             fontSize: designSystem.typography.sizes.base,
-            fontWeight: designSystem.typography.weights.semibold,
+            fontWeight: 600,
             color: themes.text,
             margin: 0,
             lineHeight: 1.4,
@@ -229,16 +231,19 @@ const VinylCard = React.memo(function VinylCard({
         )}
 
         {/* Price */}
-        <div style={{ marginTop: 'auto' }}>
+        <div style={{ marginTop: 'auto', paddingTop: designSystem.spacing.md }}>
           {hasPrice ? (
             <div
               style={{
-                fontSize: designSystem.typography.sizes.lg,
-                fontWeight: designSystem.typography.weights.bold,
-                color: themes.primary
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: 700,
+                color: themes.primary,
+                letterSpacing: '-0.5px'
               }}
             >
-              {price.currency} {typeof price.value === 'number' ? price.value.toFixed(2) : price.value}
+              {price.currency} <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {typeof price.value === 'number' ? price.value.toFixed(2) : price.value}
+              </span>
             </div>
           ) : (
             <div
@@ -256,10 +261,10 @@ const VinylCard = React.memo(function VinylCard({
         <div
           style={{
             display: 'flex',
-            gap: designSystem.spacing.sm,
-            marginTop: designSystem.spacing.sm,
-            paddingTop: designSystem.spacing.sm,
-            borderTop: `1px solid ${themes.borderLight}`
+            gap: '6px',
+            marginTop: designSystem.spacing.md,
+            paddingTop: designSystem.spacing.md,
+            borderTop: `1px solid ${themes.border}`
           }}
         >
           {inCollection ? (
@@ -377,19 +382,21 @@ const VinylCard = React.memo(function VinylCard({
                     flex: 1,
                     padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
                     backgroundColor: themes.primary,
-                    color: 'white',
+                    color: '#0f0f0f',
                     border: 'none',
-                    borderRadius: designSystem.borderRadius.sm,
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontSize: designSystem.typography.sizes.sm,
-                    fontWeight: designSystem.typography.weights.medium,
+                    fontWeight: 600,
                     transition: designSystem.transitions.fast
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = themes.primaryHover;
+                    e.currentTarget.style.transform = 'scale(1.02)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = themes.primary;
+                    e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
                   Add to Collection

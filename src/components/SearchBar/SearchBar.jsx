@@ -79,26 +79,31 @@ export default function SearchBar({
           padding: `${designSystem.spacing.md} ${designSystem.spacing.xl}`,
           minWidth: designSystem.touchTarget.min,
           backgroundColor: themes.primary,
-          color: 'white',
+          color: '#0f0f0f',
           border: 'none',
-          borderRadius: designSystem.borderRadius.md,
+          borderRadius: '8px',
           cursor: isLoading || !query.trim() ? 'not-allowed' : 'pointer',
           opacity: isLoading || !query.trim() ? 0.6 : 1,
           fontSize: designSystem.typography.sizes.base,
-          fontWeight: designSystem.typography.weights.medium,
+          fontWeight: 600,
           display: 'flex',
           alignItems: 'center',
           gap: designSystem.spacing.sm,
           justifyContent: 'center',
-          transition: designSystem.transitions.fast
+          transition: designSystem.transitions.base,
+          boxShadow: designSystem.shadows.sm
         }}
         onMouseEnter={(e) => {
           if (!isLoading && query.trim()) {
             e.currentTarget.style.backgroundColor = themes.primaryHover;
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = designSystem.shadows.md;
           }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = themes.primary;
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = designSystem.shadows.sm;
         }}
       >
         {isLoading ? (

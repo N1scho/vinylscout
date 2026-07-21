@@ -1,13 +1,6 @@
-/**
- * Header Component
- *
- * Application header with logo
- * Extracted from App.jsx v2.12.0
- */
-
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Music } from 'lucide-react';
+import { Disc3 } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
 const Header = React.memo(({ themes }) => {
@@ -20,27 +13,30 @@ const Header = React.memo(({ themes }) => {
       top: 0,
       left: 0,
       right: 0,
-      height: '56px',
+      height: '64px',
       backgroundColor: themes.surface,
       borderBottom: `1px solid ${themes.border}`,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      padding: `0 ${designSystem.spacing.md}`,
+      justifyContent: 'space-between',
+      paddingLeft: designSystem.spacing.lg,
+      paddingRight: designSystem.spacing.lg,
       zIndex: 100,
-      boxShadow: designSystem.shadows.sm
+      boxShadow: designSystem.shadows.sm,
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
     }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: designSystem.spacing.sm
+        gap: designSystem.spacing.md
       }}>
         {!logoError ? (
           <img
             src={LOGO_PATH}
             alt="VinylScout Logo"
             style={{
-              height: '36px',
+              height: '40px',
               width: 'auto',
               objectFit: 'contain'
             }}
@@ -50,19 +46,30 @@ const Header = React.memo(({ themes }) => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: designSystem.spacing.xs
+            gap: designSystem.spacing.sm,
+            color: themes.primary
           }}>
-            <Music size={22} color={themes.primary} />
+            <Disc3 size={28} strokeWidth={1.5} />
             <h1 style={{
-              fontSize: designSystem.typography.sizes.base,
-              fontWeight: designSystem.typography.weights.bold,
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: 700,
               color: themes.text,
-              margin: 0
+              margin: 0,
+              letterSpacing: '0.5px'
             }}>
               VinylScout
             </h1>
           </div>
         )}
+      </div>
+      <div style={{
+        fontSize: designSystem.typography.sizes.xs,
+        color: themes.textSecondary,
+        fontWeight: 500,
+        letterSpacing: '1px',
+        textTransform: 'uppercase'
+      }}>
+        Collection Manager
       </div>
     </header>
   );
@@ -73,7 +80,8 @@ Header.propTypes = {
     surface: PropTypes.string.isRequired,
     border: PropTypes.string.isRequired,
     primary: PropTypes.string.isRequired,
-    text: PropTypes.string.isRequired
+    text: PropTypes.string.isRequired,
+    textSecondary: PropTypes.string.isRequired
   }).isRequired
 };
 
