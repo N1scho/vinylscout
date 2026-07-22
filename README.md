@@ -12,12 +12,15 @@ Voraussetzungen: Node 20+, Vercel CLI (`npm i -g vercel`), einmalig `vercel logi
 
 ```bash
 npm install
-cp .env.example .env.local   # Keys eintragen (DISCOGS_TOKEN, ANTHROPIC_API_KEY)
-vercel dev                   # startet Vite UND die api/-Functions
+cp .env.example .env         # Keys eintragen (DISCOGS_TOKEN, ANTHROPIC_API_KEY)
+vercel dev                   # startet Vite Frontend UND api/-Functions gemeinsam
 ```
 
-Wichtig: `npm run dev` startet nur das Frontend — Suche und Kamera-Erkennung
-brauchen die Serverless Functions und funktionieren nur unter `vercel dev`.
+**⚠️ WICHTIG:** Nutze **`vercel dev`**, NICHT `npm run dev`!
+- `npm run dev` = nur Frontend (Suche zeigt "No price data")
+- `vercel dev` = Frontend + Backend zusammen (Preise laden korrekt)
+- `.env` Datei (nicht `.local`) wird von `vercel dev` geladen
+- `.env` wird von Git ignoriert (Secrets sind sicher)
 
 ## Tests & Build
 
