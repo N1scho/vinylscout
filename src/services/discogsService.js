@@ -6,7 +6,6 @@
 import { NetworkError, RateLimitError, ApiError } from '../utils/errors';
 
 const PROXY_URL = '/api/discogs-proxy';
-const RATE_LIMIT_DELAY = 1100; // Discogs erlaubt 60 Requests/min
 
 async function proxyRequest(endpoint, params = {}) {
   let response;
@@ -100,7 +99,8 @@ export const fetchVinylDetails = async (id) => {
 };
 
 export const waitForRateLimit = () => {
-  return new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY));
+  // Minimal delay to space out requests, but don't block at flea market
+  return new Promise((resolve) => setTimeout(resolve, 50));
 };
 
 export const fetchMultiplePrices = async (items, onProgress = null, batchSize = 3) => {
