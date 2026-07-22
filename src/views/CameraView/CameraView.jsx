@@ -22,9 +22,11 @@ export default function CameraView({
   // State
   isAnalyzing,
   cameraError,
+  capturedImageData,
 
   // Actions
   onCapture,
+  onClearCapture,
 
   // Theme
   themes
@@ -42,7 +44,7 @@ export default function CameraView({
         overflow: 'hidden'
       }}
     >
-      {/* Video Feed */}
+      {/* Video Feed or Captured Image */}
       <video
         ref={videoRef}
         autoPlay
@@ -51,14 +53,29 @@ export default function CameraView({
           width: '100%',
           flex: 1,
           objectFit: 'cover',
-          backgroundColor: '#000'
+          backgroundColor: '#000',
+          display: capturedImageData ? 'none' : 'block'
         }}
       />
+
+      {/* Display Captured Image */}
+      {capturedImageData && (
+        <img
+          src={capturedImageData}
+          alt="Captured vinyl cover"
+          style={{
+            width: '100%',
+            flex: 1,
+            objectFit: 'cover',
+            backgroundColor: '#000'
+          }}
+        />
+      )}
 
       {/* Hidden Canvas for Capture */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {/* Capture Button */}
+      {/* Capture/Retry Button */}
       <div
         style={{
           position: 'absolute',
@@ -67,21 +84,51 @@ export default function CameraView({
           right: 0,
           display: 'flex',
           justifyContent: 'center',
+          gap: designSystem.spacing.md,
           padding: designSystem.spacing.md,
           zIndex: 101
         }}
       >
+        {capturedImageData && !isAnalyzing && (
+          <button
+            onClick={onClearCapture}
+            style={{
+              padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
+              borderRadius: designSystem.borderRadius.md,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: '#FFFFFF',
+              border: '2px solid #FFFFFF',
+              cursor: 'pointer',
+              fontSize: designSystem.typography.sizes.sm,
+              fontWeight: designSystem.typography.weights.medium,
+              transition: 'transform 0.1s ease'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.95)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            aria-label="Retry photo"
+          >
+            Retry
+          </button>
+        )}
+
         <button
           onClick={onCapture}
-          disabled={isAnalyzing}
+          disabled={isAnalyzing || capturedImageData}
           style={{
             width: '70px',
             height: '70px',
             borderRadius: '50%',
             backgroundColor: '#FFFFFF',
             border: '4px solid #FFFFFF',
-            cursor: isAnalyzing ? 'not-allowed' : 'pointer',
-            opacity: isAnalyzing ? 0.6 : 1,
+            cursor: isAnalyzing || capturedImageData ? 'not-allowed' : 'pointer',
+            opacity: isAnalyzing || capturedImageData ? 0.6 : 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -90,7 +137,7 @@ export default function CameraView({
             position: 'relative'
           }}
           onMouseDown={(e) => {
-            if (!isAnalyzing) {
+            if (!isAnalyzing && !capturedImageData) {
               e.currentTarget.style.transform = 'scale(0.95)';
             }
           }}

@@ -12,7 +12,7 @@ const SettingsView = lazy(() => import('./views/SettingsView'));
 // Utilities
 import { calculateCollectionStats } from './utils/statistics';
 import { formatPrice, sortCollection, filterCollection, calculateCollectionValue } from './utils/collectionHelpers';
-import { captureAndAnalyzeVinyl } from './utils/cameraHelpers';
+import { captureAndAnalyzeVinyl, captureImageFromVideo } from './utils/cameraHelpers';
 import { validators } from './utils/validators';
 
 // Services
@@ -255,6 +255,11 @@ export default function App() {
   const captureAndAnalyze = async () => {
     camera.setIsAnalyzing(true);
     try {
+      // Pause video and show captured image
+      camera.pauseCamera();
+      const base64Image = captureImageFromVideo(camera.videoRef.current, camera.canvasRef.current, 0.8);
+      camera.setCapturedImageData(`data:image/jpeg;base64,${base64Image}`);
+
       const result = await captureAndAnalyzeVinyl(camera.videoRef.current, camera.canvasRef.current);
 
       const parts = [result.artist, result.album].filter((p) => p && p !== 'Unknown');
@@ -263,12 +268,15 @@ export default function App() {
         search.setSearchQuery(query);
         await searchDiscogs(false, query, 1);
         handleViewChange('search');
+        camera.clearCapturedImage();
       } else {
         ui.showToast('Vinyl nicht erkannt. Bitte erneut versuchen.', 'error');
+        camera.clearCapturedImage();
       }
     } catch (error) {
       console.error('Camera analysis failed:', error);
       ui.showToast(error.message || 'Analyse fehlgeschlagen', 'error');
+      camera.clearCapturedImage();
     } finally {
       camera.setIsAnalyzing(false);
     }
@@ -380,13 +388,19 @@ export default function App() {
       captureAndAnalyze();
     };
 
+    const handleClearCapture = () => {
+      camera.clearCapturedImage();
+    };
+
     return (
       <CameraView
         videoRef={camera.videoRef}
         canvasRef={camera.canvasRef}
         isAnalyzing={camera.isAnalyzing}
         cameraError={camera.cameraError}
+        capturedImageData={camera.capturedImageData}
         onCapture={handleCapture}
+        onClearCapture={handleClearCapture}
         themes={themes}
       />
     );

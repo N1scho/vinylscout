@@ -13,6 +13,7 @@ export const useCamera = (isActive) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [capturedImageData, setCapturedImageData] = useState(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -74,21 +75,43 @@ export const useCamera = (isActive) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isCameraActive]);
 
+  const pauseCamera = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  };
+
+  const resumeCamera = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
+  };
+
+  const clearCapturedImage = () => {
+    setCapturedImageData(null);
+    resumeCamera();
+  };
+
   return {
     // State
     cameraStream,
     isCameraActive,
     cameraError,
     isAnalyzing,
+    capturedImageData,
     videoRef,
     canvasRef,
 
     // Setters
     setCameraError,
     setIsAnalyzing,
+    setCapturedImageData,
 
     // Operations
     startCamera,
-    stopCamera
+    stopCamera,
+    pauseCamera,
+    resumeCamera,
+    clearCapturedImage
   };
 };
