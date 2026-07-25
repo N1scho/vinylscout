@@ -17,6 +17,9 @@ function formatPrice(value, currency = 'EUR') {
 
 function formatDate(dateString) {
   try {
+    if (!dateString) {
+      return 'Invalid date';
+    }
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       return 'Invalid date';

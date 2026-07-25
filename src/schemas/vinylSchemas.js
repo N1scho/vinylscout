@@ -92,12 +92,26 @@ export function validateData(schema, data) {
   // Format error message nicely
   let errorMessage = 'Validation failed';
   try {
-    if (result.error?.errors?.length > 0) {
-      errorMessage = result.error.errors.map(err =>
-        `${err.path?.length > 0 ? err.path.join('.') : 'unknown'}: ${err.message}`
-      ).join(', ');
-    } else if (result.error?.message) {
-      errorMessage = result.error.message;
+    // Try using Zod's flatten() method first
+    if (typeof result.error?.flatten === 'function') {
+      const flattened = result.error.flatten();
+      const fieldErrors = Object.entries(flattened.fieldErrors || {});
+      if (fieldErrors.length > 0) {
+        const [field, msgs] = fieldErrors[0];
+        errorMessage = `${field}: ${msgs[0]}`;
+      } else if (flattened.formErrors?.length > 0) {
+        errorMessage = flattened.formErrors[0];
+      }
+    } else {
+      // Fallback: Zod errors have an issues array
+      const issues = result.error?.issues || [];
+      if (issues.length > 0) {
+        errorMessage = issues.map(issue =>
+          `${issue.path?.length > 0 ? issue.path.join('.') : 'unknown'}: ${issue.message}`
+        ).join(', ');
+      } else if (result.error?.message) {
+        errorMessage = result.error.message;
+      }
     }
   } catch (e) {
     console.error('[validateData] error formatting message:', e, result.error);

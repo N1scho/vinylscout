@@ -108,7 +108,7 @@ describe('CollectionStore', () => {
     it('toggles favorite status', () => {
       const { result } = renderHook(() => useCollectionStore());
 
-      const vinyl = { id: 1, title: 'Test Album', favorite: false };
+      const vinyl = { id: 1, title: 'Test Album', isFavorite: false };
       act(() => {
         result.current.addToCollection(vinyl);
       });
@@ -119,14 +119,14 @@ describe('CollectionStore', () => {
         expect(response.success).toBe(true);
       });
 
-      expect(result.current.collection[0].favorite).toBe(true);
+      expect(result.current.collection[0].isFavorite).toBe(true);
 
       // Toggle off
       act(() => {
         result.current.toggleFavorite(1);
       });
 
-      expect(result.current.collection[0].favorite).toBe(false);
+      expect(result.current.collection[0].isFavorite).toBe(false);
     });
   });
 

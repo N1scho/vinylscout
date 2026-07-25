@@ -75,7 +75,8 @@ export const useCollectionStore = create(
 
       getCollectionValue: () => {
         const state = get();
-        return calculateCollectionValue(state.collection);
+        const valueObj = calculateCollectionValue(state.collection);
+        return valueObj.total;
       },
 
       getPriceChange: (item) => {
@@ -87,7 +88,19 @@ export const useCollectionStore = create(
         const validation = validateData(VinylSchema, newItem);
 
         if (!validation.success) {
-          const errorMsg = String(validation.error || 'Invalid vinyl data').split(',')[0];
+          // Extract error message with detailed fallback logic
+          let errorMsg = 'Invalid vinyl data';
+          if (typeof validation.error === 'string') {
+            // If it's already a string, use it (possibly split to get first error)
+            errorMsg = validation.error.split(',')[0].trim();
+          } else if (validation.details?.errors?.length > 0) {
+            // Fallback to details if error is not a string
+            errorMsg = validation.details.errors
+              .map(err => `${err.path?.join('.') || 'unknown'}: ${err.message}`)
+              .join(', ')
+              .split(',')[0]
+              .trim();
+          }
           console.error('[addToCollection] validation failed:', errorMsg, newItem);
           return { success: false, error: errorMsg };
         }

@@ -16,8 +16,15 @@ export const MAX_BACKUPS = 3;
 function isValidPersistedValue(raw) {
   try {
     const parsed = JSON.parse(raw);
-    // Just check that it's an object with a state property
-    return typeof parsed === 'object' && parsed !== null && 'state' in parsed;
+    // Check that it's an object with a state property
+    if (typeof parsed !== 'object' || parsed === null || !('state' in parsed)) {
+      return false;
+    }
+    // Check that state.collection is an array
+    if (!Array.isArray(parsed.state.collection)) {
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }
