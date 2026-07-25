@@ -14,17 +14,17 @@ const shuffleArray = (arr) => {
 export const useDiscoverStore = create(
   persist(
     (set, get) => ({
-      // State
+      // State (use Arrays instead of Sets for better serialization)
       allAlbums: [],
       genres: [],
-      selectedGenreIds: new Set(),
+      selectedGenreIds: [],
       shuffledAlbums: [],
       currentAlbumIndex: 0,
-      wishlist: new Set(),
+      wishlist: [],
 
       // Initialize with album data
       initializeAlbums: (data) => {
-        const allGenreIds = new Set(data.genres.map(g => g.id));
+        const allGenreIds = data.genres.map(g => g.id);
         const shuffled = shuffleArray(data.albums);
 
         set({
@@ -43,14 +43,14 @@ export const useDiscoverStore = create(
         const shuffled = shuffleArray(filtered);
 
         set({
-          selectedGenreIds: selectedSet,
+          selectedGenreIds: Array.from(selectedSet),
           shuffledAlbums: shuffled,
           currentAlbumIndex: 0
         });
       },
 
       selectAllGenres: () => {
-        const allGenreIds = new Set(get().genres.map(g => g.id));
+        const allGenreIds = get().genres.map(g => g.id);
         const shuffled = shuffleArray(get().allAlbums);
 
         set({
@@ -62,7 +62,7 @@ export const useDiscoverStore = create(
 
       clearAllGenres: () => {
         set({
-          selectedGenreIds: new Set(),
+          selectedGenreIds: [],
           shuffledAlbums: [],
           currentAlbumIndex: 0
         });
@@ -87,21 +87,20 @@ export const useDiscoverStore = create(
 
       // Wishlist
       toggleWishlist: (albumId) => {
-        const wishlist = new Set(get().wishlist);
-        if (wishlist.has(albumId)) {
-          wishlist.delete(albumId);
+        const wishlist = get().wishlist;
+        if (wishlist.includes(albumId)) {
+          set({ wishlist: wishlist.filter(id => id !== albumId) });
         } else {
-          wishlist.add(albumId);
+          set({ wishlist: [...wishlist, albumId] });
         }
-        set({ wishlist });
       },
 
       isInWishlist: (albumId) => {
-        return get().wishlist.has(albumId);
+        return get().wishlist.includes(albumId);
       },
 
       getWishlistCount: () => {
-        return get().wishlist.size;
+        return get().wishlist.length;
       },
 
       getFilteredAlbums: () => {
@@ -109,15 +108,7 @@ export const useDiscoverStore = create(
       }
     }),
     {
-      name: 'discover-store',
-      partialize: (state) => ({
-        wishlist: Array.from(state.wishlist)
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (state && state.wishlist) {
-          state.wishlist = new Set(state.wishlist);
-        }
-      }
+      name: 'discover-store'
     }
   )
 );

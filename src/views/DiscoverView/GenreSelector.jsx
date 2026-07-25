@@ -15,9 +15,7 @@ export default function GenreSelector({ themes }) {
     setSelectedGenres(Array.from(newSelected));
   };
 
-  // Convert Set to array for memoization
-  const selectedArray = useMemo(() => Array.from(selectedGenreIds || []), [selectedGenreIds]);
-  const selectAllCount = useMemo(() => selectedArray.length === genres.length, [selectedArray.length, genres.length]);
+  const selectAllCount = useMemo(() => selectedGenreIds.length === genres.length, [selectedGenreIds.length, genres.length]);
 
   return (
     <div style={{
@@ -59,8 +57,8 @@ export default function GenreSelector({ themes }) {
           style={{
             flex: 1,
             padding: '10px 12px',
-            backgroundColor: selectedArray.length === 0 ? themes.primary : themes.border,
-            color: selectedArray.length === 0 ? themes.buttonText : themes.text,
+            backgroundColor: selectedGenreIds.length === 0 ? themes.primary : themes.border,
+            color: selectedGenreIds.length === 0 ? themes.buttonText : themes.text,
             border: 'none',
             borderRadius: '6px',
             fontSize: '14px',
@@ -69,10 +67,10 @@ export default function GenreSelector({ themes }) {
             transition: 'all 200ms ease'
           }}
           onMouseEnter={(e) => {
-            if (selectedGenreIds.size > 0) e.target.style.backgroundColor = themes.primaryHover || themes.primary;
+            if (selectedGenreIds.length > 0) e.target.style.backgroundColor = themes.primaryHover || themes.primary;
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = selectedArray.length === 0 ? themes.primary : themes.border;
+            e.target.style.backgroundColor = selectedGenreIds.length === 0 ? themes.primary : themes.border;
           }}
         >
           Clear All
@@ -97,14 +95,14 @@ export default function GenreSelector({ themes }) {
               padding: '8px 10px',
               cursor: 'pointer',
               borderRadius: '4px',
-              backgroundColor: selectedArray.includes(genre.id) ? `${themes.primary}15` : 'transparent',
+              backgroundColor: selectedGenreIds.includes(genre.id) ? `${themes.primary}15` : 'transparent',
               userSelect: 'none',
               fontSize: '13px'
             }}
           >
             <input
               type="checkbox"
-              checked={selectedArray.includes(genre.id)}
+              checked={selectedGenreIds.includes(genre.id)}
               onChange={() => handleGenreToggle(genre.id)}
               style={{
                 cursor: 'pointer',
