@@ -26,10 +26,10 @@ class ViewErrorBoundary extends React.Component {
   }
 
   componentDidCatch(_error, errorInfo) {
-    console.error(`Error in ${this.props.viewName || 'View'}:`, error, errorInfo);
+    console.error(`Error in ${this.props.viewName || 'View'}:`, _error, errorInfo);
 
     this.setState(prevState => ({
-      error,
+      error: _error,
       errorInfo,
       errorCount: prevState.errorCount + 1
     }));
