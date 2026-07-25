@@ -42,6 +42,20 @@ function slugifyGenreName(name) {
 async function parseGenreCovers() {
   console.log('Starting Excel genre parser...\n');
 
+  // Check if source directory exists (skip on CI/Vercel where local paths don't exist)
+  if (!fs.existsSync(GENRE_LIST_DIR)) {
+    console.log(`Source directory not found: ${GENRE_LIST_DIR}`);
+
+    // Check if we already have cached data
+    if (fs.existsSync(OUTPUT_FILE)) {
+      console.log(`Using cached data from ${OUTPUT_FILE}`);
+      return;
+    }
+
+    console.error('ERROR: Excel source not found and no cached data available.');
+    process.exit(1);
+  }
+
   try {
     // Read all Excel files
     const files = fs.readdirSync(GENRE_LIST_DIR);
