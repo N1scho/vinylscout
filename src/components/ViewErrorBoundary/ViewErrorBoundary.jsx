@@ -26,7 +26,13 @@ class ViewErrorBoundary extends React.Component {
   }
 
   componentDidCatch(_error, errorInfo) {
-    console.error(`Error in ${this.props.viewName || 'View'}:`, _error, errorInfo);
+    // Log full error details for debugging
+    console.error(`=== ERROR in ${this.props.viewName || 'View'} ===`);
+    console.error('Error Name:', _error?.name);
+    console.error('Error Message:', _error?.message);
+    console.error('Error Stack:', _error?.stack);
+    console.error('Component Stack:', errorInfo?.componentStack);
+    console.error(_error, errorInfo);
 
     this.setState(prevState => ({
       error: _error,
@@ -127,8 +133,8 @@ class ViewErrorBoundary extends React.Component {
               }
             </p>
 
-            {/* Error message (in development) */}
-            {import.meta.env.DEV  && this.state.error && (
+            {/* Error message (always show in production too) */}
+            {this.state.error && (
               <div style={{
                 marginBottom: designSystem.spacing.lg,
                 padding: designSystem.spacing.md,
@@ -140,11 +146,11 @@ class ViewErrorBoundary extends React.Component {
                   fontFamily: 'monospace',
                   fontSize: designSystem.typography.sizes.sm,
                   color: themes?.error || '#ef4444',
-                  margin: 0,
+                  margin: '0 0 8px 0',
                   textAlign: 'left',
                   wordBreak: 'break-word'
                 }}>
-                  {this.state.error.toString()}
+                  {this.state.error.name || 'Error'}: {this.state.error.message || this.state.error.toString()}
                 </p>
               </div>
             )}
