@@ -48,7 +48,7 @@ export default function AlbumGallery({ themes }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentAlbumIndex]);
+  }, [nextAlbum, prevAlbum]);
 
   // Touch swipe handling
   const handleTouchStart = (e) => {
