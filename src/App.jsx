@@ -8,6 +8,7 @@ const CameraView = lazy(() => import('./views/CameraView'));
 const CollectionView = lazy(() => import('./views/CollectionView'));
 const StatsView = lazy(() => import('./views/StatsView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
+const DiscoverView = lazy(() => import('./views/DiscoverView'));
 
 // Utilities
 import { calculateCollectionStats } from './utils/statistics';
@@ -495,6 +496,13 @@ export default function App() {
     );
   };
 
+  const renderDiscoverView = () => {
+    return (
+      <DiscoverView
+        themes={themes}
+      />
+    );
+  };
 
 return (
     <div style={{
@@ -546,6 +554,7 @@ return (
             {view === 'camera' && renderCameraView()}
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
+            {view === 'discover' && renderDiscoverView()}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
