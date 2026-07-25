@@ -43,3 +43,24 @@ und `ANTHROPIC_API_KEY` müssen im Vercel-Dashboard gesetzt sein
 - `api/analyze.js` — Cover-Erkennung via Claude (Server-Key)
 - Sammlung liegt in localStorage mit rollierenden Backups
   (`vinyl-collection-backup-1..3`)
+
+## Discover Mode
+
+Browse ~2000 vinyl albums from 80 genres with cover images. Select genres, swipe through gallery, add to wishlist.
+
+**Features:**
+- Genre multi-select (Select All / Clear All)
+- Album gallery with swipe, arrow keys, spacebar navigation
+- Wishlist toggle (♡/♥ heart icon)
+- Wishlist filter in Collection view
+
+**Data Source:**
+- Excel files in `C:\Users\nikol\Desktop\Claude\Genre Lists`
+- Parsed at build time: `npm run build`
+- Stored in localStorage + Zustand discoverStore
+
+**Navigation:**
+- Discover tab in bottom navigation
+- Swipe left/right or use arrow keys to browse
+- Spacebar for next album
+- Click heart to add/remove from wishlist

@@ -15,7 +15,7 @@
 | **0** | Baseline, branch setup, version unify | ✅ Complete | 3.0.0 |
 | **1** | Security (server auth), stability (storage backup), features (camera expand) | ✅ Complete | 3.0.0–3.0.8 |
 | **2** | Data management (CSV export), search history | ✅ Complete | 3.1.0–3.1.1 |
-| **3** | UI polish (filters, duplicate detection, charts) | 📋 Planned | TBD |
+| **3** | UI polish (filters, duplicate detection, charts) | 📋 In Progress | 3.2.0-TBD |
 
 ---
 
@@ -77,6 +77,8 @@
 | Data Backup | ✅ Full | JSON + CSV export, rolling storage backup |
 | Search History | ⏳ Partial | Backend ready, UI not yet |
 | Collection Filtering | ⏳ Partial | Basic filters work, quick-access buttons missing |
+| Discover Mode | ✅ Full | 80 genres, 2000 albums, swipe gallery, wishlist |
+| Wishlist Integration | ✅ Full | Toggle on albums, filter in collection |
 | Duplicate Detection | ❌ Not Started | |
 | Price Trends | ❌ Not Started | |
 | Bulk Operations | ❌ Not Started | |
