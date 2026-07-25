@@ -141,7 +141,7 @@ export default function AlbumGallery({ themes }) {
           fontSize: '13px',
           color: themes.textTertiary
         }}>
-          {currentAlbum.year || 'Year unknown'}
+          {currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown'}
           {currentAlbum.label && ` • ${currentAlbum.label}`}
         </p>
       </div>
