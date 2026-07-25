@@ -18,22 +18,7 @@ export default function AlbumGallery({ themes }) {
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
 
-  if (!currentAlbum) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px',
-        color: themes.textSecondary,
-        fontSize: '16px'
-      }}>
-        Select genres to browse albums
-      </div>
-    );
-  }
-
-  // Keyboard navigation
+  // Keyboard navigation (MUST be before conditional return)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight') {
@@ -49,6 +34,21 @@ export default function AlbumGallery({ themes }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextAlbum, prevAlbum]);
+
+  if (!currentAlbum) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '400px',
+        color: themes.textSecondary,
+        fontSize: '16px'
+      }}>
+        Select genres to browse albums
+      </div>
+    );
+  }
 
   // Touch swipe handling
   const handleTouchStart = (e) => {
