@@ -53,10 +53,10 @@ export const sortCollection = (items, sortBy) => {
 };
 
 /**
- * Filter collection items by favorites, search query, genre, decade, and format
+ * Filter collection items by favorites, wishlist, search query, genre, decade, and format
  *
  * @param {Array} items - Collection items to filter
- * @param {string} filter - Filter type ('all' or 'favorites')
+ * @param {string} filter - Filter type ('all', 'favorites', or 'wishlist')
  * @param {string} searchQuery - Search query for artist/album filtering
  * @param {string|null} genreFilter - Genre to filter by
  * @param {string|null} decadeFilter - Decade to filter by (e.g., '1980s')
@@ -64,7 +64,17 @@ export const sortCollection = (items, sortBy) => {
  * @returns {Array} Filtered collection items
  */
 export const filterCollection = (items, filter, searchQuery = '', genreFilter = null, decadeFilter = null, formatFilter = null) => {
-  let filtered = filter === 'favorites' ? items.filter(item => item.isFavorite) : items;
+  let filtered = items;
+
+  // Apply main filter (all, favorites, or wishlist)
+  if (filter === 'favorites') {
+    filtered = items.filter(item => item.isFavorite);
+  } else if (filter === 'wishlist') {
+    // Import the store inside the function to avoid circular dependencies
+    const { useDiscoverStore } = require('../stores/discoverStore');
+    const wishlistIds = useDiscoverStore().wishlist;
+    filtered = items.filter(item => wishlistIds.has(item.id));
+  }
 
   // Apply search filter if query exists
   if (searchQuery.trim()) {
