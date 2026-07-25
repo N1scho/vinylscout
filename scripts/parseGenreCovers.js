@@ -2,6 +2,7 @@ import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import unzipper from 'unzipper';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -34,6 +35,57 @@ function parseGenreFromFilename(filename) {
  */
 function slugifyGenreName(name) {
   return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
+ * Extract images from Excel file (xlsx is a ZIP archive)
+ * Returns array of {name, data} for images found in xl/media/
+ */
+async function extractImagesFromExcel(excelFilePath) {
+  const images = [];
+
+  try {
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(excelFilePath)
+        .pipe(unzipper.Parse())
+        .on('entry', (entry) => {
+          // Look for images in xl/media/ folder
+          if (entry.path.startsWith('xl/media/')) {
+            const fileName = entry.path.split('/').pop();
+            const chunks = [];
+
+            entry.on('data', (chunk) => {
+              chunks.push(chunk);
+            });
+
+            entry.on('end', () => {
+              images.push({
+                name: fileName,
+                data: Buffer.concat(chunks),
+              });
+            });
+
+            entry.on('error', (err) => {
+              console.warn(`    Warning: Failed to read ${entry.path}: ${err.message}`);
+              entry.autodrain();
+            });
+          } else {
+            entry.autodrain();
+          }
+        })
+        .on('error', (err) => {
+          console.warn(`    Warning: Error reading Excel file: ${err.message}`);
+          // Resolve with whatever images we found so far
+          resolve(images);
+        })
+        .on('finish', () => {
+          resolve(images);
+        });
+    });
+  } catch (error) {
+    console.warn(`    Warning: Error extracting images: ${error.message}`);
+    return [];
+  }
 }
 
 /**
@@ -111,6 +163,68 @@ async function parseGenreCovers() {
           fs.mkdirSync(genreCoverDir, { recursive: true });
         }
 
+        // Extract images from Excel file
+        console.log(`  Extracting images from Excel...`);
+        const extractedImages = await extractImagesFromExcel(filepath);
+        if (extractedImages.length > 0) {
+          console.log(`  Found ${extractedImages.length} images`);
+
+          // Map images by extension type (prefer .jpeg over .png)
+          const imagesByExt = {};
+          extractedImages.forEach((img) => {
+            const ext = path.extname(img.name).toLowerCase();
+            if (!imagesByExt[ext]) {
+              imagesByExt[ext] = [];
+            }
+            imagesByExt[ext].push(img);
+          });
+
+          // Use .jpeg images if available, otherwise use .png
+          const imagesToUse = imagesByExt['.jpeg'] || imagesByExt['.jpg'] || imagesByExt['.png'] || [];
+
+          // Save extracted images
+          imagesToUse.slice(0, rows.length).forEach((img, index) => {
+            const imageIndex = index + 1;
+            const imageFileName = `${String(imageIndex).padStart(3, '0')}.png`;
+            const imageFilePath = path.join(genreCoverDir, imageFileName);
+
+            // Convert JPEG to PNG if needed (simple copy for now, as Excel stores as .jpeg)
+            // If it's already .png or .jpeg, just save it with .png extension
+            fs.writeFileSync(imageFilePath, img.data);
+          });
+
+          console.log(`  ✓ Saved ${imagesToUse.length} extracted images`);
+        } else {
+          console.log(`  No images found in Excel, using placeholders`);
+
+          // Create placeholder cover images
+          rows.forEach((row, index) => {
+            const artist = row.Artist?.trim() || '';
+            const album = row.Album?.trim() || '';
+
+            // Skip empty rows
+            if (!artist || !album) {
+              return;
+            }
+
+            const albumIndex = index + 1;
+            const coverFileName = `${String(albumIndex).padStart(3, '0')}.png`;
+            const coverFilePath = path.join(genreCoverDir, coverFileName);
+
+            if (!fs.existsSync(coverFilePath) || fs.statSync(coverFilePath).size === 67) {
+              // Create a 1x1 transparent PNG as placeholder
+              const placeholderPNG = Buffer.from([
+                0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+                0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+                0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+                0x42, 0x60, 0x82,
+              ]);
+              fs.writeFileSync(coverFilePath, placeholderPNG);
+            }
+          });
+        }
+
         // Process each album row
         rows.forEach((row, index) => {
           try {
@@ -129,20 +243,8 @@ async function parseGenreCovers() {
             const albumIndex = index + 1; // 1-based index
             const albumId = `${genreInfo.id}-${String(albumIndex).padStart(3, '0')}`;
 
-            // Create placeholder cover image file (empty for now)
+            // Create cover URL
             const coverFileName = `${String(albumIndex).padStart(3, '0')}.png`;
-            const coverFilePath = path.join(genreCoverDir, coverFileName);
-            if (!fs.existsSync(coverFilePath)) {
-              // Create a 1x1 transparent PNG as placeholder
-              const placeholderPNG = Buffer.from([
-                0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-                0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-                0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-                0x42, 0x60, 0x82,
-              ]);
-              fs.writeFileSync(coverFilePath, placeholderPNG);
-            }
 
             // Create album object
             const albumObj = {

@@ -40,6 +40,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-lazy-load-image-component": "^1.6.3",
+    "unzipper": "^0.12.5",
     "use-debounce": "^10.0.6",
     "xlsx": "^0.18.5",
     "zod": "^4.1.13",
