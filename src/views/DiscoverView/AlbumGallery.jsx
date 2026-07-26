@@ -1,7 +1,7 @@
 // src/views/DiscoverView/AlbumGallery.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
-import { getDiscogsAlbumMetadata } from '../../services/discogsService';
+import { getDiscogsAlbumMetadata, fetchPriceInfo } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
 
 export default function AlbumGallery({ themes }) {
@@ -38,7 +38,7 @@ export default function AlbumGallery({ themes }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextAlbum, prevAlbum]);
 
-  // Fetch Discogs metadata (cover + year) for current album
+  // Fetch Discogs metadata (cover + year + price) for current album
   useEffect(() => {
     if (!currentAlbum) {
       setDiscogsMetadata(null);
@@ -47,9 +47,26 @@ export default function AlbumGallery({ themes }) {
 
     const fetchMetadata = async () => {
       setLoadingMetadata(true);
-      const metadata = await getDiscogsAlbumMetadata(currentAlbum.artist, currentAlbum.album);
-      setDiscogsMetadata(metadata);
-      setLoadingMetadata(false);
+      try {
+        // Fetch cover and year from metadata search
+        const metadata = await getDiscogsAlbumMetadata(currentAlbum.artist, currentAlbum.album);
+
+        // If we got a releaseId, fetch price data
+        let priceData = null;
+        if (metadata?.releaseId) {
+          priceData = await fetchPriceInfo(metadata.releaseId);
+        }
+
+        setDiscogsMetadata({
+          ...metadata,
+          price: priceData
+        });
+      } catch (error) {
+        console.error('Error fetching metadata:', error);
+        setDiscogsMetadata(null);
+      } finally {
+        setLoadingMetadata(false);
+      }
     };
 
     fetchMetadata();
@@ -173,13 +190,38 @@ export default function AlbumGallery({ themes }) {
           {currentAlbum.album}
         </p>
         <p style={{
-          margin: '0',
+          margin: '0 0 6px 0',
           fontSize: '13px',
           color: themes.textTertiary
         }}>
           {discogsMetadata?.year > 0 ? discogsMetadata.year : (currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown')}
           {currentAlbum.label && ` • ${currentAlbum.label}`}
         </p>
+        {/* Price */}
+        {discogsMetadata?.price ? (
+          <p style={{
+            margin: '0',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: themes.primary
+          }}>
+            {discogsMetadata.price.currency} {
+              typeof discogsMetadata.price.value === 'number'
+                ? discogsMetadata.price.value.toFixed(2)
+                : (discogsMetadata.price.value && !isNaN(parseFloat(discogsMetadata.price.value))
+                    ? parseFloat(discogsMetadata.price.value).toFixed(2)
+                    : '0.00')
+            }
+          </p>
+        ) : (
+          <p style={{
+            margin: '0',
+            fontSize: '12px',
+            color: themes.textTertiary
+          }}>
+            No price available
+          </p>
+        )}
       </div>
 
       {/* Navigation Controls */}
