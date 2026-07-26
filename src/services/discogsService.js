@@ -65,8 +65,9 @@ export const searchDiscogs = async ({
     if (advancedSearch.year) params.year = advancedSearch.year;
     if (advancedSearch.label) params.label = advancedSearch.label;
     if (advancedSearch.genre) params.genre = advancedSearch.genre;
+    if (advancedSearch.country) params.country = advancedSearch.country;
 
-    const hasField = ['artist', 'release_title', 'year', 'label', 'genre']
+    const hasField = ['artist', 'release_title', 'year', 'label', 'genre', 'country']
       .some((key) => params[key]);
     if (!hasField) {
       throw new ApiError('Bitte mindestens ein Suchfeld ausfüllen', 400);

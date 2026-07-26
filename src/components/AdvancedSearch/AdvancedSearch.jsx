@@ -34,6 +34,7 @@ export default function AdvancedSearch({
     { key: 'year', label: 'Year', placeholder: 'Release year', type: 'number' },
     { key: 'label', label: 'Label', placeholder: 'Record label' },
     { key: 'genre', label: 'Genre', placeholder: 'Genre' },
+    { key: 'country', label: 'Country', placeholder: 'e.g., US, UK, DE' },
     { key: 'format', label: 'Format', placeholder: 'e.g., Vinyl, CD' }
   ];
 
