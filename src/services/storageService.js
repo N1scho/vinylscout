@@ -93,12 +93,22 @@ export const importCollection = async (file) => {
         }
 
         resolve(importedCollection);
-      } catch {
-        reject(new Error('Invalid JSON file'));
+      } catch (error) {
+        console.error('Collection import parse error:', error, 'File:', file.name);
+        reject(new Error(`Invalid JSON file: ${error.message}`));
       }
     };
 
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error, 'File:', file.name);
+      reject(new Error('Failed to read file'));
+    };
+
+    reader.onabort = () => {
+      console.error('FileReader aborted:', file.name);
+      reject(new Error('File read was aborted'));
+    };
+
     reader.readAsText(file);
   });
 };

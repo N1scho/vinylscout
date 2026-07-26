@@ -30,6 +30,7 @@ export default function SettingsView({
   onExportCollection,
   onExportCollectionAsCSV,
   onImportCollection,
+  importFileInputRef,
 
   // App Info
   appVersion,
@@ -282,6 +283,7 @@ export default function SettingsView({
             >
               Import Collection
               <input
+                ref={importFileInputRef}
                 type="file"
                 accept=".json"
                 onChange={onImportCollection}

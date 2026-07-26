@@ -47,6 +47,9 @@ export default function App() {
   const settings = useSettingsStore();
   const ui = useUIStore();
 
+  // File input ref for Chrome compatibility
+  const fileInputRef = useRef(null);
+
   // Memoized selectors for computed values (fixes performance issue)
   const filteredAndSorted = useCollectionStore(
     useShallow((s) =>
@@ -124,19 +127,29 @@ export default function App() {
   };
 
   const handleImportCollection = async (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       const imported = await StorageService.importCollection(file);
+      if (!Array.isArray(imported) || imported.length === 0) {
+        ui.showToast('Collection is empty', 'error');
+        return;
+      }
       collection.setCollection(imported);
       ui.showToast(`Imported ${imported.length} records`, 'success');
     } catch (error) {
-      console.error('Import failed:', error);
-      ui.showToast('Failed to import collection', 'error');
+      console.error('Import failed:', error.message);
+      ui.showToast(`Import failed: ${error.message}`, 'error');
     }
 
-    event.target.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerImportInput = () => {
+    fileInputRef.current?.click();
   };
 
   // Load Google Fonts Inter & Add CSS Animations
@@ -490,6 +503,7 @@ export default function App() {
         onExportCollection={exportCollection}
         onExportCollectionAsCSV={exportCollectionAsCSV}
         onImportCollection={handleImportCollection}
+        importFileInputRef={fileInputRef}
         appVersion={APP_VERSION}
         themes={themes}
       />
