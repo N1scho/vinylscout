@@ -1,6 +1,7 @@
 // src/views/DiscoverView/AlbumGallery.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
+import { getDiscogsAlbumCover } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
 
 export default function AlbumGallery({ themes }) {
@@ -14,6 +15,8 @@ export default function AlbumGallery({ themes }) {
   } = useDiscoverStore();
 
   const [touchStart, setTouchStart] = useState(null);
+  const [discogsCoverUrl, setDiscogsCoverUrl] = useState(null);
+  const [loadingCover, setLoadingCover] = useState(false);
   const containerRef = useRef(null);
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
@@ -34,6 +37,23 @@ export default function AlbumGallery({ themes }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextAlbum, prevAlbum]);
+
+  // Fetch Discogs cover for current album
+  useEffect(() => {
+    if (!currentAlbum) {
+      setDiscogsCoverUrl(null);
+      return;
+    }
+
+    const fetchCover = async () => {
+      setLoadingCover(true);
+      const coverUrl = await getDiscogsAlbumCover(currentAlbum.artist, currentAlbum.album);
+      setDiscogsCoverUrl(coverUrl);
+      setLoadingCover(false);
+    };
+
+    fetchCover();
+  }, [currentAlbum?.id]);
 
   if (!currentAlbum) {
     return (
@@ -99,20 +119,36 @@ export default function AlbumGallery({ themes }) {
         overflow: 'hidden',
         boxShadow: `0 4px 12px ${themes.primary}20`,
         cursor: 'grab',
-        userSelect: 'none'
+        userSelect: 'none',
+        position: 'relative'
       }}>
+        {/* Use Discogs cover if available, fallback to local */}
         <img
-          src={currentAlbum.coverUrl}
+          src={discogsCoverUrl || currentAlbum.coverUrl}
           alt={`${currentAlbum.artist} - ${currentAlbum.album}`}
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            opacity: loadingCover ? 0.5 : 1,
+            transition: 'opacity 200ms ease'
           }}
           onError={(e) => {
             e.target.style.display = 'none';
           }}
         />
+        {/* Loading indicator */}
+        {loadingCover && (
+          <div style={{
+            position: 'absolute',
+            width: '20px',
+            height: '20px',
+            border: `2px solid ${themes.primary}`,
+            borderTop: `2px solid transparent`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+        )}
       </div>
 
       {/* Album Info */}

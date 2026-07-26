@@ -128,3 +128,35 @@ export const fetchMultiplePrices = async (items, onProgress = null, batchSize = 
 
   return allPrices;
 };
+
+// Cache for album cover URLs (Discover mode)
+const albumCoverCache = new Map();
+
+export const getDiscogsAlbumCover = async (artist, album) => {
+  const cacheKey = `${artist}|${album}`.toLowerCase();
+
+  if (albumCoverCache.has(cacheKey)) {
+    return albumCoverCache.get(cacheKey);
+  }
+
+  try {
+    const data = await proxyRequest('/database/search', {
+      q: `${artist} ${album}`,
+      type: 'release',
+      per_page: '1'
+    });
+
+    if (data.results?.[0]?.cover_image) {
+      const coverUrl = data.results[0].cover_image;
+      albumCoverCache.set(cacheKey, coverUrl);
+      return coverUrl;
+    }
+
+    albumCoverCache.set(cacheKey, null);
+    return null;
+  } catch (error) {
+    console.warn(`Cover fetch failed for ${artist} - ${album}:`, error.message);
+    albumCoverCache.set(cacheKey, null);
+    return null;
+  }
+};
