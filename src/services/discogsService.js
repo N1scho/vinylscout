@@ -7,32 +7,47 @@ import { NetworkError, RateLimitError, ApiError } from '../utils/errors';
 
 const PROXY_URL = '/api/discogs-proxy';
 
-async function proxyRequest(endpoint, params = {}) {
-  let response;
-  try {
-    response = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint, params }),
-    });
-  } catch (error) {
-    throw new NetworkError('Keine Verbindung zum Server. Bitte Internetverbindung prüfen.');
+async function proxyRequest(endpoint, params = {}, retries = 3) {
+  let lastError;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    let response;
+    try {
+      response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint, params }),
+      });
+    } catch (error) {
+      throw new NetworkError('Keine Verbindung zum Server. Bitte Internetverbindung prüfen.');
+    }
+
+    if (response.ok) {
+      return response.json();
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 429) {
+      const retryAfter = data.retryAfter ?? (Math.pow(2, attempt) * 2);
+      lastError = new RateLimitError(retryAfter);
+
+      // Retry on rate limit with exponential backoff
+      if (attempt < retries - 1) {
+        console.warn(`Rate limited. Retrying in ${retryAfter}s (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        continue;
+      }
+    }
+
+    throw new ApiError(
+      data.error || `Anfrage fehlgeschlagen (HTTP ${response.status})`,
+      response.status,
+      data.details
+    );
   }
 
-  if (response.ok) {
-    return response.json();
-  }
-
-  const data = await response.json().catch(() => ({}));
-
-  if (response.status === 429) {
-    throw new RateLimitError(data.retryAfter ?? 60);
-  }
-  throw new ApiError(
-    data.error || `Anfrage fehlgeschlagen (HTTP ${response.status})`,
-    response.status,
-    data.details
-  );
+  throw lastError || new ApiError('Max retries exceeded', 429);
 }
 
 export const searchDiscogs = async ({

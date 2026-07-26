@@ -199,7 +199,8 @@ export default function App() {
         if (!isAdvanced && query) search.addToSearchHistory(query);
 
         if (results.length > 0) {
-          await discogsApi.fetchAllPrices(results);
+          // Fetch prices for first 20 results only to avoid rate limiting
+          await discogsApi.fetchAllPrices(results, 20);
         }
       },
       onError: (error) => {

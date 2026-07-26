@@ -49,6 +49,7 @@ export const useDiscogsSearch = () => {
 
   /**
    * Fetch prices for multiple results with incremental UI updates
+   * Batches requests to avoid rate limiting
    */
   const fetchAllPrices = useCallback(async (results, maxItems = 50) => {
     // Clear previous prices
@@ -56,6 +57,8 @@ export const useDiscogsSearch = () => {
 
     const itemsToFetch = results.slice(0, Math.min(results.length, maxItems));
     let fetchedPrices = {};
+    const batchSize = 3;
+    const delayBetweenBatches = 500; // 500ms between batches
 
     for (let i = 0; i < itemsToFetch.length; i++) {
       const result = itemsToFetch[i];
@@ -66,10 +69,15 @@ export const useDiscogsSearch = () => {
         if (priceData) {
           fetchedPrices[result.id] = priceData;
 
-          // Update UI every 3 items for smooth incremental loading
-          if ((i + 1) % 3 === 0 || i === itemsToFetch.length - 1) {
+          // Update UI every batchSize items
+          if ((i + 1) % batchSize === 0 || i === itemsToFetch.length - 1) {
             setResultPrices(prev => ({ ...prev, ...fetchedPrices }));
             fetchedPrices = {}; // Clear batch
+
+            // Delay between batches to avoid rate limiting
+            if (i < itemsToFetch.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+            }
           }
         }
       } catch (error) {
