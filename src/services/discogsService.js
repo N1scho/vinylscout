@@ -99,8 +99,8 @@ export const fetchVinylDetails = async (id) => {
 };
 
 export const waitForRateLimit = () => {
-  // Minimal delay to space out requests, but don't block at flea market
-  return new Promise((resolve) => setTimeout(resolve, 50));
+  // No delay - Discogs API handles rate limiting server-side
+  return Promise.resolve();
 };
 
 export const fetchMultiplePrices = async (items, onProgress = null, batchSize = 3) => {
