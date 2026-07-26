@@ -1,7 +1,7 @@
 // src/views/DiscoverView/AlbumGallery.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
-import { getDiscogsAlbumCover } from '../../services/discogsService';
+import { getDiscogsAlbumMetadata } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
 
 export default function AlbumGallery({ themes }) {
@@ -15,8 +15,8 @@ export default function AlbumGallery({ themes }) {
   } = useDiscoverStore();
 
   const [touchStart, setTouchStart] = useState(null);
-  const [discogsCoverUrl, setDiscogsCoverUrl] = useState(null);
-  const [loadingCover, setLoadingCover] = useState(false);
+  const [discogsMetadata, setDiscogsMetadata] = useState(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
   const containerRef = useRef(null);
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
@@ -38,21 +38,21 @@ export default function AlbumGallery({ themes }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextAlbum, prevAlbum]);
 
-  // Fetch Discogs cover for current album
+  // Fetch Discogs metadata (cover + year) for current album
   useEffect(() => {
     if (!currentAlbum) {
-      setDiscogsCoverUrl(null);
+      setDiscogsMetadata(null);
       return;
     }
 
-    const fetchCover = async () => {
-      setLoadingCover(true);
-      const coverUrl = await getDiscogsAlbumCover(currentAlbum.artist, currentAlbum.album);
-      setDiscogsCoverUrl(coverUrl);
-      setLoadingCover(false);
+    const fetchMetadata = async () => {
+      setLoadingMetadata(true);
+      const metadata = await getDiscogsAlbumMetadata(currentAlbum.artist, currentAlbum.album);
+      setDiscogsMetadata(metadata);
+      setLoadingMetadata(false);
     };
 
-    fetchCover();
+    fetchMetadata();
   }, [currentAlbum?.id]);
 
   if (!currentAlbum) {
@@ -124,13 +124,13 @@ export default function AlbumGallery({ themes }) {
       }}>
         {/* Use Discogs cover if available, fallback to local */}
         <img
-          src={discogsCoverUrl || currentAlbum.coverUrl}
+          src={discogsMetadata?.coverUrl || currentAlbum.coverUrl}
           alt={`${currentAlbum.artist} - ${currentAlbum.album}`}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            opacity: loadingCover ? 0.5 : 1,
+            opacity: loadingMetadata ? 0.5 : 1,
             transition: 'opacity 200ms ease'
           }}
           onError={(e) => {
@@ -138,7 +138,7 @@ export default function AlbumGallery({ themes }) {
           }}
         />
         {/* Loading indicator */}
-        {loadingCover && (
+        {loadingMetadata && (
           <div style={{
             position: 'absolute',
             width: '20px',
@@ -177,7 +177,7 @@ export default function AlbumGallery({ themes }) {
           fontSize: '13px',
           color: themes.textTertiary
         }}>
-          {currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown'}
+          {discogsMetadata?.year > 0 ? discogsMetadata.year : (currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown')}
           {currentAlbum.label && ` • ${currentAlbum.label}`}
         </p>
       </div>

@@ -129,14 +129,14 @@ export const fetchMultiplePrices = async (items, onProgress = null, batchSize = 
   return allPrices;
 };
 
-// Cache for album cover URLs (Discover mode)
-const albumCoverCache = new Map();
+// Cache for album cover + metadata (Discover mode)
+const albumMetadataCache = new Map();
 
-export const getDiscogsAlbumCover = async (artist, album) => {
+export const getDiscogsAlbumMetadata = async (artist, album) => {
   const cacheKey = `${artist}|${album}`.toLowerCase();
 
-  if (albumCoverCache.has(cacheKey)) {
-    return albumCoverCache.get(cacheKey);
+  if (albumMetadataCache.has(cacheKey)) {
+    return albumMetadataCache.get(cacheKey);
   }
 
   try {
@@ -146,17 +146,23 @@ export const getDiscogsAlbumCover = async (artist, album) => {
       per_page: '1'
     });
 
-    if (data.results?.[0]?.cover_image) {
-      const coverUrl = data.results[0].cover_image;
-      albumCoverCache.set(cacheKey, coverUrl);
-      return coverUrl;
+    const result = data.results?.[0];
+    if (!result) {
+      albumMetadataCache.set(cacheKey, null);
+      return null;
     }
 
-    albumCoverCache.set(cacheKey, null);
-    return null;
+    const metadata = {
+      coverUrl: result.cover_image || null,
+      year: result.year || 0,
+      releaseId: result.id
+    };
+
+    albumMetadataCache.set(cacheKey, metadata);
+    return metadata;
   } catch (error) {
-    console.warn(`Cover fetch failed for ${artist} - ${album}:`, error.message);
-    albumCoverCache.set(cacheKey, null);
+    console.warn(`Metadata fetch failed for ${artist} - ${album}:`, error.message);
+    albumMetadataCache.set(cacheKey, null);
     return null;
   }
 };
