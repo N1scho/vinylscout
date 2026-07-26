@@ -26,8 +26,8 @@ const VinylCard = React.memo(function VinylCard({
   onAddToCollection,
   themes
 }) {
-  const hasPrice = price && typeof price.value === 'number';
-  const hasPriceChange = priceChange && typeof priceChange.amount === 'number';
+  const hasPrice = price && (typeof price.value === 'number' || typeof price.value === 'string') && price.value !== null && price.value !== undefined;
+  const hasPriceChange = priceChange && (typeof priceChange.amount === 'number' || typeof priceChange.amount === 'string') && priceChange.amount !== null && priceChange.amount !== undefined;
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((e) => {
@@ -244,7 +244,7 @@ const VinylCard = React.memo(function VinylCard({
               }}
             >
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {price.currency} {typeof price.value === 'number' ? price.value.toFixed(2) : price.value}
+                {price.currency} {typeof price.value === 'number' ? price.value.toFixed(2) : (parseFloat(price.value).toFixed(2) || price.value)}
               </span>
             </div>
           ) : (
