@@ -244,7 +244,13 @@ const VinylCard = React.memo(function VinylCard({
               }}
             >
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {price.currency} {typeof price.value === 'number' ? price.value.toFixed(2) : (parseFloat(price.value).toFixed(2) || price.value)}
+                {price.currency} {
+                  typeof price.value === 'number'
+                    ? price.value.toFixed(2)
+                    : (price.value && !isNaN(parseFloat(price.value))
+                        ? parseFloat(price.value).toFixed(2)
+                        : '0.00')
+                }
               </span>
             </div>
           ) : (

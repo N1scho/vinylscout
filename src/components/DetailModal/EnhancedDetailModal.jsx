@@ -482,7 +482,13 @@ const EnhancedDetailModal = React.memo(({
                         color: themes.text
                       }}
                     >
-                      {priceData.currency} {priceData.value.toFixed(2)}
+                      {priceData.currency} {
+                        typeof priceData.value === 'number'
+                          ? priceData.value.toFixed(2)
+                          : (priceData.value && !isNaN(parseFloat(priceData.value))
+                              ? parseFloat(priceData.value).toFixed(2)
+                              : '0.00')
+                      }
                     </div>
                     <div
                       style={{
