@@ -123,7 +123,6 @@ export const fetchMultiplePrices = async (items, onProgress = null, batchSize = 
     } catch (error) {
       console.error(`Preisabruf fehlgeschlagen für ${item.id}:`, error);
     }
-    await waitForRateLimit();
   }
 
   return allPrices;

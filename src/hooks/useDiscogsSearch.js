@@ -72,13 +72,8 @@ export const useDiscogsSearch = () => {
             fetchedPrices = {}; // Clear batch
           }
         }
-
-        // Respect Discogs rate limits
-        await DiscogsService.waitForRateLimit();
       } catch (error) {
         console.error(`Failed to fetch price for ${result.id}:`, error);
-        // Still respect rate limit even on error
-        await DiscogsService.waitForRateLimit();
       }
     }
   }, []);
