@@ -49,40 +49,38 @@ export const useDiscogsSearch = () => {
 
   /**
    * Fetch prices for multiple results with incremental UI updates
-   * Batches requests to avoid rate limiting
    */
-  const fetchAllPrices = useCallback(async (results, maxItems = 50) => {
-    // Clear previous prices
-    setResultPrices({});
-
+  const fetchAllPrices = useCallback(async (results, maxItems = 20) => {
     const itemsToFetch = results.slice(0, Math.min(results.length, maxItems));
-    let fetchedPrices = {};
-    const batchSize = 3;
-    const delayBetweenBatches = 500; // 500ms between batches
 
-    for (let i = 0; i < itemsToFetch.length; i++) {
-      const result = itemsToFetch[i];
+    if (itemsToFetch.length === 0) return;
 
+    const fetchPromises = itemsToFetch.map(async (result) => {
       try {
         const priceData = await DiscogsService.fetchPriceInfo(result.id);
-
         if (priceData) {
-          fetchedPrices[result.id] = priceData;
-
-          // Update UI every batchSize items
-          if ((i + 1) % batchSize === 0 || i === itemsToFetch.length - 1) {
-            setResultPrices(prev => ({ ...prev, ...fetchedPrices }));
-            fetchedPrices = {}; // Clear batch
-
-            // Delay between batches to avoid rate limiting
-            if (i < itemsToFetch.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-            }
-          }
+          return { id: result.id, priceData };
         }
       } catch (error) {
-        console.error(`Failed to fetch price for ${result.id}:`, error);
+        console.error(`Failed to fetch price for ${result.id}:`, error.message);
       }
+      return null;
+    });
+
+    // Fetch all prices in parallel (proxy handles rate limiting)
+    const results_prices = await Promise.all(fetchPromises);
+
+    // Build prices object from successful fetches
+    const newPrices = {};
+    results_prices.forEach(result => {
+      if (result) {
+        newPrices[result.id] = result.priceData;
+      }
+    });
+
+    // Update state once with all prices
+    if (Object.keys(newPrices).length > 0) {
+      setResultPrices(newPrices);
     }
   }, []);
 
