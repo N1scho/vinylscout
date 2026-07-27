@@ -168,7 +168,7 @@ export const getDiscogsAlbumMetadata = async (artist, album) => {
     }
 
     const metadata = {
-      coverUrl: result.cover_image || null,
+      coverUrl: result.cover_image ? result.cover_image.replace(/_\d+\.(jpg|jpeg|png)$/i, '_350.$1') : null,
       year: result.year || 0,
       releaseId: result.id
     };
