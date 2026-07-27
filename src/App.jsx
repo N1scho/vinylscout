@@ -507,6 +507,7 @@ export default function App() {
         importFileInputRef={fileInputRef}
         appVersion={APP_VERSION}
         themes={themes}
+        onNotify={ui.showToast}
       />
     );
   };

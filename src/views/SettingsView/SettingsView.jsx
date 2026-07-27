@@ -1,5 +1,6 @@
 import React from 'react';
 import { designSystem, themeDefinitions } from '../../designsystem';
+import RecoveryPanel from './RecoveryPanel';
 
 /**
  * SettingsView Component
@@ -11,6 +12,7 @@ import { designSystem, themeDefinitions } from '../../designsystem';
  * - Custom color picker
  * - Shop selection for price fetching
  * - Collection import/export
+ * - Backup recovery and management
  * - Version information
  *
  * @component
@@ -36,7 +38,10 @@ export default function SettingsView({
   appVersion,
 
   // Theme
-  themes
+  themes,
+
+  // Notifications
+  onNotify
 }) {
   const availableShops = [
     { id: 'discogs', name: 'Discogs' },
@@ -292,6 +297,13 @@ export default function SettingsView({
             </label>
           </div>
         </div>
+
+        {/* Recovery Panel */}
+        {onNotify && (
+          <div>
+            <RecoveryPanel themes={themes} onNotify={onNotify} />
+          </div>
+        )}
 
         {/* App Version */}
         <div
