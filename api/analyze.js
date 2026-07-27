@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     const anthropic = new Anthropic({ apiKey });
 
     const message = await anthropic.messages.create({
-      model: 'claude-opus-4-8',
+      model: 'claude-opus-5',
       max_tokens: 200,
       output_config: {
         format: {
@@ -70,7 +70,16 @@ export default async function handler(req, res) {
     });
 
     const text = message.content.find((b) => b.type === 'text')?.text ?? '{}';
-    const vinylData = JSON.parse(text);
+    let vinylData;
+    try {
+      vinylData = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse vinyl data JSON:', parseError);
+      return res.status(500).json({
+        error: 'Vinyl analysis failed',
+        details: 'Could not parse analysis response'
+      });
+    }
     return res.status(200).json(vinylData);
   } catch (error) {
     console.error('Analyze error:', error);

@@ -59,7 +59,7 @@ describe('discogsService (proxy client)', () => {
     global.fetch.mockResolvedValue({
       ok: false,
       status: 429,
-      json: async () => ({ error: 'Rate limit exceeded', retryAfter: 30 }),
+      json: async () => ({ error: 'Rate limit exceeded', retryAfter: 0.001 }),
     });
     await expect(searchDiscogs({ query: 'x' })).rejects.toBeInstanceOf(RateLimitError);
   });

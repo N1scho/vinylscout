@@ -153,26 +153,29 @@ export default function App() {
     fileInputRef.current?.click();
   };
 
-  // Load Google Fonts Inter & Add CSS Animations
+  // Load Google Fonts Inter & Add CSS Animations (once on mount)
   useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
+    // Check if fonts already loaded
+    const existingLink = document.querySelector('link[href*="fonts.googleapis.com"]');
+    if (!existingLink) {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
 
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(link);
-      document.head.removeChild(style);
-    };
+    // Check if spin animation already exists
+    if (!document.getElementById('app-animations')) {
+      const style = document.createElement('style');
+      style.id = 'app-animations';
+      style.innerHTML = `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
   }, []);
 
   // Settings now loaded by useSettings hook
@@ -339,13 +342,14 @@ export default function App() {
           updated++;
 
           // Rate limit: Wait 1.1 seconds between requests (Discogs allows 60/min)
-          // Use abortable delay
+          // Use abortable delay with AbortSignal.timeout
           await new Promise((resolve, reject) => {
             const timeoutId = setTimeout(resolve, 1100);
-            abortController.signal.addEventListener('abort', () => {
+            const abortHandler = () => {
               clearTimeout(timeoutId);
               reject(new Error('Aborted'));
-            });
+            };
+            abortController.signal.addEventListener('abort', abortHandler, { once: true });
           });
         } catch (error) {
           if (error.message === 'Aborted') break;

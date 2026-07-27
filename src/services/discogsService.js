@@ -37,6 +37,9 @@ async function proxyRequest(endpoint, params = {}, retries = 3) {
         console.warn(`Rate limited. Retrying in ${retryAfter}s (attempt ${attempt + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         continue;
+      } else {
+        // Exhausted retries on rate limit - throw the rate limit error
+        throw lastError;
       }
     }
 
@@ -94,6 +97,11 @@ export const fetchPriceInfo = async (releaseId) => {
   try {
     const data = await proxyRequest(`/marketplace/stats/${releaseId}`);
     if (data.lowest_price && data.num_for_sale > 0) {
+      // Validate price structure
+      if (!data.lowest_price.value || !data.lowest_price.currency) {
+        console.warn(`Invalid price structure for release ${releaseId}:`, data.lowest_price);
+        return null;
+      }
       return {
         value: data.lowest_price.value,
         currency: data.lowest_price.currency,

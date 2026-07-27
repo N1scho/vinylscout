@@ -69,7 +69,7 @@ describe('analyze handler', () => {
     expect(res.body.artist).toBe('Nirvana');
     expect(res.body.album).toBe('Nevermind');
     const params = createMock.mock.calls[0][0];
-    expect(params.model).toBe('claude-opus-4-8');
+    expect(params.model).toBe('claude-opus-5');
     expect(params.max_tokens).toBe(200);
     expect(params.output_config.format.type).toBe('json_schema');
     expect(params.output_config.format.schema.properties).toEqual({

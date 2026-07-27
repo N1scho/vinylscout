@@ -39,7 +39,17 @@ export default async function handler(req, res) {
 
   let url = `https://api.discogs.com${endpoint}`;
   if (params && Object.keys(params).length > 0) {
-    url += `?${new URLSearchParams(params).toString()}`;
+    try {
+      // Validate params are strings to avoid URLSearchParams issues
+      const validParams = {};
+      for (const [key, value] of Object.entries(params)) {
+        validParams[key] = String(value);
+      }
+      url += `?${new URLSearchParams(validParams).toString()}`;
+    } catch (error) {
+      console.error('Failed to encode URL parameters:', error);
+      return res.status(400).json({ error: 'Invalid query parameters' });
+    }
   }
 
   try {

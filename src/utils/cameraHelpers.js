@@ -107,17 +107,22 @@ export const analyzeVinylCover = async (base64Image) => {
 
   const data = await response.json();
 
+  // Validate required fields exist
+  if (typeof data.artist !== 'string' || typeof data.album !== 'string') {
+    throw new Error('Album nicht erkannt. Ungültige Antwort vom Server.');
+  }
+
   if ((!data.artist || data.artist === 'Unknown') && (!data.album || data.album === 'Unknown')) {
     throw new Error('Album nicht erkannt. Bitte mit besserem Licht erneut versuchen.');
   }
 
   return {
-    artist: data.artist,
-    album: data.album,
-    year: data.year,
-    genre: data.genre,
-    labelAndCatalog: data.labelAndCatalog,
-    format: data.format,
+    artist: data.artist || 'Unknown',
+    album: data.album || 'Unknown',
+    year: data.year || '',
+    genre: data.genre || '',
+    labelAndCatalog: data.labelAndCatalog || '',
+    format: data.format || '',
   };
 };
 

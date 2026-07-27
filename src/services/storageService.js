@@ -39,8 +39,12 @@ export const saveCollection = (collection) => {
     // Save the new collection
     localStorage.setItem(STORAGE_KEYS.COLLECTION, collectionJson);
 
-    // Copy newly saved collection to backup 1
-    localStorage.setItem(STORAGE_KEYS.BACKUP_1, collectionJson);
+    // Copy newly saved collection to backup 1 with metadata
+    const backupWithMetadata = JSON.stringify({
+      collection,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem(STORAGE_KEYS.BACKUP_1, backupWithMetadata);
   } catch (error) {
     console.error('Failed to save collection:', error);
   }
@@ -84,7 +88,9 @@ export const exportCollection = (collection, filename = null) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+
+  // Revoke URL after download is triggered (defer to next tick)
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 /**
@@ -109,6 +115,18 @@ export const importCollection = async (file) => {
           importedCollection = imported;
         } else {
           throw new Error('Invalid collection format');
+        }
+
+        // Validate it's an array
+        if (!Array.isArray(importedCollection)) {
+          throw new Error('Collection must be an array');
+        }
+
+        // Validate each item has required fields (id and title)
+        for (const item of importedCollection) {
+          if (typeof item !== 'object' || !item.id || !item.title) {
+            throw new Error(`Invalid item: missing required fields (id, title)`);
+          }
         }
 
         resolve(importedCollection);
@@ -172,7 +190,9 @@ export const exportCollectionAsCSV = (collection, filename = null) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+
+  // Revoke URL after download is triggered (defer to next tick)
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 /**
@@ -293,11 +313,18 @@ export const listBackups = () => {
 
     if (backupData) {
       try {
-        const collection = JSON.parse(backupData);
+        const backup = JSON.parse(backupData);
+        // Handle both old format (array) and new format (with metadata)
+        let collection = backup;
+        let timestamp = new Date().toISOString();
+        if (backup.collection && Array.isArray(backup.collection)) {
+          collection = backup.collection;
+          timestamp = backup.timestamp || timestamp;
+        }
         backups.push({
           index: i,
-          count: collection.length,
-          timestamp: new Date().toISOString()
+          count: Array.isArray(collection) ? collection.length : 0,
+          timestamp
         });
       } catch (error) {
         console.error(`Failed to parse backup ${i}:`, error);
@@ -328,8 +355,15 @@ export const restoreBackup = (index) => {
       return false;
     }
 
-    // Validate backup data before restoring
-    const collection = JSON.parse(backupData);
+    // Handle both old format (array) and new format (with metadata)
+    const backup = JSON.parse(backupData);
+    const collection = backup.collection && Array.isArray(backup.collection) ? backup.collection : backup;
+
+    if (!Array.isArray(collection)) {
+      console.error('Invalid backup format');
+      return false;
+    }
+
     localStorage.setItem(STORAGE_KEYS.COLLECTION, JSON.stringify(collection));
     return true;
   } catch (error) {
