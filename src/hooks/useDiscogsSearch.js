@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import * as DiscogsService from '../services/discogsService';
+import { savePriceRecord } from '../services/priceHistoryService';
 
 export const useDiscogsSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +122,14 @@ export const useDiscogsSearch = () => {
           ...prev,
           [itemId]: priceData
         }));
+
+        // Save price record to history
+        try {
+          savePriceRecord(itemId, priceData.value, priceData.currency);
+        } catch (error) {
+          console.error('Failed to save price record:', error);
+          // Continue anyway - price update is successful even if history save fails
+        }
 
         return priceData;
       } else {

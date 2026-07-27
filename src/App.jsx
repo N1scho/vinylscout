@@ -18,6 +18,7 @@ import { validators } from './utils/validators';
 
 // Services
 import * as StorageService from './services/storageService';
+import { savePriceRecord } from './services/priceHistoryService';
 
 // Zustand Stores
 import { useCollectionStore } from './stores/collectionStore';
@@ -235,6 +236,14 @@ export default function App() {
           console.error('Invalid price data received:', priceData);
           ui.showToast('Received invalid price data from Discogs', 'error');
           return;
+        }
+
+        // Save price record to history
+        try {
+          savePriceRecord(itemId, priceData.value, priceData.currency);
+        } catch (error) {
+          console.error('Failed to save price record:', error);
+          // Continue anyway - price update is successful even if history save fails
         }
 
         const newCollection = collection.collection.map(item => {
