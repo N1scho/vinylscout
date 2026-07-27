@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye } from 'lucide-react';
+import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon } from 'lucide-react';
 import { designSystem } from '../../designsystem';
+import { getPriceHistory } from '../../services/priceHistoryService';
 
 /**
  * VinylCard Component
@@ -24,6 +25,7 @@ const VinylCard = React.memo(function VinylCard({
   onRemove,
   onViewDetails,
   onAddToCollection,
+  onPriceHistory,
   themes
 }) {
   const hasPrice = price && (typeof price.value === 'number' || typeof price.value === 'string') && price.value !== null && price.value !== undefined;
@@ -93,6 +95,23 @@ const VinylCard = React.memo(function VinylCard({
       onViewDetails(vinyl);
     }
   }, [onViewDetails, vinyl]);
+
+  const handlePriceHistory = useCallback((e) => {
+    e.stopPropagation();
+    if (onPriceHistory) {
+      onPriceHistory(vinyl.id);
+    }
+  }, [onPriceHistory, vinyl.id]);
+
+  // Check if price history exists
+  const hasPriceHistory = () => {
+    try {
+      const history = getPriceHistory(vinyl.id);
+      return history && history.length > 0;
+    } catch (error) {
+      return false;
+    }
+  };
 
   return (
     <div
@@ -336,6 +355,28 @@ const VinylCard = React.memo(function VinylCard({
                 </button>
               )}
 
+              {onPriceHistory && hasPriceHistory() && (
+                <button
+                  onClick={handlePriceHistory}
+                  style={{
+                    flex: 1,
+                    padding: designSystem.spacing.sm,
+                    backgroundColor: 'transparent',
+                    color: themes.primary,
+                    border: `1px solid ${themes.primary}`,
+                    borderRadius: designSystem.borderRadius.sm,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: designSystem.transitions.fast
+                  }}
+                  title="Price History"
+                >
+                  <TrendingUpIcon size={16} />
+                </button>
+              )}
+
               {onViewDetails && (
                 <button
                   onClick={handleViewDetailsButton}
@@ -467,6 +508,7 @@ VinylCard.propTypes = {
   onRemove: PropTypes.func,
   onViewDetails: PropTypes.func,
   onAddToCollection: PropTypes.func,
+  onPriceHistory: PropTypes.func,
   themes: PropTypes.shape({
     primary: PropTypes.string.isRequired,
     surface: PropTypes.string.isRequired,
@@ -485,7 +527,8 @@ VinylCard.defaultProps = {
   onRefreshPrice: null,
   onRemove: null,
   onViewDetails: null,
-  onAddToCollection: null
+  onAddToCollection: null,
+  onPriceHistory: null
 };
 
 export default VinylCard;

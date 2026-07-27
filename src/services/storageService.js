@@ -11,8 +11,13 @@ const STORAGE_KEYS = {
   THEME: 'theme',
   CUSTOM_COLORS: 'customColors',
   SELECTED_SHOPS: 'selectedShops',
-  SEARCH_HISTORY: 'vinylSearchHistory'
+  SEARCH_HISTORY: 'vinylSearchHistory',
+  BACKUP_1: 'vinylCollectionBackup1',
+  BACKUP_2: 'vinylCollectionBackup2',
+  BACKUP_3: 'vinylCollectionBackup3'
 };
+
+const MAX_BACKUPS = 3;
 
 /**
  * Save collection to localStorage
@@ -21,7 +26,21 @@ const STORAGE_KEYS = {
  */
 export const saveCollection = (collection) => {
   try {
-    localStorage.setItem(STORAGE_KEYS.COLLECTION, JSON.stringify(collection));
+    const collectionJson = JSON.stringify(collection);
+
+    // Rotate backups before saving: 3→discard, 2→3, 1→2
+    if (localStorage.getItem(STORAGE_KEYS.BACKUP_2)) {
+      localStorage.setItem(STORAGE_KEYS.BACKUP_3, localStorage.getItem(STORAGE_KEYS.BACKUP_2));
+    }
+    if (localStorage.getItem(STORAGE_KEYS.BACKUP_1)) {
+      localStorage.setItem(STORAGE_KEYS.BACKUP_2, localStorage.getItem(STORAGE_KEYS.BACKUP_1));
+    }
+
+    // Save the new collection
+    localStorage.setItem(STORAGE_KEYS.COLLECTION, collectionJson);
+
+    // Copy newly saved collection to backup 1
+    localStorage.setItem(STORAGE_KEYS.BACKUP_1, collectionJson);
   } catch (error) {
     console.error('Failed to save collection:', error);
   }
@@ -262,3 +281,80 @@ export const clearAllData = () => {
   });
 };
 
+/**
+ * List available backups
+ */
+export const listBackups = () => {
+  const backups = [];
+
+  for (let i = 1; i <= MAX_BACKUPS; i++) {
+    const backupKey = STORAGE_KEYS[`BACKUP_${i}`];
+    const backupData = localStorage.getItem(backupKey);
+
+    if (backupData) {
+      try {
+        const collection = JSON.parse(backupData);
+        backups.push({
+          index: i,
+          count: collection.length,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error(`Failed to parse backup ${i}:`, error);
+      }
+    }
+  }
+
+  return backups;
+};
+
+/**
+ * Restore a backup
+ * @param {number} index - Backup index (1-3)
+ * @returns {boolean} true if restore was successful
+ */
+export const restoreBackup = (index) => {
+  try {
+    if (index < 1 || index > MAX_BACKUPS) {
+      console.error('Invalid backup index');
+      return false;
+    }
+
+    const backupKey = STORAGE_KEYS[`BACKUP_${index}`];
+    const backupData = localStorage.getItem(backupKey);
+
+    if (!backupData) {
+      console.error(`Backup ${index} not found`);
+      return false;
+    }
+
+    // Validate backup data before restoring
+    const collection = JSON.parse(backupData);
+    localStorage.setItem(STORAGE_KEYS.COLLECTION, JSON.stringify(collection));
+    return true;
+  } catch (error) {
+    console.error('Failed to restore backup:', error);
+    return false;
+  }
+};
+
+/**
+ * Delete a backup
+ * @param {number} index - Backup index (1-3)
+ * @returns {boolean} true if delete was successful
+ */
+export const deleteBackup = (index) => {
+  try {
+    if (index < 1 || index > MAX_BACKUPS) {
+      console.error('Invalid backup index');
+      return false;
+    }
+
+    const backupKey = STORAGE_KEYS[`BACKUP_${index}`];
+    localStorage.removeItem(backupKey);
+    return true;
+  } catch (error) {
+    console.error('Failed to delete backup:', error);
+    return false;
+  }
+};

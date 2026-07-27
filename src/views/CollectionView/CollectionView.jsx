@@ -1,10 +1,11 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { RefreshCw, Grid, List, X, Music } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { designSystem } from '../../designsystem';
 import VinylCard from '../../components/VinylCard';
 import FilterChip from '../../components/FilterChip';
 import EmptyState from '../../components/EmptyState';
+import PriceHistoryModal from '../../components/PriceHistoryModal/PriceHistoryModal';
 import { useDiscoverStore } from '../../stores/discoverStore';
 
 /**
@@ -68,11 +69,27 @@ export default function CollectionView({
 }) {
   const parentRef = useRef(null);
   const wishlistCount = useDiscoverStore((state) => state.wishlist.length);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedAlbumId, setSelectedAlbumId] = useState(null);
+  const [selectedAlbumTitle, setSelectedAlbumTitle] = useState('');
 
   const handleClearAllFilters = () => {
     onActiveGenreFilterChange(null);
     onActiveDecadeFilterChange(null);
     onActiveFormatFilterChange(null);
+  };
+
+  const handleOpenPriceHistory = (albumId) => {
+    const album = collection.find(item => item.id === albumId);
+    setSelectedAlbumId(albumId);
+    setSelectedAlbumTitle(album ? album.title : 'Album');
+    setIsHistoryOpen(true);
+  };
+
+  const handleClosePriceHistory = () => {
+    setIsHistoryOpen(false);
+    setSelectedAlbumId(null);
+    setSelectedAlbumTitle('');
   };
 
   const hasActiveFilters = activeGenreFilter || activeDecadeFilter || activeFormatFilter;
@@ -531,6 +548,7 @@ export default function CollectionView({
                       onRefreshPrice={() => onRefreshPrice(item.id, true)}
                       onRemove={() => onRemove(item.id)}
                       onViewDetails={() => onViewDetails(item)}
+                      onPriceHistory={handleOpenPriceHistory}
                       themes={themes}
                     />
                   );
@@ -540,6 +558,15 @@ export default function CollectionView({
           })}
         </div>
       )}
+
+      {/* Price History Modal */}
+      <PriceHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={handleClosePriceHistory}
+        albumId={selectedAlbumId}
+        albumTitle={selectedAlbumTitle}
+        themes={themes}
+      />
     </div>
   );
 }
