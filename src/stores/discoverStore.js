@@ -11,6 +11,26 @@ const shuffleArray = (arr) => {
   return copy;
 };
 
+// Helper function to get price from album
+const getAlbumPrice = (album) => {
+  return album.price?.value ?? album.lowestPrice ?? 0;
+};
+
+// Helper function to apply all filters
+const applyAllFilters = (albums, selectedGenreIds, yearRange, priceRange) => {
+  const selectedSet = new Set(selectedGenreIds);
+  return albums.filter(album => {
+    // Must match genre
+    if (!selectedSet.has(album.genreId)) return false;
+    // Must be in year range
+    if (album.year && (album.year < yearRange[0] || album.year > yearRange[1])) return false;
+    // Must be in price range
+    const price = getAlbumPrice(album);
+    if (price < priceRange[0] || price > priceRange[1]) return false;
+    return true;
+  });
+};
+
 export const useDiscoverStore = create(
   persist(
     (set, get) => ({
@@ -18,6 +38,8 @@ export const useDiscoverStore = create(
       allAlbums: [],
       genres: [],
       selectedGenreIds: [],
+      yearRange: [1960, 2025],
+      priceRange: [0, 500],
       shuffledAlbums: [],
       currentAlbumIndex: 0,
       wishlist: [],
@@ -38,20 +60,22 @@ export const useDiscoverStore = create(
 
       // Genre selection
       setSelectedGenres: (genreIds) => {
-        const selectedSet = new Set(genreIds);
-        const filtered = get().allAlbums.filter(a => selectedSet.has(a.genreId));
+        const state = get();
+        const filtered = applyAllFilters(state.allAlbums, genreIds, state.yearRange, state.priceRange);
         const shuffled = shuffleArray(filtered);
 
         set({
-          selectedGenreIds: Array.from(selectedSet),
+          selectedGenreIds: genreIds,
           shuffledAlbums: shuffled,
           currentAlbumIndex: 0
         });
       },
 
       selectAllGenres: () => {
-        const allGenreIds = get().genres.map(g => g.id);
-        const shuffled = shuffleArray(get().allAlbums);
+        const state = get();
+        const allGenreIds = state.genres.map(g => g.id);
+        const filtered = applyAllFilters(state.allAlbums, allGenreIds, state.yearRange, state.priceRange);
+        const shuffled = shuffleArray(filtered);
 
         set({
           selectedGenreIds: allGenreIds,
@@ -64,6 +88,44 @@ export const useDiscoverStore = create(
         set({
           selectedGenreIds: [],
           shuffledAlbums: [],
+          currentAlbumIndex: 0
+        });
+      },
+
+      // Year range filter
+      setYearRange: (range) => {
+        const state = get();
+        const filtered = applyAllFilters(state.allAlbums, state.selectedGenreIds, range, state.priceRange);
+        const shuffled = shuffleArray(filtered);
+
+        set({
+          yearRange: range,
+          shuffledAlbums: shuffled,
+          currentAlbumIndex: 0
+        });
+      },
+
+      // Price range filter
+      setPriceRange: (range) => {
+        const state = get();
+        const filtered = applyAllFilters(state.allAlbums, state.selectedGenreIds, state.yearRange, range);
+        const shuffled = shuffleArray(filtered);
+
+        set({
+          priceRange: range,
+          shuffledAlbums: shuffled,
+          currentAlbumIndex: 0
+        });
+      },
+
+      // Shuffle with current filters applied
+      shuffle: () => {
+        const state = get();
+        const filtered = applyAllFilters(state.allAlbums, state.selectedGenreIds, state.yearRange, state.priceRange);
+        const shuffled = shuffleArray(filtered);
+
+        set({
+          shuffledAlbums: shuffled,
           currentAlbumIndex: 0
         });
       },
