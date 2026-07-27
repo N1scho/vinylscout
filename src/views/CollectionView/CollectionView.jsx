@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { RefreshCw, Grid, List, X, Music } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { designSystem } from '../../designsystem';
@@ -67,6 +67,7 @@ export default function CollectionView({
   themes
 }) {
   const parentRef = useRef(null);
+  const wishlistCount = useDiscoverStore((state) => state.wishlist.length);
 
   const handleClearAllFilters = () => {
     onActiveGenreFilterChange(null);
@@ -433,7 +434,7 @@ export default function CollectionView({
             }
           }}
         >
-          Wishlist ({useDiscoverStore().wishlist.size})
+          Wishlist ({wishlistCount})
         </button>
       </div>
 

@@ -60,7 +60,7 @@ describe('GenreSelector Component', () => {
 
     fireEvent.click(selectAllBtn);
     const { selectedGenreIds } = useDiscoverStore.getState();
-    expect(selectedGenreIds.size).toBe(2);
+    expect(selectedGenreIds.length).toBe(2);
   });
 
   it('clears all genres on "Clear All" click', () => {
@@ -69,7 +69,7 @@ describe('GenreSelector Component', () => {
 
     fireEvent.click(clearAllBtn);
     const { selectedGenreIds } = useDiscoverStore.getState();
-    expect(selectedGenreIds.size).toBe(0);
+    expect(selectedGenreIds.length).toBe(0);
   });
 });
 
@@ -83,7 +83,7 @@ describe('AlbumGallery Component', () => {
       ]
     };
     initializeStoreForTest(testData);
-    useDiscoverStore.setState({ selectedGenreIds: new Set(['01']), shuffledAlbums: testData.albums, currentAlbumIndex: 0 });
+    useDiscoverStore.setState({ selectedGenreIds: ['01'], shuffledAlbums: testData.albums, currentAlbumIndex: 0 });
   });
 
   it('displays current album information', () => {

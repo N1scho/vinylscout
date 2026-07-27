@@ -9,9 +9,9 @@ describe('discoverStore', () => {
     act(() => {
       result.current.allAlbums = [];
       result.current.genres = [];
-      result.current.selectedGenreIds = new Set();
+      result.current.selectedGenreIds = [];
       result.current.currentAlbumIndex = 0;
-      result.current.wishlist = new Set();
+      result.current.wishlist = [];
     });
   });
 
@@ -56,7 +56,7 @@ describe('discoverStore', () => {
       result.current.setSelectedGenres(['01']);
     });
 
-    expect(result.current.selectedGenreIds.size).toBe(1);
+    expect(result.current.selectedGenreIds.length).toBe(1);
     expect(result.current.shuffledAlbums.length).toBe(2);
     expect(result.current.shuffledAlbums.every(a => a.genreId === '01')).toBe(true);
   });
@@ -131,13 +131,13 @@ describe('discoverStore', () => {
       result.current.selectAllGenres();
     });
 
-    expect(result.current.selectedGenreIds.size).toBe(2);
+    expect(result.current.selectedGenreIds.length).toBe(2);
 
     act(() => {
       result.current.clearAllGenres();
     });
 
-    expect(result.current.selectedGenreIds.size).toBe(0);
+    expect(result.current.selectedGenreIds.length).toBe(0);
     expect(result.current.shuffledAlbums.length).toBe(0);
   });
 });

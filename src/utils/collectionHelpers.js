@@ -5,6 +5,8 @@
  * Extracted from App.jsx v2.8.0
  */
 
+import { useDiscoverStore } from '../stores/discoverStore';
+
 /**
  * Sort collection items by various criteria
  *
@@ -70,10 +72,8 @@ export const filterCollection = (items, filter, searchQuery = '', genreFilter = 
   if (filter === 'favorites') {
     filtered = items.filter(item => item.isFavorite);
   } else if (filter === 'wishlist') {
-    // Import the store inside the function to avoid circular dependencies
-    const { useDiscoverStore } = require('../stores/discoverStore');
     const wishlistIds = useDiscoverStore().wishlist;
-    filtered = items.filter(item => wishlistIds.has(item.id));
+    filtered = items.filter(item => wishlistIds.includes(item.id));
   }
 
   // Apply search filter if query exists
