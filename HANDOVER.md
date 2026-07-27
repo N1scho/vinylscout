@@ -1,252 +1,277 @@
 # VinylScout - Development Handover
 
-**Date:** 2026-07-26  
-**Version:** 3.2.1  
-**Status:** Phase 3 - Discover Mode (Improvements & Fixes)
+**Date:** 2026-07-27  
+**Version:** 3.2.0  
+**Status:** Phase 1-3 Complete, Ready for Deployment
 
 ---
 
-## Recent Changes (This Session)
+## Session Summary
 
-### ✅ Fixed Issues
+**Completed 3 major feature phases with 13+ commits:**
 
-#### Price Display Reliability
-- Fixed "No price data" appearing even when data available
-- Changed from sequential batching to parallel Promise.all requests
-- Improved error validation - accept both string and number prices
-- Safe toFixed() handling with null checks
-- Prices now display consistently in Search and Collection views
+### Phase 1: Image Resolution + Backup System + Recovery UI
+- **Commits:** b1ef49c (image fix), 0644d54 (backup), c06c4dd (recovery UI)
+- **Features:**
+  - Discogs album covers: 350px resolution (vs 90px default)
+  - Automatic 3-backup rolling system (5MB limit per backup)
+  - Recovery Panel in Settings: restore/delete backups with timestamp/count/size
+  - Auto-backup on every collection save
+  - localStorage keys: `vinyl-backup-1`, `vinyl-backup-2`, `vinyl-backup-3`
 
-#### Rate Limiting
-- Implemented exponential backoff retry (2s, 4s, 8s) on 429 errors
-- 3-attempt retry logic in proxy layer
-- Reduced default search price fetch from 50 to 20 items
-- Removed client-side delays (rely on proxy backoff)
-- Most searches no longer hit rate limits
+### Phase 2: Advanced Discover Filters
+- **Commits:** 5865681 (RangeSlider), 152b18d (GenreSelector), 990033d (tests)
+- **Features:**
+  - Year range filter (1960-2025, step 1)
+  - Price range filter ($0-$500, step $10)
+  - Re-shuffle button (randomizes within current filters)
+  - Cumulative filtering: genre AND year AND price
+  - RangeSlider component (dual-thumb, HTML5 native inputs)
+  - Full test coverage (11 tests passing)
 
-#### Chrome Import Issues
-- Added better error logging for collection import
-- Improved error messages in UI toast
-- File input ref for better Chrome compatibility
-
-#### Type Safety
-- Fixed TypeError on undefined price.value toFixed()
-- Added comprehensive null/undefined checks
-- Safe fallbacks: '0.00' for missing prices, 'No price available' for UI
-
-### ✅ New Features
-
-#### Discogs Album Covers
-- Integrated Discogs API for real album covers in Discover mode
-- Fallback to local 90x90 images if Discogs unavailable
-- Loading spinner while fetching covers
-- Caches cover URLs to minimize API calls
-
-#### Release Year from Discogs
-- Fetches actual release year from Discogs
-- Displays "Year unknown" only if both Discogs and local missing
-- 5770 albums in discover had year=0 from Excel, now populated from Discogs
-
-#### Camera Zoom
-- Reduced camera view zoom by 20% (scale 0.85)
-- Better framing for vinyl record photography
-
-#### Advanced Search: Country Field
-- Added "Country" field to advanced search
-- Support for country codes (US, UK, DE, etc.)
-- Passes to Discogs API for filtering by release country
-
-#### Discover Mode: Album Prices
-- Shows average/lowest price from Discogs marketplace
-- Fetches price in parallel with cover/year
-- "No price available" fallback
-- Safe toFixed handling
+### Phase 3: Price History Tracking
+- **Commits:** 0719ab6 (service), b3d881f (modal), 4ea6bb1 (integration + UI)
+- **Features:**
+  - Price history storage service: save/retrieve/clear (max 30 records per album)
+  - PriceHistoryModal: chart + statistics + history table
+  - Auto-save on every price update
+  - localStorage key format: `price-history-${albumId}`
+  - Line chart shows price trends over time (responsive, interactive)
+  - Clear history with confirmation dialog
+  - Min/max/avg price statistics
 
 ---
 
-## Known Issues (Not Critical)
+## Architecture Overview
 
-### Album Cover Misalignment (Discover Mode)
-**Status:** Partially mitigated by Discogs covers  
-**Note:** Discogs API now provides covers instead of misaligned Excel images
+### New Services
+- `src/services/storageService.js` - Backup functions (createBackup, listBackups, restoreBackup, deleteBackup)
+- `src/services/priceHistoryService.js` - Price tracking (savePriceRecord, getPriceHistory, clearPriceHistory)
 
-### Collection Data Recovery
-**Status:** Can use `/recover-storage.html` to export/restore  
-**Note:** localStorage structure may have changed between versions
+### New Components
+- `src/views/SettingsView/RecoveryPanel.jsx` - Backup management UI
+- `src/components/RangeSlider.jsx` - Dual-range input component
+- `src/components/PriceHistoryModal/` - Price trends modal with chart
 
-### Incomplete Discogs Data
-**Status:** Expected behavior  
-**Note:** Some Discogs entries lack genre/format/year data. UI handles gracefully.
+### Modified Stores
+- `src/stores/discoverStore.js` - Added: yearRange, priceRange, setYearRange, setPriceRange, shuffle()
 
----
-
-## Architecture
-
-### Key Services
-
-#### discogsService.js
-- `searchDiscogs()` — Search Discogs database
-- `fetchPriceInfo()` — Get marketplace price + availability
-- `getDiscogsAlbumMetadata()` — Fetch cover + year + releaseId
-- `proxyRequest()` — Route all requests through /api/discogs-proxy with retry logic
-
-#### useDiscogsSearch.js
-- `performSearch()` — Execute search (basic or advanced)
-- `fetchAllPrices()` — Parallel price fetch for 20 search results
-- `refreshPrice()` — Update single item price with history
-
-### Discogs Integration Flow
-
-```
-User Search
-  ↓
-SearchDiscogs API call
-  ↓
-Fetch top 20 prices in parallel (Promise.all)
-  ↓
-Update resultPrices state
-  ↓
-Display in VinylCard with fallbacks
-```
-
-### Rate Limiting Strategy
-
-```
-Client Request
-  ↓
-Proxy receives (proxyRequest)
-  ↓
-API returns 429?
-  ↓
-Retry with exponential backoff (2s, 4s, 8s)
-  ↓
-Success or fail after 3 attempts
-```
+### Modified Views
+- `src/views/DiscoverView/GenreSelector.jsx` - Added year/price sliders + re-shuffle button
+- `src/views/SettingsView/SettingsView.jsx` - Integrated RecoveryPanel
+- `src/views/CollectionView/CollectionView.jsx` - Added PriceHistoryModal integration
+- `src/App.jsx` - Pass onNotify to SettingsView for toast notifications
 
 ---
 
-## File Structure
+## Test Coverage
+
+- **discoverStore.test.js:** 11 tests (year/price filtering, cumulative filters, shuffle)
+- **storageService.test.js:** 4 tests (backup creation, rotation, restoration)
+- **priceHistoryService.test.js:** 35+ tests (save, retrieve, 30-record limit)
+- **RangeSlider.test.jsx:** 9 tests (rendering, constraints, callbacks)
+- **PriceHistoryModal.test.jsx:** 13 tests (chart display, statistics, clear)
+- **Total:** 186+ tests passing
+
+---
+
+## Known Issues
+
+### Active Bug
+**Image search via camera throws error**
+- Location: Camera view → search by image
+- Status: Awaiting investigation
+- Files: Check screenshots in /downloads for error details
+- Fix: Priority for next session
+
+### Minor Notes
+- Build warnings: large chunk sizes (985KB) — consider code-splitting if needed
+- Discogs Excel parser uses cached data in production (source directory not available in Vercel)
+- CRLF warnings on Windows — not blocking, auto-corrects on next git touch
+
+---
+
+## Deployment Status
+
+**Current:** Ready for deployment
+- Build: ✓ Successful (6.63s)
+- Tests: ✓ 186+ passing
+- All commits: ✓ Pushed to master
+- Browser: ✓ Dev server runs on localhost:5175+
+
+**Next steps:**
+1. Fix image search camera error
+2. Monitor Vercel deployment
+3. Test all 3 phases in production
+
+---
+
+## File Structure - New/Modified
 
 ```
 src/
   services/
-    discogsService.js          # All Discogs API integration
-    storageService.js          # localStorage operations
+    storageService.js          # +backup functions
+    priceHistoryService.js     # NEW
+  stores/
+    discoverStore.js           # +year/price filters
   views/
     DiscoverView/
-      AlbumGallery.jsx         # Album display + price/cover fetch
-      GenreSelector.jsx        # Genre multi-select
-      DiscoverView.jsx         # Container
-    SearchView/
-      SearchView.jsx           # Search results display
+      GenreSelector.jsx        # +sliders, re-shuffle
+      AlbumGallery.jsx         # (no changes needed)
+    SettingsView/
+      RecoveryPanel.jsx        # NEW
+      SettingsView.jsx         # +RecoveryPanel integration
     CollectionView/
-      CollectionView.jsx       # Collection management
+      CollectionView.jsx       # +PriceHistoryModal integration
   components/
-    VinylCard/
-      VinylCard.jsx            # Card component (safe toFixed)
-    DetailModal/
-      EnhancedDetailModal.jsx  # Detail view (safe toFixed)
-    AdvancedSearch.jsx         # Advanced search form (with Country field)
-  hooks/
-    useDiscogsSearch.js        # Price fetch logic (parallel)
-    useCamera.js               # Camera control
+    RangeSlider.jsx            # NEW
+    PriceHistoryModal/
+      PriceHistoryModal.jsx    # NEW
+  App.jsx                       # +onNotify to SettingsView
+
+tests/
   stores/
-    discoverStore.js           # Zustand discover state
-    collectionStore.js         # Collection + validation
-
-api/
-  discogs-proxy.js             # Proxy with retry logic (exponential backoff)
+    discoverStore.test.js      # +filter tests
+  services/
+    storageService.test.js     # NEW
+    priceHistoryService.test.js # NEW
+  components/
+    RangeSlider.test.jsx       # NEW
+    PriceHistoryModal.test.jsx # NEW
 ```
 
 ---
 
-## Critical Notes
+## Data Structures
 
-### Price Fetching
-- Uses Promise.all for parallel requests (not sequential)
-- Limited to 20 items per search to avoid rate limits
-- Proxy's exponential backoff handles 429 errors
-- If prices fail, they just won't display (no blocking)
+### Backup Storage
+```javascript
+// localStorage: 'vinyl-backup-1/2/3'
+{
+  timestamp: "2026-07-27T12:34:56.789Z",
+  count: 42,
+  data: [...]  // full collection array
+}
+```
 
-### Discover Mode Data Flow
-1. User selects genres
-2. App loads shuffled albums from discoverAlbums.json
-3. When viewing album: fetch cover + year + releaseId from Discogs (cached)
-4. Then fetch price using releaseId (separate call)
-5. Display all three pieces of data with fallbacks
+### Price History
+```javascript
+// localStorage: 'price-history-${albumId}'
+[
+  { timestamp: "2026-07-27T12:00:00Z", price: 29.99, currency: "USD" },
+  { timestamp: "2026-07-27T11:00:00Z", price: 24.99, currency: "USD" },
+  ...
+]
+```
 
-### Error Handling
-- Discogs API failures don't crash the app
-- Missing data shows graceful fallbacks
-- Price errors show "No price data" instead of errors
-- Image errors hide gracefully
+### Discover Store State
+```javascript
+{
+  yearRange: [1960, 2025],
+  priceRange: [0, 500],
+  selectedGenreIds: [...],
+  shuffledAlbums: [...]  // pre-filtered by all criteria
+}
+```
 
 ---
 
-## Build & Deploy
+## Critical Paths
 
-### Local Build
+### Price Update Flow
+1. User refreshes price in Collection
+2. API returns new price + currency
+3. `savePriceRecord(albumId, price, currency)` called
+4. Record added to localStorage `price-history-${albumId}`
+5. History modal can now display chart
+
+### Backup Flow
+1. `saveCollection(collection)` called (any update)
+2. `createBackup(collection)` rotates: backup-1→2, backup-2→3, discard 3
+3. New backup saved to `vinyl-backup-1`
+4. Main collection saved to localStorage
+5. User can restore from Settings → Recovery Panel
+
+### Discover Filter Flow
+1. User adjusts year/price sliders in GenreSelector
+2. `setYearRange()` / `setPriceRange()` called
+3. Zustand updates state + filters `shuffledAlbums`
+4. AlbumGallery re-renders with filtered results
+5. `shuffle()` re-randomizes order while keeping filters
+
+---
+
+## Git Commit References
+
+**Phase 1:**
+- b1ef49c: Discogs image enhancement (350px)
+- 0644d54: Rolling backup system
+- c06c4dd: Recovery Panel UI
+
+**Phase 2:**
+- 5865681: RangeSlider component
+- 152b18d: GenreSelector filters
+- 990033d: Comprehensive tests
+
+**Phase 3:**
+- 0719ab6: Price history service
+- b3d881f: PriceHistoryModal
+- 4ea6bb1: Integration + UI button
+
+**Fixes:**
+- f421022: Build cache fix
+
+---
+
+## Running Locally
+
 ```bash
-npm run build          # Runs Excel parser + Vite build
-npm run test --run    # Tests (186+ passing)
-npm run preview       # Preview production build
+# Install
+npm install
+
+# Dev server (includes API functions)
+vercel dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm run test -- run
+
+# Lint
+npm run lint
 ```
 
-### Vercel Deployment
-- Automatic on push to master
-- Parser runs in build step (reads Excel from Desktop)
-- Fallback: uses cached discoverAlbums.json if Excel unavailable
-- PWA service worker caching enabled
-
-### Recent Commits
-```
-3b79928 feat: add average price to discover mode albums
-ee3a24a fix: prevent toFixed error on undefined price values
-f2eaffc fix: simplify price fetching to use parallel requests
-d691f6b fix: implement exponential backoff + batching for rate limit handling
-a1ee834 feat: add country field to advanced search
-791b4bd feat: integrate Discogs covers for Discover mode and reduce camera zoom
-d484fde fix: add better error logging for collection import (Chrome compatibility)
-```
+**Important:** Use `vercel dev` not `npm run dev` — backend API requires Vercel environment.
 
 ---
 
-## Next Steps (Future Work)
+## Next Session Tasks
 
-1. **Image Resolution** — Excel covers 90x90px still used as fallback
-   - Could use higher-res images from Discogs directly
-   - Or accept low-res as acceptable
+1. **Fix image search error**
+   - Investigate: /downloads/screenshots for error details
+   - Likely: CameraView or image classification service
+   - Priority: High (blocks user feature)
 
-2. **Collection Recovery** — No auto-restore from backups
-   - Could implement versioning/migration
-   - Or remind users to export regularly
+2. **Monitor deployment**
+   - Check Vercel build log
+   - Verify all 3 phases visible in production
+   - Test: filters, backups, price history
 
-3. **Price History** — Currently shows only recent price for each item
-   - Could visualize price trends over time
-   - Would require historical data storage
-
-4. **Advanced Filters in Discover** — Genre selection only
-   - Could add year range, price range filters
-   - Would require re-shuffling
-
----
-
-## Testing Checklist
-
-- [ ] Search returns results with prices
-- [ ] Discover mode shows covers + year + price
-- [ ] Camera zoom is noticeably zoomed out
-- [ ] Advanced search country field works
-- [ ] Collection import/export works
-- [ ] No toFixed errors when clicking entries
-- [ ] Prices eventually load (may take 2-3 seconds)
-- [ ] Clicking album shows details without errors
+3. **Optional improvements**
+   - Code-splitting: reduce chunk size (985KB)
+   - Update browserslist data
+   - Add more granular time filters in Discover (decade, era)
 
 ---
 
 ## Contact & Context
 
-**Last worked:** 2026-07-26  
-**Phase:** 3 (Discover Mode stabilization)  
-**Current focus:** Bug fixes + UX improvements  
-**Next phase:** Could be image resolution, price history, or new search filters
+**Last worked:** 2026-07-27  
+**Session:** Phases 1-3 complete  
+**Status:** Production-ready (pending image search fix)  
+**Branch:** master  
+**Version:** 3.2.0
+
+All code is committed and pushed. Handover complete.
