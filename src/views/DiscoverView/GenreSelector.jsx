@@ -1,9 +1,21 @@
 import React, { useMemo } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import { designSystem } from '../../designsystem';
+import RangeSlider from '../../components/RangeSlider';
 
 export default function GenreSelector({ themes }) {
-  const { genres, selectedGenreIds, selectAllGenres, clearAllGenres, setSelectedGenres } = useDiscoverStore();
+  const {
+    genres,
+    selectedGenreIds,
+    selectAllGenres,
+    clearAllGenres,
+    setSelectedGenres,
+    yearRange,
+    priceRange,
+    setYearRange,
+    setPriceRange,
+    shuffle
+  } = useDiscoverStore();
 
   const handleGenreToggle = (genreId) => {
     const newSelected = new Set(selectedGenreIds);
@@ -75,6 +87,56 @@ export default function GenreSelector({ themes }) {
         >
           Clear All
         </button>
+        <button
+          onClick={shuffle}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            backgroundColor: themes.primary,
+            color: themes.buttonText,
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 200ms ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = themes.primaryHover || themes.primary;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = themes.primary;
+          }}
+        >
+          Re-shuffle
+        </button>
+      </div>
+
+      {/* Sliders Section */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        marginBottom: '16px'
+      }}>
+        <RangeSlider
+          min={1960}
+          max={2025}
+          value={yearRange}
+          onChange={setYearRange}
+          label="Release Year"
+          step={1}
+          themes={themes}
+        />
+        <RangeSlider
+          min={0}
+          max={500}
+          value={priceRange}
+          onChange={setPriceRange}
+          label="Price ($)"
+          step={10}
+          themes={themes}
+        />
       </div>
 
       {/* Genre List */}
