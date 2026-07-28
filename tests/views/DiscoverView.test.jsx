@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useDiscoverStore } from '../../src/stores/discoverStore';
+import DiscoverView from '../../src/views/DiscoverView/DiscoverView';
 import GenreSelector from '../../src/views/DiscoverView/GenreSelector';
 import AlbumGallery from '../../src/views/DiscoverView/AlbumGallery';
 
@@ -134,5 +135,60 @@ describe('AlbumGallery Component', () => {
     useDiscoverStore.setState({ shuffledAlbums: [] });
     render(<AlbumGallery themes={mockThemes} />);
     expect(screen.getByText(/Select genres to browse albums/)).toBeInTheDocument();
+  });
+});
+
+describe('DiscoverView - Clear All Genres regression', () => {
+  const testData = {
+    genres: [
+      { id: '01', name: 'Heavy Metal', albumCount: 2 },
+      { id: '02', name: 'Punk', albumCount: 1 }
+    ],
+    albums: [
+      { id: '01-001', genreId: '01', artist: 'A', album: 'B', year: 1970 },
+      { id: '01-002', genreId: '01', artist: 'C', album: 'D', year: 1980 },
+      { id: '02-001', genreId: '02', artist: 'E', album: 'F', year: 1977 }
+    ]
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Start from a fully populated, non-corrupted store so the mount effect
+    // doesn't need to auto-initialize.
+    useDiscoverStore.getState().initializeAlbums(testData);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not silently repopulate genres 2+ seconds after the user clears them', () => {
+    render(<DiscoverView themes={mockThemes} />);
+
+    act(() => {
+      useDiscoverStore.getState().clearAllGenres();
+    });
+    expect(useDiscoverStore.getState().selectedGenreIds).toEqual([]);
+
+    // Advance well past the old 2-second "reset flag" timer window.
+    act(() => {
+      vi.advanceTimersByTime(2100);
+    });
+
+    // Regression check: genres must still be cleared, not silently
+    // repopulated by the corrupted-state recovery effect re-firing.
+    expect(useDiscoverStore.getState().selectedGenreIds).toEqual([]);
+  });
+
+  it('still auto-recovers genuinely corrupted state (no prior user clear)', () => {
+    render(<DiscoverView themes={mockThemes} />);
+
+    // Simulate corruption directly (not via clearAllGenres, so
+    // userClearedGenres stays false) — mirrors a corrupted localStorage load.
+    act(() => {
+      useDiscoverStore.setState({ selectedGenreIds: [] });
+    });
+
+    expect(useDiscoverStore.getState().selectedGenreIds.length).toBeGreaterThan(0);
   });
 });

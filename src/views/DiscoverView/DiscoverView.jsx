@@ -11,13 +11,15 @@ export default function DiscoverView({ themes }) {
     selectedGenreIds,
     initializeAlbums,
     userClearedGenres,
-    userClearTimestamp,
-    resetUserClearFlag
+    userClearTimestamp
   } = useDiscoverStore();
 
-  // Initialize store with discover data on mount if needed
+  // Initialize store with discover data on mount if needed.
   // Also reinitialize if albums exist but no genres selected (corrupted localStorage) —
-  // but not if the user just intentionally cleared all genres.
+  // but not if the user just intentionally cleared all genres (within the last 2s, or
+  // on this same mount — the flag itself is only cleared by a real user re-selection or
+  // a genuine recovery, never by a timer here, so it can't force this effect to
+  // re-fire and silently undo the user's clear).
   useEffect(() => {
     const now = Date.now();
     const isRecentUserClear = userClearedGenres && (now - userClearTimestamp) < 2000;
@@ -25,15 +27,7 @@ export default function DiscoverView({ themes }) {
     if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0 && !isRecentUserClear)) {
       initializeAlbums(discoverData);
     }
-
-    // Reset flag after 2 seconds
-    if (isRecentUserClear) {
-      const timer = setTimeout(() => {
-        resetUserClearFlag();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres, userClearTimestamp, resetUserClearFlag]);
+  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres, userClearTimestamp]);
 
   return (
     <div

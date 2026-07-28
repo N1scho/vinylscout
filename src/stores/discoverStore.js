@@ -56,7 +56,10 @@ export const useDiscoverStore = create(
           genres: data.genres,
           selectedGenreIds: allGenreIds,
           shuffledAlbums: shuffled,
-          currentAlbumIndex: 0
+          currentAlbumIndex: 0,
+          // A fresh/corrupted-state recovery supersedes any stale "user cleared" flag
+          userClearedGenres: false,
+          userClearTimestamp: 0
         });
       },
 
@@ -69,7 +72,10 @@ export const useDiscoverStore = create(
         set({
           selectedGenreIds: genreIds,
           shuffledAlbums: shuffled,
-          currentAlbumIndex: 0
+          currentAlbumIndex: 0,
+          // Explicit re-selection means the "user cleared" state no longer applies
+          userClearedGenres: false,
+          userClearTimestamp: 0
         });
       },
 
@@ -82,7 +88,9 @@ export const useDiscoverStore = create(
         set({
           selectedGenreIds: allGenreIds,
           shuffledAlbums: shuffled,
-          currentAlbumIndex: 0
+          currentAlbumIndex: 0,
+          userClearedGenres: false,
+          userClearTimestamp: 0
         });
       },
 
