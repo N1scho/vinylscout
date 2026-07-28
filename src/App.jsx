@@ -500,12 +500,17 @@ export default function App() {
       handleViewChange('collection');
     };
 
+    const handleDiscoverClick = () => {
+      handleViewChange('discover');
+    };
+
     return (
       <StatsView
         stats={stats}
         onGenreClick={handleGenreClick}
         onDecadeClick={handleDecadeClick}
         onFormatClick={handleFormatClick}
+        onDiscoverClick={handleDiscoverClick}
         formatPrice={formatPrice}
         themes={themes}
       />

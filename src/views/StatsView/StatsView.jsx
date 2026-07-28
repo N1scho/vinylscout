@@ -28,6 +28,7 @@ export default function StatsView({
   onGenreClick,
   onDecadeClick,
   onFormatClick,
+  onDiscoverClick,
   formatPrice,
 
   // Theme
@@ -117,6 +118,7 @@ export default function StatsView({
       {/* Wishlist Summary */}
       {wishlist && wishlist.length > 0 && (
         <div
+          onClick={onDiscoverClick}
           style={{
             backgroundColor: themes.surface,
             padding: designSystem.spacing.lg,
@@ -125,8 +127,12 @@ export default function StatsView({
             marginBottom: designSystem.spacing.xl,
             display: 'flex',
             alignItems: 'center',
-            gap: designSystem.spacing.md
+            gap: designSystem.spacing.md,
+            cursor: 'pointer',
+            transition: 'opacity 0.2s'
           }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
         >
           <Heart size={32} color={themes.warning} fill={themes.warning} />
           <div>
