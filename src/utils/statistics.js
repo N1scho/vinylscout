@@ -170,6 +170,19 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     return added.getFullYear() === now.getFullYear();
   }).length;
 
+  // Added by year breakdown
+  const addedByYear = {};
+  collection.forEach(v => {
+    if (v.addedAt) {
+      const year = new Date(v.addedAt).getFullYear();
+      addedByYear[year] = (addedByYear[year] || 0) + 1;
+    }
+  });
+  const addedByYearStats = Object.entries(addedByYear)
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, 5)
+    .map(([year, count]) => ({ year, count }));
+
   // Value distribution
   const priceRanges = {
     '0-10': 0,
@@ -286,6 +299,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     recentAdditions,
     thisMonth,
     thisYear,
+    addedByYearStats,
     oldestRelease,
     newestRelease,
     avgAge,

@@ -155,6 +155,57 @@ export default function StatsView({
         </div>
       )}
 
+      {/* Added by Year */}
+      {stats.addedByYearStats && stats.addedByYearStats.length > 0 && (
+        <div style={{ marginBottom: designSystem.spacing.xl }}>
+          <h3
+            style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}
+          >
+            Added By Year
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+            {stats.addedByYearStats.map((item) => (
+              <div
+                key={item.year}
+                style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    fontWeight: designSystem.typography.weights.medium
+                  }}
+                >
+                  {item.year}
+                </span>
+                <span
+                  style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}
+                >
+                  {item.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Genres */}
       {stats.topGenres.length > 0 && (
         <div style={{ marginBottom: designSystem.spacing.xl }}>
