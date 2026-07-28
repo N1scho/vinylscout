@@ -304,7 +304,7 @@ export default function SettingsView({
               <input
                 ref={importFileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.csv"
                 onChange={onImportCollection}
                 style={{ display: 'none' }}
               />
@@ -319,12 +319,29 @@ export default function SettingsView({
           </div>
         )}
 
-        {/* Clear Cache */}
-        <div>
+        {/* Refresh & Clear Cache */}
+        <div style={{ display: 'flex', gap: designSystem.spacing.sm }}>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              flex: 1,
+              padding: designSystem.spacing.md,
+              backgroundColor: themes.primary,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: designSystem.borderRadius.md,
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: designSystem.typography.weights.medium,
+              cursor: 'pointer',
+              minHeight: designSystem.touchTarget.min
+            }}
+          >
+            Refresh App
+          </button>
           <button
             onClick={handleClearCache}
             style={{
-              width: '100%',
+              flex: 1,
               padding: designSystem.spacing.md,
               backgroundColor: '#dc2626',
               color: '#ffffff',

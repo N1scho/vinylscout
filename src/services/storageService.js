@@ -93,10 +93,104 @@ export const exportCollection = (collection, filename = null) => {
   setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
+function parseCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  if (lines.length < 2) throw new Error('CSV must have header row and at least one data row');
+
+  const headerLine = lines[0];
+  const headers = parseCSVLine(headerLine);
+
+  const headerMap = {
+    id: headers.indexOf('ID'),
+    title: headers.indexOf('Title'),
+    artist: headers.indexOf('Artist'),
+    year: headers.indexOf('Year'),
+    format: headers.indexOf('Format'),
+    genres: headers.indexOf('Genre'),
+    label: headers.indexOf('Label'),
+    price: headers.indexOf('Price'),
+    currency: headers.indexOf('Currency'),
+    favorite: headers.indexOf('Favorite')
+  };
+
+  if (headerMap.id === -1 || headerMap.title === -1) {
+    throw new Error('CSV must have ID and Title columns');
+  }
+
+  const collection = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+
+    const values = parseCSVLine(lines[i]);
+    const item = {
+      id: values[headerMap.id]?.trim() || '',
+      title: values[headerMap.title]?.trim() || '',
+      artist: values[headerMap.artist]?.trim() || undefined,
+      year: values[headerMap.year]?.trim() ? parseInt(values[headerMap.year].trim(), 10) : undefined,
+      favorite: values[headerMap.favorite]?.trim().toLowerCase() === 'yes'
+    };
+
+    if (!item.id || !item.title) continue;
+
+    if (headerMap.format !== -1 && values[headerMap.format]?.trim()) {
+      const fmt = values[headerMap.format].trim();
+      item.format = fmt.includes(';') ? fmt.split(';').map(s => s.trim()) : fmt;
+    }
+
+    if (headerMap.genres !== -1 && values[headerMap.genres]?.trim()) {
+      const genreStr = values[headerMap.genres].trim();
+      item.genres = genreStr.includes(';') ? genreStr.split(';').map(s => s.trim()) : [genreStr];
+    }
+
+    if (headerMap.label !== -1 && values[headerMap.label]?.trim()) {
+      const labelStr = values[headerMap.label].trim();
+      item.label = labelStr.includes(';') ? labelStr.split(';').map(s => s.trim()) : labelStr;
+    }
+
+    if (headerMap.price !== -1 && values[headerMap.price]?.trim()) {
+      item.price = {
+        value: parseFloat(values[headerMap.price].trim()),
+        currency: values[headerMap.currency]?.trim() || 'USD'
+      };
+    }
+
+    collection.push(item);
+  }
+
+  return collection;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
 /**
- * Import collection from JSON file
+ * Import collection from JSON or CSV file
  *
- * @param {File} file - The file to import
+ * @param {File} file - The file to import (.json or .csv)
  * @returns {Promise<Array>} The imported collection
  */
 export const importCollection = async (file) => {
@@ -105,24 +199,39 @@ export const importCollection = async (file) => {
 
     reader.onload = (e) => {
       try {
-        const imported = JSON.parse(e.target.result);
-
-        // Handle both old and new format
+        const content = e.target.result;
         let importedCollection = [];
-        if (imported.version && imported.collection) {
-          importedCollection = imported.collection;
-        } else if (Array.isArray(imported)) {
-          importedCollection = imported;
-        } else {
-          throw new Error('Invalid collection format');
+
+        // Try JSON first
+        let jsonError = null;
+        try {
+          const imported = JSON.parse(content);
+          console.log('[importCollection] JSON parsed successfully');
+          if (imported.version && imported.collection) {
+            importedCollection = imported.collection;
+          } else if (Array.isArray(imported)) {
+            importedCollection = imported;
+          } else {
+            jsonError = new Error('Invalid collection format');
+          }
+        } catch (e) {
+          console.log('[importCollection] JSON parse failed, trying CSV:', e.message);
+          jsonError = e;
         }
 
-        // Validate it's an array
+        // If JSON failed, try CSV
+        if (jsonError && importedCollection.length === 0) {
+          console.log('[importCollection] Attempting CSV parse...');
+          importedCollection = parseCSV(content);
+          console.log('[importCollection] CSV parsed successfully, records:', importedCollection.length);
+        } else if (jsonError) {
+          throw jsonError;
+        }
+
         if (!Array.isArray(importedCollection)) {
           throw new Error('Collection must be an array');
         }
 
-        // Validate each item has required fields (id and title)
         for (const item of importedCollection) {
           if (typeof item !== 'object' || !item.id || !item.title) {
             throw new Error(`Invalid item: missing required fields (id, title)`);
@@ -132,7 +241,7 @@ export const importCollection = async (file) => {
         resolve(importedCollection);
       } catch (error) {
         console.error('Collection import parse error:', error, 'File:', file.name);
-        reject(new Error(`Invalid JSON file: ${error.message}`));
+        reject(new Error(`Invalid file: ${error.message}`));
       }
     };
 
