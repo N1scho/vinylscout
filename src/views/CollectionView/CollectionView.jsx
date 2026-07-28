@@ -94,6 +94,43 @@ export default function CollectionView({
 
   const hasActiveFilters = activeGenreFilter || activeDecadeFilter || activeFormatFilter;
 
+  // Calculate available genres and formats for quick filters
+  const quickFilterData = useMemo(() => {
+    const genres = {};
+    const formats = {};
+    const decades = {};
+
+    collection.forEach(v => {
+      if (v.genres) {
+        v.genres.forEach(g => {
+          genres[g] = (genres[g] || 0) + 1;
+        });
+      }
+      if (v.format) {
+        const fmt = Array.isArray(v.format) ? v.format[0] : v.format;
+        if (fmt) {
+          formats[fmt] = (formats[fmt] || 0) + 1;
+        }
+      }
+      if (v.year) {
+        const decade = `${Math.floor(v.year / 10) * 10}s`;
+        decades[decade] = (decades[decade] || 0) + 1;
+      }
+    });
+
+    return {
+      topGenres: Object.entries(genres)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3),
+      topFormats: Object.entries(formats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3),
+      topDecades: Object.entries(decades)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+    };
+  }, [collection]);
+
   // Virtual scrolling configuration
   // For grid view, we calculate columns based on minimum card width (160px + gap)
   // For list view, each item is full width
@@ -226,6 +263,143 @@ export default function CollectionView({
           onBlur={(e) => (e.target.style.borderColor = themes.border)}
         />
       </div>
+
+      {/* Quick Filters */}
+      {collection.length > 0 && (
+        <div style={{ marginBottom: designSystem.spacing.md }}>
+          {quickFilterData.topGenres.length > 0 && (
+            <div style={{ marginBottom: designSystem.spacing.sm }}>
+              <div style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                marginBottom: designSystem.spacing.xs,
+                textTransform: 'uppercase',
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                Genre
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: designSystem.spacing.xs }}>
+                {quickFilterData.topGenres.map(([genre, count]) => (
+                  <button
+                    key={genre}
+                    onClick={() => onActiveGenreFilterChange(activeGenreFilter === genre ? null : genre)}
+                    style={{
+                      padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                      backgroundColor: activeGenreFilter === genre ? themes.primary : themes.surface,
+                      color: activeGenreFilter === genre ? '#ffffff' : themes.text,
+                      border: `1px solid ${activeGenreFilter === genre ? themes.primary : themes.border}`,
+                      borderRadius: designSystem.borderRadius.sm,
+                      fontSize: designSystem.typography.sizes.sm,
+                      cursor: 'pointer',
+                      transition: designSystem.transitions.fast
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeGenreFilter !== genre) {
+                        e.currentTarget.style.backgroundColor = themes.hoverOverlay || 'rgba(0,0,0,0.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeGenreFilter !== genre) {
+                        e.currentTarget.style.backgroundColor = themes.surface;
+                      }
+                    }}
+                  >
+                    {genre} ({count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {quickFilterData.topFormats.length > 0 && (
+            <div style={{ marginBottom: designSystem.spacing.sm }}>
+              <div style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                marginBottom: designSystem.spacing.xs,
+                textTransform: 'uppercase',
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                Format
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: designSystem.spacing.xs }}>
+                {quickFilterData.topFormats.map(([format, count]) => (
+                  <button
+                    key={format}
+                    onClick={() => onActiveFormatFilterChange(activeFormatFilter === format ? null : format)}
+                    style={{
+                      padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                      backgroundColor: activeFormatFilter === format ? themes.primary : themes.surface,
+                      color: activeFormatFilter === format ? '#ffffff' : themes.text,
+                      border: `1px solid ${activeFormatFilter === format ? themes.primary : themes.border}`,
+                      borderRadius: designSystem.borderRadius.sm,
+                      fontSize: designSystem.typography.sizes.sm,
+                      cursor: 'pointer',
+                      transition: designSystem.transitions.fast
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeFormatFilter !== format) {
+                        e.currentTarget.style.backgroundColor = themes.hoverOverlay || 'rgba(0,0,0,0.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeFormatFilter !== format) {
+                        e.currentTarget.style.backgroundColor = themes.surface;
+                      }
+                    }}
+                  >
+                    {format} ({count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {quickFilterData.topDecades.length > 0 && (
+            <div style={{ marginBottom: designSystem.spacing.sm }}>
+              <div style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                marginBottom: designSystem.spacing.xs,
+                textTransform: 'uppercase',
+                fontWeight: designSystem.typography.weights.medium
+              }}>
+                Decade
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: designSystem.spacing.xs }}>
+                {quickFilterData.topDecades.map(([decade, count]) => (
+                  <button
+                    key={decade}
+                    onClick={() => onActiveDecadeFilterChange(activeDecadeFilter === decade ? null : decade)}
+                    style={{
+                      padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+                      backgroundColor: activeDecadeFilter === decade ? themes.primary : themes.surface,
+                      color: activeDecadeFilter === decade ? '#ffffff' : themes.text,
+                      border: `1px solid ${activeDecadeFilter === decade ? themes.primary : themes.border}`,
+                      borderRadius: designSystem.borderRadius.sm,
+                      fontSize: designSystem.typography.sizes.sm,
+                      cursor: 'pointer',
+                      transition: designSystem.transitions.fast
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeDecadeFilter !== decade) {
+                        e.currentTarget.style.backgroundColor = themes.hoverOverlay || 'rgba(0,0,0,0.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeDecadeFilter !== decade) {
+                        e.currentTarget.style.backgroundColor = themes.surface;
+                      }
+                    }}
+                  >
+                    {decade} ({count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Active Filter Badges */}
       {hasActiveFilters && (
