@@ -230,7 +230,7 @@ const VinylDetailsModal = ({
                 color: themes.primary,
                 margin: 0
               }}>
-                ${selectedVinyl.lowestPrice.toFixed(2)}
+                ${selectedVinyl.lowestPrice ? selectedVinyl.lowestPrice.toFixed(2) : '0.00'}
               </p>
             </div>
           )}

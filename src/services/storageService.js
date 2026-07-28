@@ -147,10 +147,16 @@ function parseCSV(csvText) {
       item.label = labelStr.includes(';') ? labelStr.split(';').map(s => s.trim()) : labelStr;
     }
 
-    if (headerMap.price !== -1 && values[headerMap.price]?.trim()) {
+    if (headerMap.price !== -1) {
+      const priceStr = values[headerMap.price]?.trim();
       item.price = {
-        value: parseFloat(values[headerMap.price].trim()),
+        value: priceStr ? parseFloat(priceStr) : null,
         currency: values[headerMap.currency]?.trim() || 'USD'
+      };
+    } else {
+      item.price = {
+        value: null,
+        currency: 'USD'
       };
     }
 

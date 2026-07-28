@@ -5,11 +5,21 @@
 
 async function fetchCoverFromDiscogs(discogsId) {
   try {
-    const response = await fetch(`/api/discogs-release?id=${discogsId}`);
+    const response = await fetch('/api/discogs-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        endpoint: `/releases/${discogsId}`
+      })
+    });
+
     if (!response.ok) {
       console.warn(`[fetchMissingCovers] Failed to fetch cover for ID ${discogsId}:`, response.status);
       return null;
     }
+
     const data = await response.json();
     return data.thumb || null;
   } catch (error) {

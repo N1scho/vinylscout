@@ -77,7 +77,7 @@ export default function StatsView({
           { label: 'Avg Value', value: formatPrice(stats.avgValue, stats.currency) },
           {
             label: 'Most Valuable',
-            value: stats.mostValuable
+            value: stats.mostValuable && stats.mostValuable.lowestPrice
               ? `$${stats.mostValuable.lowestPrice.toFixed(2)}`
               : 'N/A'
           }
