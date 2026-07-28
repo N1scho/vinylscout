@@ -67,7 +67,7 @@ export default function StatsView({
       >
         {[
           { label: 'Total Vinyls', value: stats.total },
-          { label: 'Favorites', value: stats.favorites },
+          { label: 'Favorites', value: `${stats.favorites} (${stats.favoritePercentage}%)` },
           { label: 'With Price', value: stats.withPrice },
           { label: 'Added (7 days)', value: stats.recentAdditions },
           { label: 'Total Value', value: formatPrice(stats.totalValue, stats.currency) },
@@ -217,6 +217,67 @@ export default function StatsView({
                   }}
                 >
                   {decade}
+                </span>
+                <span
+                  style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}
+                >
+                  {count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Favorite Genres */}
+      {stats.topFavoriteGenres && stats.topFavoriteGenres.length > 0 && (
+        <div style={{ marginBottom: designSystem.spacing.xl }}>
+          <h3
+            style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}
+          >
+            Favorite Genres
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+            {stats.topFavoriteGenres.map(([genre, count]) => (
+              <div
+                key={genre}
+                onClick={() => onGenreClick(genre)}
+                style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  transition: designSystem.transitions.fast
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = themes.surface;
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text
+                  }}
+                >
+                  {genre}
                 </span>
                 <span
                   style={{

@@ -243,10 +243,25 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
       percentage: ((count / collection.length) * 100).toFixed(1)
     }));
 
+  // Favorites breakdown by genre
+  const favoritesByGenre = {};
+  collection.forEach(v => {
+    if (v.isFavorite) {
+      v.genres?.forEach(g => {
+        favoritesByGenre[g] = (favoritesByGenre[g] || 0) + 1;
+      });
+    }
+  });
+  const topFavoriteGenres = Object.entries(favoritesByGenre)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const favoritePercentage = collection.length > 0 ? ((favorites / collection.length) * 100).toFixed(1) : 0;
+
   return {
     // Core stats
     total,
     favorites,
+    favoritePercentage,
     withPrice,
     totalValue,
     avgValue,
@@ -257,6 +272,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     topDecades,
     topFormats,
     conditionBreakdown,
+    topFavoriteGenres,
 
     // Value stats
     mostValuable,
