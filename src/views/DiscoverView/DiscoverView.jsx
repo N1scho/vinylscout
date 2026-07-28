@@ -10,24 +10,22 @@ export default function DiscoverView({ themes }) {
     allAlbums,
     selectedGenreIds,
     initializeAlbums,
-    userClearedGenres,
-    userClearTimestamp
+    userClearedGenres
   } = useDiscoverStore();
 
   // Initialize store with discover data on mount if needed.
   // Also reinitialize if albums exist but no genres selected (corrupted localStorage) —
-  // but not if the user just intentionally cleared all genres (within the last 2s, or
-  // on this same mount — the flag itself is only cleared by a real user re-selection or
-  // a genuine recovery, never by a timer here, so it can't force this effect to
-  // re-fire and silently undo the user's clear).
+  // but not if the user intentionally cleared all genres. There is deliberately NO
+  // wall-clock/timer decay here: a mobile tab switch or any other >2s gap between
+  // renders must not re-enable auto-recovery on its own. `userClearedGenres` persists
+  // across mount/unmount (it lives in the persisted store) and is reset ONLY by a real
+  // user action — selecting genres (`setSelectedGenres`/`selectAllGenres`) — or a
+  // genuine corrupted-state recovery (`initializeAlbums`, called below or elsewhere).
   useEffect(() => {
-    const now = Date.now();
-    const isRecentUserClear = userClearedGenres && (now - userClearTimestamp) < 2000;
-
-    if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0 && !isRecentUserClear)) {
+    if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0 && !userClearedGenres)) {
       initializeAlbums(discoverData);
     }
-  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres, userClearTimestamp]);
+  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres]);
 
   return (
     <div

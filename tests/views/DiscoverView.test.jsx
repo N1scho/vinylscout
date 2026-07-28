@@ -180,6 +180,32 @@ describe('DiscoverView - Clear All Genres regression', () => {
     expect(useDiscoverStore.getState().selectedGenreIds).toEqual([]);
   });
 
+  it('genres stay cleared after an unmount/remount (mobile tab-switch) more than 2s later', () => {
+    // Mirrors real usage: DiscoverView is conditionally rendered, so switching to
+    // another tab/view and back unmounts and re-mounts it.
+    const { unmount } = render(<DiscoverView themes={mockThemes} />);
+
+    const clearAllBtn = screen.getByText(/Clear All/);
+    fireEvent.click(clearAllBtn);
+    expect(useDiscoverStore.getState().selectedGenreIds).toEqual([]);
+
+    // Navigate away (unmount) — the store itself is untouched by this, only the component.
+    unmount();
+
+    // Ordinary mobile tab-switch: well over 2 seconds of wall-clock time passes
+    // while the view is unmounted.
+    act(() => {
+      vi.advanceTimersByTime(2100);
+    });
+
+    // User switches back to the Discover tab — remount.
+    render(<DiscoverView themes={mockThemes} />);
+
+    // Regression check: the user never re-selected any genres, so auto-recovery
+    // must NOT have fired on remount just because wall-clock time passed.
+    expect(useDiscoverStore.getState().selectedGenreIds.length).toBe(0);
+  });
+
   it('still auto-recovers genuinely corrupted state (no prior user clear)', () => {
     render(<DiscoverView themes={mockThemes} />);
 
