@@ -171,8 +171,8 @@ export const useDiscoverStore = create(
     }),
     {
       name: 'discover-store',
-      onRehydrateStorage: () => (state) => {
-        if (state) {
+      onRehydrateStorage: () => (state, error) => {
+        if (state && !error) {
           state.wishlist = Array.isArray(state.wishlist) ? state.wishlist : [];
           if (!Array.isArray(state.selectedGenreIds)) {
             state.selectedGenreIds = [];
