@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Minus, Music, Info } from 'lucide-react';
+import { Plus, Minus, Music, Info, Clock, X } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import SearchBar from '../../components/SearchBar';
 import AdvancedSearch from '../../components/AdvancedSearch';
@@ -8,6 +8,7 @@ import VinylCard from '../../components/VinylCard';
 import Pagination from '../../components/Pagination';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
+import { useSearchStore } from '../../stores/searchStore';
 
 /**
  * SearchView Component
@@ -59,6 +60,7 @@ const SearchView = React.memo(function SearchView({
 }) {
   // Local UI State
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const { addToSearchHistory } = useSearchStore();
 
   // Helper to check if vinyl is in collection
   const isInCollection = (vinylId) => {
@@ -68,12 +70,17 @@ const SearchView = React.memo(function SearchView({
   // Handle basic search
   const handleBasicSearch = () => {
     if (searchQuery.trim()) {
+      addToSearchHistory(searchQuery);
       onSearch(searchQuery, 1);
     }
   };
 
   // Handle advanced search
   const handleAdvancedSearch = () => {
+    const query = Object.values(advancedSearch).filter(v => v).join(' ');
+    if (query.trim()) {
+      addToSearchHistory(query);
+    }
     onAdvancedSearch();
   };
 
@@ -147,6 +154,14 @@ const SearchView = React.memo(function SearchView({
           themes={themes}
         />
       )}
+
+      {/* Search History Quick Buttons */}
+      <SearchHistoryButtons
+        searchQuery={searchQuery}
+        onSearch={handleBasicSearch}
+        onSearchQueryChange={onSearchQueryChange}
+        themes={themes}
+      />
 
       {/* Loading State */}
       {isLoading && (
@@ -319,5 +334,103 @@ SearchView.propTypes = {
     textSecondary: PropTypes.string.isRequired
   }).isRequired
 };
+
+function SearchHistoryButtons({ searchQuery, onSearch, onSearchQueryChange, themes }) {
+  const { searchHistory, addToSearchHistory, clearSearchHistory } = useSearchStore();
+
+  if (!searchHistory.length) return null;
+
+  const handleHistoryClick = (query) => {
+    onSearchQueryChange(query);
+    setTimeout(() => {
+      addToSearchHistory(query);
+      onSearch();
+    }, 0);
+  };
+
+  return (
+    <div style={{ marginBottom: designSystem.spacing.lg }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: designSystem.spacing.sm,
+        marginBottom: designSystem.spacing.sm
+      }}>
+        <Clock size={16} color={themes.textSecondary} />
+        <span style={{
+          fontSize: designSystem.typography.sizes.sm,
+          color: themes.textSecondary,
+          fontWeight: designSystem.typography.weights.medium
+        }}>
+          Recent Searches
+        </span>
+      </div>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: designSystem.spacing.sm,
+        marginBottom: designSystem.spacing.md
+      }}>
+        {searchHistory.slice(0, 5).map((query, idx) => (
+          <button
+            key={idx}
+            onClick={() => handleHistoryClick(query)}
+            style={{
+              padding: `${designSystem.spacing.xs} ${designSystem.spacing.md}`,
+              backgroundColor: themes.surface,
+              color: themes.primary,
+              border: `1px solid ${themes.primary}`,
+              borderRadius: designSystem.borderRadius.sm,
+              fontSize: designSystem.typography.sizes.sm,
+              cursor: 'pointer',
+              transition: designSystem.transitions.fast,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = themes.primary;
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = themes.surface;
+              e.currentTarget.style.color = themes.primary;
+            }}
+          >
+            {query}
+          </button>
+        ))}
+        {searchHistory.length > 0 && (
+          <button
+            onClick={clearSearchHistory}
+            style={{
+              padding: `${designSystem.spacing.xs} ${designSystem.spacing.md}`,
+              backgroundColor: 'transparent',
+              color: themes.textSecondary,
+              border: `1px solid ${themes.border}`,
+              borderRadius: designSystem.borderRadius.sm,
+              fontSize: designSystem.typography.sizes.xs,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: designSystem.spacing.xs
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = themes.error || '#dc2626';
+              e.currentTarget.style.borderColor = themes.error || '#dc2626';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = themes.textSecondary;
+              e.currentTarget.style.borderColor = themes.border;
+            }}
+          >
+            <X size={14} /> Clear
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default SearchView;

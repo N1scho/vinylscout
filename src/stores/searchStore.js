@@ -6,11 +6,12 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 
 export const useSearchStore = create(
-  devtools(
-    (set) => ({
+  persist(
+    devtools(
+      (set) => ({
   // Search Query State
   searchQuery: '',
   advancedSearch: {
@@ -77,8 +78,14 @@ export const useSearchStore = create(
       label: '',
       genre: ''
     }
-  })
-    }),
+      })
+    ),
     { name: 'SearchStore' }
-  )
+  ),
+  {
+    name: 'search-store',
+    partialize: (state) => ({
+      searchHistory: state.searchHistory
+    })
+  }
 );
