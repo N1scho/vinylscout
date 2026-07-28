@@ -45,7 +45,8 @@ export const useCollection = () => {
         collectionSearch,
         activeGenreFilter,
         activeDecadeFilter,
-        activeFormatFilter
+        activeFormatFilter,
+        [] // No wishlist context available in this legacy hook; see App.jsx for the live selector
       ),
       sortBy
     ),

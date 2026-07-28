@@ -5,8 +5,6 @@
  * Extracted from App.jsx v2.8.0
  */
 
-import { useDiscoverStore } from '../stores/discoverStore';
-
 /**
  * Sort collection items by various criteria
  *
@@ -63,16 +61,16 @@ export const sortCollection = (items, sortBy) => {
  * @param {string|null} genreFilter - Genre to filter by
  * @param {string|null} decadeFilter - Decade to filter by (e.g., '1980s')
  * @param {string|null} formatFilter - Format to filter by
+ * @param {Array} wishlistIds - Wishlist item IDs (passed in from caller; see App.jsx)
  * @returns {Array} Filtered collection items
  */
-export const filterCollection = (items, filter, searchQuery = '', genreFilter = null, decadeFilter = null, formatFilter = null) => {
+export const filterCollection = (items, filter, searchQuery = '', genreFilter = null, decadeFilter = null, formatFilter = null, wishlistIds = []) => {
   let filtered = items;
 
   // Apply main filter (all, favorites, or wishlist)
   if (filter === 'favorites') {
     filtered = items.filter(item => item.isFavorite);
   } else if (filter === 'wishlist') {
-    const wishlistIds = useDiscoverStore().wishlist;
     filtered = items.filter(item => wishlistIds.includes(item.id));
   }
 

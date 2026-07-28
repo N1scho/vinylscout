@@ -25,6 +25,7 @@ import { useCollectionStore } from './stores/collectionStore';
 import { useSearchStore } from './stores/searchStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useUIStore } from './stores/uiStore';
+import { useDiscoverStore } from './stores/discoverStore';
 import { useShallow } from 'zustand/react/shallow';
 
 // Custom Hooks (still needed for some functionality)
@@ -47,6 +48,7 @@ export default function App() {
   const search = useSearchStore();
   const settings = useSettingsStore();
   const ui = useUIStore();
+  const wishlist = useDiscoverStore((s) => s.wishlist);
 
   // File input ref for Chrome compatibility
   const fileInputRef = useRef(null);
@@ -61,7 +63,8 @@ export default function App() {
           s.collectionSearch,
           s.activeGenreFilter,
           s.activeDecadeFilter,
-          s.activeFormatFilter
+          s.activeFormatFilter,
+          wishlist
         ),
         s.sortBy
       )

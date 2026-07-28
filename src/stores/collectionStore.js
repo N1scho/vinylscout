@@ -67,7 +67,8 @@ export const useCollectionStore = create(
             state.collectionSearch,
             state.activeGenreFilter,
             state.activeDecadeFilter,
-            state.activeFormatFilter
+            state.activeFormatFilter,
+            [] // No wishlist context available in this store method; see App.jsx for the live selector
           ),
           state.sortBy
         );
