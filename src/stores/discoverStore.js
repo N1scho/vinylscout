@@ -43,6 +43,8 @@ export const useDiscoverStore = create(
       shuffledAlbums: [],
       currentAlbumIndex: 0,
       wishlist: [],
+      userClearedGenres: false,
+      userClearTimestamp: 0,
 
       // Initialize with album data
       initializeAlbums: (data) => {
@@ -88,8 +90,14 @@ export const useDiscoverStore = create(
         set({
           selectedGenreIds: [],
           shuffledAlbums: [],
-          currentAlbumIndex: 0
+          currentAlbumIndex: 0,
+          userClearedGenres: true,
+          userClearTimestamp: Date.now()
         });
+      },
+
+      resetUserClearFlag: () => {
+        set({ userClearedGenres: false });
       },
 
       // Year range filter

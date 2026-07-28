@@ -6,15 +6,34 @@ import GenreSelector from './GenreSelector';
 import AlbumGallery from './AlbumGallery';
 
 export default function DiscoverView({ themes }) {
-  const { allAlbums, selectedGenreIds, initializeAlbums } = useDiscoverStore();
+  const {
+    allAlbums,
+    selectedGenreIds,
+    initializeAlbums,
+    userClearedGenres,
+    userClearTimestamp,
+    resetUserClearFlag
+  } = useDiscoverStore();
 
   // Initialize store with discover data on mount if needed
-  // Also reinitialize if albums exist but no genres selected (corrupted localStorage)
+  // Also reinitialize if albums exist but no genres selected (corrupted localStorage) —
+  // but not if the user just intentionally cleared all genres.
   useEffect(() => {
-    if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0)) {
+    const now = Date.now();
+    const isRecentUserClear = userClearedGenres && (now - userClearTimestamp) < 2000;
+
+    if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0 && !isRecentUserClear)) {
       initializeAlbums(discoverData);
     }
-  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums]);
+
+    // Reset flag after 2 seconds
+    if (isRecentUserClear) {
+      const timer = setTimeout(() => {
+        resetUserClearFlag();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres, userClearTimestamp, resetUserClearFlag]);
 
   return (
     <div
