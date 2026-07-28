@@ -57,6 +57,20 @@ export default function SettingsView({
     }
   };
 
+  const handleClearCache = () => {
+    if (!window.confirm('Clear all cache and storage? This cannot be undone.')) return;
+
+    localStorage.clear();
+    sessionStorage.clear();
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((reg) => reg.unregister());
+      });
+    }
+    onNotify?.('Cache cleared. Reloading app...', 'success');
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
   return (
     <div
       style={{
@@ -304,6 +318,27 @@ export default function SettingsView({
             <RecoveryPanel themes={themes} onNotify={onNotify} />
           </div>
         )}
+
+        {/* Clear Cache */}
+        <div>
+          <button
+            onClick={handleClearCache}
+            style={{
+              width: '100%',
+              padding: designSystem.spacing.md,
+              backgroundColor: '#dc2626',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: designSystem.borderRadius.md,
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: designSystem.typography.weights.medium,
+              cursor: 'pointer',
+              minHeight: designSystem.touchTarget.min
+            }}
+          >
+            Clear Cache & Storage
+          </button>
+        </div>
 
         {/* App Version */}
         <div
