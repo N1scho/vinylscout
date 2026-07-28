@@ -97,12 +97,26 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
 
   // Format breakdown
   const formatCounts = {};
+  const formatValue = {};
   collection.forEach(v => {
     const format = v.format || v.formats?.[0] || 'Unknown';
     formatCounts[format] = (formatCounts[format] || 0) + 1;
+    const price = v.lowestPrice || 0;
+    formatValue[format] = (formatValue[format] || 0) + price;
   });
   const topFormats = Object.entries(formatCounts)
     .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  // Format value breakdown (sorted by total value)
+  const formatValueBreakdown = Object.entries(formatValue)
+    .map(([format, value]) => ({
+      format,
+      count: formatCounts[format],
+      totalValue: value,
+      avgValue: formatCounts[format] > 0 ? value / formatCounts[format] : 0
+    }))
+    .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 5);
 
   // Top Artists (most albums)
@@ -284,6 +298,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     topGenres,
     topDecades,
     topFormats,
+    formatValueBreakdown,
     conditionBreakdown,
     topFavoriteGenres,
 
