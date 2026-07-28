@@ -229,6 +229,20 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))
     .slice(0, 5);
 
+  // Condition breakdown
+  const conditionCounts = {};
+  collection.forEach(v => {
+    const condition = v.condition || 'Not Set';
+    conditionCounts[condition] = (conditionCounts[condition] || 0) + 1;
+  });
+  const conditionBreakdown = Object.entries(conditionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([condition, count]) => ({
+      condition,
+      count,
+      percentage: ((count / collection.length) * 100).toFixed(1)
+    }));
+
   return {
     // Core stats
     total,
@@ -242,6 +256,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     topGenres,
     topDecades,
     topFormats,
+    conditionBreakdown,
 
     // Value stats
     mostValuable,

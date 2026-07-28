@@ -294,6 +294,68 @@ export default function StatsView({
         </div>
       )}
 
+      {/* Condition Breakdown */}
+      {stats.conditionBreakdown && stats.conditionBreakdown.length > 0 && (
+        <div style={{ marginBottom: designSystem.spacing.xl }}>
+          <h3
+            style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}
+          >
+            By Condition
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+            {stats.conditionBreakdown.map((item) => (
+              <div
+                key={item.condition}
+                style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <span
+                    style={{
+                      fontSize: designSystem.typography.sizes.base,
+                      color: themes.text,
+                      fontWeight: designSystem.typography.weights.medium,
+                      marginRight: designSystem.spacing.md
+                    }}
+                  >
+                    {item.condition}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: designSystem.typography.sizes.sm,
+                      color: themes.textSecondary
+                    }}
+                  >
+                    {item.percentage}%
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.medium,
+                    color: themes.primary
+                  }}
+                >
+                  {item.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Artists */}
       {stats.topArtists.length > 0 && (
         <div style={{ marginBottom: designSystem.spacing.xl }}>
