@@ -1,5 +1,7 @@
 import React from 'react';
+import { Heart } from 'lucide-react';
 import { designSystem } from '../../designsystem';
+import { useDiscoverStore } from '../../stores/discoverStore';
 
 /**
  * StatsView Component
@@ -31,6 +33,7 @@ export default function StatsView({
   // Theme
   themes
 }) {
+  const { wishlist } = useDiscoverStore();
   return (
     <div
       style={{
@@ -110,6 +113,47 @@ export default function StatsView({
           </div>
         ))}
       </div>
+
+      {/* Wishlist Summary */}
+      {wishlist && wishlist.length > 0 && (
+        <div
+          style={{
+            backgroundColor: themes.surface,
+            padding: designSystem.spacing.lg,
+            borderRadius: designSystem.borderRadius.md,
+            border: `1px solid ${themes.border}`,
+            marginBottom: designSystem.spacing.xl,
+            display: 'flex',
+            alignItems: 'center',
+            gap: designSystem.spacing.md
+          }}
+        >
+          <Heart size={32} color={themes.warning} fill={themes.warning} />
+          <div>
+            <p
+              style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: 0,
+                textTransform: 'uppercase',
+                fontWeight: designSystem.typography.weights.medium
+              }}
+            >
+              Wishlist Items
+            </p>
+            <p
+              style={{
+                fontSize: designSystem.typography.sizes.xl,
+                fontWeight: designSystem.typography.weights.bold,
+                color: themes.text,
+                margin: 0
+              }}
+            >
+              {wishlist.length}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Top Genres */}
       {stats.topGenres.length > 0 && (
