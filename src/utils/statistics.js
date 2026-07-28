@@ -37,13 +37,27 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
 
   // Genre statistics
   const genreCounts = {};
+  const genreValue = {};
   collection.forEach(v => {
+    const price = v.lowestPrice || 0;
     v.genres?.forEach(g => {
       genreCounts[g] = (genreCounts[g] || 0) + 1;
+      genreValue[g] = (genreValue[g] || 0) + price;
     });
   });
   const topGenres = Object.entries(genreCounts)
     .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  // Genre value breakdown
+  const genreValueBreakdown = Object.entries(genreValue)
+    .map(([genre, value]) => ({
+      genre,
+      count: genreCounts[genre],
+      totalValue: value,
+      avgValue: genreCounts[genre] > 0 ? value / genreCounts[genre] : 0
+    }))
+    .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 5);
 
   // Most valuable record
@@ -296,6 +310,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
 
     // Breakdowns
     topGenres,
+    genreValueBreakdown,
     topDecades,
     topFormats,
     formatValueBreakdown,

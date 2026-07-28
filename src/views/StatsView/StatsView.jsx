@@ -328,6 +328,79 @@ export default function StatsView({
         </div>
       )}
 
+      {/* Genre Value Breakdown */}
+      {stats.genreValueBreakdown && stats.genreValueBreakdown.length > 0 && (
+        <div style={{ marginBottom: designSystem.spacing.xl }}>
+          <h3
+            style={{
+              fontSize: designSystem.typography.sizes.lg,
+              fontWeight: designSystem.typography.weights.semibold,
+              color: themes.text,
+              marginBottom: designSystem.spacing.md
+            }}
+          >
+            Value By Genre
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
+            {stats.genreValueBreakdown.map((item) => (
+              <div
+                key={item.genre}
+                onClick={() => onGenreClick(item.genre)}
+                style={{
+                  backgroundColor: themes.surface,
+                  padding: designSystem.spacing.md,
+                  borderRadius: designSystem.borderRadius.md,
+                  border: `1px solid ${themes.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  transition: designSystem.transitions.fast
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = themes.hoverOverlay;
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = themes.surface;
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: designSystem.typography.sizes.base,
+                      color: themes.text,
+                      fontWeight: designSystem.typography.weights.medium
+                    }}
+                  >
+                    {item.genre}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: designSystem.typography.sizes.xs,
+                      color: themes.textSecondary,
+                      marginTop: designSystem.spacing.xs
+                    }}
+                  >
+                    {item.count} items • {formatPrice(item.avgValue, stats.currency)} avg
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: designSystem.typography.weights.semibold,
+                    color: themes.primary
+                  }}
+                >
+                  {formatPrice(item.totalValue, stats.currency)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Favorite Genres */}
       {stats.topFavoriteGenres && stats.topFavoriteGenres.length > 0 && (
         <div style={{ marginBottom: designSystem.spacing.xl }}>
