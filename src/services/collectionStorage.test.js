@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { backupStorage, BACKUP_PREFIX, MAX_BACKUPS } from './collectionStorage';
 
 const KEY = 'vinyl-collection-storage';
@@ -46,5 +46,59 @@ describe('backupStorage', () => {
 
   it('getItem returns null when nothing stored', () => {
     expect(backupStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('saves item successfully on first attempt', () => {
+    const value = '{"state": {"collection": []}}';
+    backupStorage.setItem('test-key', value);
+    expect(localStorage.getItem('test-key')).toBe(value);
+  });
+
+  it('retries and clears backups on QuotaExceededError', () => {
+    // Mock localStorage.setItem to throw QuotaExceededError for 'test-key' until
+    // every backup slot has been cleared (the implementation frees oldest-first),
+    // then succeed. rotateBackups() also calls setItem internally for shifting
+    // backup slots, so we key the failure condition off the target name, not a
+    // raw call count.
+    let testKeyAttempts = 0;
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = vi.fn((key, value) => {
+      if (key === 'test-key') {
+        testKeyAttempts++;
+        if (testKeyAttempts <= MAX_BACKUPS) {
+          const error = new Error('QuotaExceededError');
+          error.name = 'QuotaExceededError';
+          throw error;
+        }
+      }
+      originalSetItem.call(localStorage, key, value);
+    });
+
+    // Pre-populate backups
+    originalSetItem.call(localStorage, `${BACKUP_PREFIX}1`, '{"state": {"collection": []}}');
+    originalSetItem.call(localStorage, `${BACKUP_PREFIX}2`, '{"state": {"collection": []}}');
+
+    const value = '{"state": {"collection": []}}';
+    backupStorage.setItem('test-key', value);
+
+    expect(localStorage.getItem('test-key')).toBe(value);
+    expect(localStorage.getItem(`${BACKUP_PREFIX}1`)).toBeNull(); // Cleared during retry
+
+    localStorage.setItem = originalSetItem;
+  });
+
+  it('throws user-friendly error when all retries exhausted', () => {
+    // Mock localStorage.setItem to always throw QuotaExceededError
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = vi.fn(() => {
+      const error = new Error('QuotaExceededError');
+      error.name = 'QuotaExceededError';
+      throw error;
+    });
+
+    const value = '{"state": {"collection": []}}';
+    expect(() => backupStorage.setItem('test-key', value)).toThrow('localStorage quota exceeded');
+
+    localStorage.setItem = originalSetItem;
   });
 });

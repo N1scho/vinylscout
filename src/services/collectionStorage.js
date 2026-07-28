@@ -68,9 +68,35 @@ export const backupStorage = {
       console.log(`[backupStorage] saved ${name}, size: ${value.length} bytes`);
     } catch (error) {
       if (error && error.name === 'QuotaExceededError') {
-        console.warn('[backupStorage] quota exceeded, freeing space');
-        localStorage.removeItem(`${BACKUP_PREFIX}${MAX_BACKUPS}`);
-        localStorage.setItem(name, value);
+        console.warn('[backupStorage] quota exceeded, retrying after clearing backups');
+
+        let backupCleared = false;
+        for (let i = MAX_BACKUPS; i >= 1; i--) {
+          try {
+            localStorage.removeItem(`${BACKUP_PREFIX}${i}`);
+            backupCleared = true;
+            console.warn(`[backupStorage] cleared backup slot ${i}, retrying...`);
+
+            try {
+              localStorage.setItem(name, value);
+              console.log(`[backupStorage] saved ${name} after clearing backups, size: ${value.length} bytes`);
+              return; // Success
+            } catch (retryError) {
+              if (retryError.name !== 'QuotaExceededError') {
+                throw retryError;
+              }
+              // Continue to next backup
+            }
+          } catch (clearError) {
+            console.error(`[backupStorage] failed to clear backup ${i}:`, clearError);
+            // Continue to next backup
+          }
+        }
+
+        if (!backupCleared) {
+          throw new Error('localStorage quota exceeded and no space could be freed');
+        }
+        throw new Error('localStorage quota exceeded: insufficient space after clearing all backups');
       } else {
         console.error('[backupStorage] error:', error);
         throw error;
