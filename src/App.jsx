@@ -18,6 +18,7 @@ import { calculateCollectionStats } from './utils/statistics';
 import { formatPrice, sortCollection, filterCollection, calculateCollectionValue } from './utils/collectionHelpers';
 import { captureAndAnalyzeVinyl, captureImageFromVideo } from './utils/cameraHelpers';
 import { validators } from './utils/validators';
+import { fetchMissingCovers } from './utils/fetchMissingCovers';
 
 // Services
 import * as StorageService from './services/storageService';
@@ -511,6 +512,27 @@ export default function App() {
     );
   };
 
+  const handleFetchMissingCovers = async () => {
+    if (!collection.collection.length) {
+      ui.showToast('Collection is empty', 'error');
+      return;
+    }
+
+    ui.showToast('Fetching covers (this may take a moment)...', 'info');
+
+    try {
+      const result = await fetchMissingCovers(collection.collection, (current, total) => {
+        ui.showToast(`Fetching covers... ${current}/${total}`, 'info');
+      });
+
+      collection.setCollection(result.updated_collection);
+      ui.showToast(`Fetched ${result.updated} covers (${result.failed} not found)`, 'success');
+    } catch (error) {
+      console.error('Fetch covers failed:', error);
+      ui.showError('Fetch Covers Failed', `Error: ${error.message}`);
+    }
+  };
+
   const renderSettingsView = () => {
     return (
       <SettingsView
@@ -527,6 +549,7 @@ export default function App() {
         appVersion={APP_VERSION}
         themes={themes}
         onNotify={ui.showToast}
+        onFetchMissingCovers={handleFetchMissingCovers}
       />
     );
   };

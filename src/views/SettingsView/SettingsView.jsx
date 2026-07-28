@@ -33,6 +33,7 @@ export default function SettingsView({
   onExportCollectionAsCSV,
   onImportCollection,
   importFileInputRef,
+  onFetchMissingCovers,
 
   // App Info
   appVersion,
@@ -318,6 +319,38 @@ export default function SettingsView({
             <RecoveryPanel themes={themes} onNotify={onNotify} />
           </div>
         )}
+
+        {/* Fetch Covers */}
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontSize: designSystem.typography.sizes.sm,
+              fontWeight: designSystem.typography.weights.medium,
+              color: themes.text,
+              marginBottom: designSystem.spacing.sm
+            }}
+          >
+            Album Covers
+          </label>
+          <button
+            onClick={onFetchMissingCovers}
+            style={{
+              width: '100%',
+              padding: designSystem.spacing.md,
+              backgroundColor: themes.primary,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: designSystem.borderRadius.md,
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: designSystem.typography.weights.medium,
+              cursor: 'pointer',
+              minHeight: designSystem.touchTarget.min
+            }}
+          >
+            Fetch Missing Covers
+          </button>
+        </div>
 
         {/* Refresh & Clear Cache */}
         <div style={{ display: 'flex', gap: designSystem.spacing.sm }}>
