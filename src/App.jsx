@@ -575,6 +575,7 @@ return (
           </div>
         }>
           <ViewErrorBoundary
+            key={view}
             viewName={view.charAt(0).toUpperCase() + view.slice(1)}
             themes={themes}
             onNavigateHome={() => handleViewChange('search')}
