@@ -629,6 +629,7 @@ return (
         onToggleFavorite={collection.toggleFavorite}
         onOpenValueModal={ui.openValueModal}
         onUpdatePrice={(id) => refreshPrice(id, true)}
+        onUpdateVinyl={(vinyl) => collection.updateItemInCollection(vinyl.id, vinyl)}
         onConfirmDelete={ui.setConfirmDelete}
         themes={themes}
       />

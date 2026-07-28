@@ -9,6 +9,8 @@ import React from 'react';
 import { X, Heart } from 'lucide-react';
 import { designSystem, withOpacity } from '../../designsystem';
 
+const conditionGrades = ['Mint', 'NM', 'VG+', 'VG', 'Good', 'Fair', 'Poor'];
+
 const VinylDetailsModal = ({
   selectedVinyl,
   onClose,
@@ -16,6 +18,7 @@ const VinylDetailsModal = ({
   onOpenValueModal,
   onUpdatePrice,
   onConfirmDelete,
+  onUpdateVinyl,
   themes
 }) => {
   if (!selectedVinyl) return null;
@@ -247,6 +250,49 @@ const VinylDetailsModal = ({
             }}>
               {selectedVinyl.label}
             </p>
+          </div>
+
+          <div style={{ marginBottom: designSystem.spacing.md }}>
+            <p style={{
+              fontSize: designSystem.typography.sizes.xs,
+              color: themes.textSecondary,
+              margin: `0 0 ${designSystem.spacing.xs} 0`
+            }}>
+              Condition
+            </p>
+            {onUpdateVinyl ? (
+              <select
+                value={selectedVinyl.condition || ''}
+                onChange={(e) => onUpdateVinyl({
+                  ...selectedVinyl,
+                  condition: e.target.value || undefined
+                })}
+                style={{
+                  width: '100%',
+                  padding: designSystem.spacing.sm,
+                  fontSize: designSystem.typography.sizes.base,
+                  backgroundColor: themes.surface,
+                  color: themes.text,
+                  border: `1px solid ${themes.border}`,
+                  borderRadius: designSystem.borderRadius.sm,
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="">Not set</option>
+                {conditionGrades.map(grade => (
+                  <option key={grade} value={grade}>{grade}</option>
+                ))}
+              </select>
+            ) : (
+              <p style={{
+                fontSize: designSystem.typography.sizes.base,
+                color: themes.text,
+                margin: 0
+              }}>
+                {selectedVinyl.condition || 'Not set'}
+              </p>
+            )}
           </div>
 
           {selectedVinyl.genres && selectedVinyl.genres.length > 0 && (
