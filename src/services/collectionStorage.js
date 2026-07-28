@@ -47,6 +47,49 @@ function rotateBackups(previousValue) {
   }
 }
 
+function getBackupWithWishlist(collectionValue) {
+  try {
+    const discoverStore = localStorage.getItem('discover-store');
+    const backup = {
+      collection: collectionValue,
+      wishlist: null
+    };
+
+    if (discoverStore) {
+      try {
+        const parsed = JSON.parse(discoverStore);
+        if (parsed.state && Array.isArray(parsed.state.wishlist)) {
+          backup.wishlist = parsed.state.wishlist;
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    return JSON.stringify(backup);
+  } catch {
+    return collectionValue;
+  }
+}
+
+function restoreWishlistFromBackup(backupData) {
+  try {
+    const parsed = JSON.parse(backupData);
+    if (parsed.wishlist && Array.isArray(parsed.wishlist)) {
+      const discoverStore = localStorage.getItem('discover-store');
+      if (discoverStore) {
+        const parsed2 = JSON.parse(discoverStore);
+        if (parsed2.state) {
+          parsed2.state.wishlist = parsed.wishlist;
+          localStorage.setItem('discover-store', JSON.stringify(parsed2));
+        }
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
 export const backupStorage = {
   getItem: (name) => {
     const candidates = [localStorage.getItem(name)];
@@ -63,9 +106,18 @@ export const backupStorage = {
 
   setItem: (name, value) => {
     try {
+      // Include wishlist in backup
+      let valueToBackup = value;
+      try {
+        const backup = getBackupWithWishlist(value);
+        valueToBackup = backup;
+      } catch (e) {
+        console.warn('[backupStorage] failed to include wishlist in backup:', e.message);
+      }
+
       rotateBackups(localStorage.getItem(name));
-      localStorage.setItem(name, value);
-      console.log(`[backupStorage] saved ${name}, size: ${value.length} bytes`);
+      localStorage.setItem(name, valueToBackup);
+      console.log(`[backupStorage] saved ${name}, size: ${valueToBackup.length} bytes`);
     } catch (error) {
       if (error && error.name === 'QuotaExceededError') {
         console.warn('[backupStorage] quota exceeded, retrying after clearing backups');

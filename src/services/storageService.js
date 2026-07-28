@@ -417,29 +417,37 @@ export const clearAllData = () => {
 };
 
 /**
- * List available backups
+ * List available backups (uses new backup system with vinyl-collection-backup-* keys)
  */
 export const listBackups = () => {
   const backups = [];
+  const BACKUP_PREFIX = 'vinyl-collection-backup-';
 
   for (let i = 1; i <= MAX_BACKUPS; i++) {
-    const backupKey = STORAGE_KEYS[`BACKUP_${i}`];
+    const backupKey = `${BACKUP_PREFIX}${i}`;
     const backupData = localStorage.getItem(backupKey);
 
     if (backupData) {
       try {
         const backup = JSON.parse(backupData);
-        // Handle both old format (array) and new format (with metadata)
+        // Handle both old format (array) and new format (with metadata + wishlist)
         let collection = backup;
         let timestamp = new Date().toISOString();
+        let size = '';
+
         if (backup.collection && Array.isArray(backup.collection)) {
           collection = backup.collection;
           timestamp = backup.timestamp || timestamp;
+          // Estimate size
+          const sizeBytes = new Blob([backupData]).size;
+          size = sizeBytes > 1024 ? `${(sizeBytes / 1024).toFixed(1)} KB` : `${sizeBytes} B`;
         }
+
         backups.push({
           index: i,
           count: Array.isArray(collection) ? collection.length : 0,
-          timestamp
+          timestamp,
+          size
         });
       } catch (error) {
         console.error(`Failed to parse backup ${i}:`, error);
@@ -451,7 +459,7 @@ export const listBackups = () => {
 };
 
 /**
- * Restore a backup
+ * Restore a backup (uses new backup system with vinyl-collection-backup-* keys)
  * @param {number} index - Backup index (1-3)
  * @returns {boolean} true if restore was successful
  */
@@ -462,7 +470,8 @@ export const restoreBackup = (index) => {
       return false;
     }
 
-    const backupKey = STORAGE_KEYS[`BACKUP_${index}`];
+    const BACKUP_PREFIX = 'vinyl-collection-backup-';
+    const backupKey = `${BACKUP_PREFIX}${index}`;
     const backupData = localStorage.getItem(backupKey);
 
     if (!backupData) {
@@ -470,7 +479,7 @@ export const restoreBackup = (index) => {
       return false;
     }
 
-    // Handle both old format (array) and new format (with metadata)
+    // Handle both old format (array) and new format (with metadata + wishlist)
     const backup = JSON.parse(backupData);
     const collection = backup.collection && Array.isArray(backup.collection) ? backup.collection : backup;
 
@@ -479,7 +488,35 @@ export const restoreBackup = (index) => {
       return false;
     }
 
-    localStorage.setItem(STORAGE_KEYS.COLLECTION, JSON.stringify(collection));
+    // Restore collection to new storage key
+    const zustandState = {
+      state: {
+        collection: collection,
+        sortBy: 'artist-asc',
+        collectionView: 'grid'
+      },
+      version: 0
+    };
+    localStorage.setItem('vinyl-collection-storage', JSON.stringify(zustandState));
+
+    // Restore wishlist if present in backup
+    if (backup.wishlist && Array.isArray(backup.wishlist)) {
+      const discoverStore = localStorage.getItem('discover-store');
+      if (discoverStore) {
+        try {
+          const parsed = JSON.parse(discoverStore);
+          if (parsed.state) {
+            parsed.state.wishlist = backup.wishlist;
+            localStorage.setItem('discover-store', JSON.stringify(parsed));
+            console.log(`[restoreBackup] restored ${backup.wishlist.length} wishlist items`);
+          }
+        } catch (e) {
+          console.warn('[restoreBackup] failed to restore wishlist:', e.message);
+        }
+      }
+    }
+
+    console.log(`[restoreBackup] restored backup ${index} with ${collection.length} items`);
     return true;
   } catch (error) {
     console.error('Failed to restore backup:', error);
@@ -488,7 +525,7 @@ export const restoreBackup = (index) => {
 };
 
 /**
- * Delete a backup
+ * Delete a backup (uses new backup system with vinyl-collection-backup-* keys)
  * @param {number} index - Backup index (1-3)
  * @returns {boolean} true if delete was successful
  */
@@ -499,8 +536,10 @@ export const deleteBackup = (index) => {
       return false;
     }
 
-    const backupKey = STORAGE_KEYS[`BACKUP_${index}`];
+    const BACKUP_PREFIX = 'vinyl-collection-backup-';
+    const backupKey = `${BACKUP_PREFIX}${index}`;
     localStorage.removeItem(backupKey);
+    console.log(`[deleteBackup] deleted backup ${index}`);
     return true;
   } catch (error) {
     console.error('Failed to delete backup:', error);
