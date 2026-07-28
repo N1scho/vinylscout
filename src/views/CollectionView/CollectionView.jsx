@@ -68,7 +68,7 @@ export default function CollectionView({
   themes
 }) {
   const parentRef = useRef(null);
-  const wishlistCount = useDiscoverStore((state) => state.wishlist.length);
+  const wishlistCount = useDiscoverStore((state) => state.wishlist?.length ?? 0);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [selectedAlbumTitle, setSelectedAlbumTitle] = useState('');

@@ -6,14 +6,15 @@ import GenreSelector from './GenreSelector';
 import AlbumGallery from './AlbumGallery';
 
 export default function DiscoverView({ themes }) {
-  const { allAlbums, initializeAlbums } = useDiscoverStore();
+  const { allAlbums, selectedGenreIds, initializeAlbums } = useDiscoverStore();
 
   // Initialize store with discover data on mount if needed
+  // Also reinitialize if albums exist but no genres selected (corrupted localStorage)
   useEffect(() => {
-    if (allAlbums.length === 0) {
+    if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0)) {
       initializeAlbums(discoverData);
     }
-  }, [allAlbums.length, initializeAlbums]);
+  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums]);
 
   return (
     <div

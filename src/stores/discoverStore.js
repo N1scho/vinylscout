@@ -170,7 +170,15 @@ export const useDiscoverStore = create(
       }
     }),
     {
-      name: 'discover-store'
+      name: 'discover-store',
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.wishlist = Array.isArray(state.wishlist) ? state.wishlist : [];
+          if (!Array.isArray(state.selectedGenreIds)) {
+            state.selectedGenreIds = [];
+          }
+        }
+      }
     }
   )
 );
