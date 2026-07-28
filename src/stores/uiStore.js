@@ -22,6 +22,11 @@ export const useUIStore = create(
       showValueModal: false,
       valueHistory: [],
       confirmDelete: null,
+      errorModal: {
+        show: false,
+        title: '',
+        message: ''
+      },
 
       // Toast State
       toast: {
@@ -58,6 +63,19 @@ export const useUIStore = create(
       setShowValueModal: (showValueModal) => set({ showValueModal }),
       setValueHistory: (valueHistory) => set({ valueHistory }),
       setConfirmDelete: (confirmDelete) => set({ confirmDelete }),
+      showError: (title, message) => set({
+        errorModal: {
+          show: true,
+          title,
+          message
+        }
+      }),
+      hideError: () => set((state) => ({
+        errorModal: {
+          ...state.errorModal,
+          show: false
+        }
+      })),
 
       openValueModal: (item) => {
         const history = item.priceHistory || [];

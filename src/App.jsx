@@ -10,6 +10,9 @@ const StatsView = lazy(() => import('./views/StatsView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const DiscoverView = lazy(() => import('./views/DiscoverView'));
 
+// Components
+import ErrorModal from './components/ErrorModal/ErrorModal';
+
 // Utilities
 import { calculateCollectionStats } from './utils/statistics';
 import { formatPrice, sortCollection, filterCollection, calculateCollectionValue } from './utils/collectionHelpers';
@@ -144,7 +147,7 @@ export default function App() {
       ui.showToast(`Imported ${imported.length} records`, 'success');
     } catch (error) {
       console.error('Import failed:', error.message);
-      ui.showToast(`Import failed: ${error.message}`, 'error');
+      ui.showError('Import Failed', `File: ${file.name}\n\nError:\n${error.message}\n\nCheck the DevTools console (F12) for more details.`);
     }
 
     if (fileInputRef.current) {
@@ -655,6 +658,15 @@ return (
           ui.showToast('Removed from collection', 'success');
         }}
         onCancel={() => ui.setConfirmDelete(null)}
+        themes={themes}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        show={ui.errorModal.show}
+        title={ui.errorModal.title}
+        message={ui.errorModal.message}
+        onClose={() => ui.hideError()}
         themes={themes}
       />
     </div>
