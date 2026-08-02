@@ -98,6 +98,15 @@ export default function App() {
     window.history.pushState({ view: newView }, '', `#${newView}`);
   };
 
+  // Handle viewing search results in detail modal
+  const handleViewSearchResult = (result) => {
+    ui.setSelectedVinyl({
+      ...result,
+      id: String(result.id),
+      isFavorite: collection.collection.some(v => v.id === result.id && v.isFavorite)
+    });
+  };
+
   // Handle browser back button
   useEffect(() => {
     const handlePopState = (event) => {
@@ -409,7 +418,7 @@ export default function App() {
       onRefreshPrice={refreshPrice}
       onAddToCollection={collection.addToCollection}
       onRemoveFromCollection={collection.removeFromCollection}
-      onViewDetails={(item) => ui.setSelectedVinyl({ ...item, id: item.id.toString() })}
+      onViewDetails={handleViewSearchResult}
       themes={themes}
     />
   );
@@ -619,7 +628,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
-            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={(item) => ui.setSelectedVinyl({ ...item, id: item.id.toString() })} />}
+            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
