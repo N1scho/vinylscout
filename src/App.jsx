@@ -38,7 +38,6 @@ import { useCamera } from './hooks/useCamera';
 import { useDiscogsSearch } from './hooks/useDiscogsSearch';
 
 // Components
-import EnhancedDetailModal from './components/DetailModal/EnhancedDetailModal';
 import ValueHistoryModal from './components/ValueHistoryModal';
 import VinylDetailsModal from './components/VinylDetailsModal';
 import ConfirmDialog from './components/ConfirmDialog';
@@ -410,7 +409,7 @@ export default function App() {
       onRefreshPrice={refreshPrice}
       onAddToCollection={collection.addToCollection}
       onRemoveFromCollection={collection.removeFromCollection}
-      onViewDetails={ui.setSelectedResult}
+      onViewDetails={(item) => ui.setSelectedVinyl({ ...item, id: item.id.toString() })}
       themes={themes}
     />
   );
@@ -620,7 +619,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
-            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onAddToCollection={collection.addToCollection} />}
+            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={(item) => ui.setSelectedVinyl({ ...item, id: item.id.toString() })} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
@@ -635,21 +634,6 @@ return (
       `}</style>
 
       <Navigation view={view} onViewChange={handleViewChange} wishlistCount={wishlist.length} themes={themes} />
-      <EnhancedDetailModal
-        selectedResult={ui.selectedResult}
-        collection={collection.collection}
-        onClose={() => ui.setSelectedResult(null)}
-        onAddToCollection={(item) => {
-          const result = collection.addToCollection(item);
-          if (!result.success) {
-            ui.showToast(`Cannot add: ${result.error}`, 'error');
-          } else {
-            ui.showToast('Added to collection', 'success');
-          }
-        }}
-        onRemoveFromCollection={collection.removeFromCollection}
-        themes={themes}
-      />
       <ValueHistoryModal
         showValueModal={ui.showValueModal}
         selectedResult={ui.selectedResult}

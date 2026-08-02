@@ -6,9 +6,15 @@ import { useCollectionStore } from '../../stores/collectionStore';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
 
-export default function WishlistView({ themes, onNavigateToDiscover, onAddToCollection }) {
+export default function WishlistView({ themes, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
   const { wishlist, toggleWishlist } = useDiscoverStore();
   const [selectedAlbumIndex, setSelectedAlbumIndex] = useState(null);
+
+  const handleAddToCollection = (item) => {
+    if (onViewDetails) {
+      onViewDetails(item);
+    }
+  };
 
   if (!wishlist || wishlist.length === 0) {
     return (
@@ -182,7 +188,7 @@ export default function WishlistView({ themes, onNavigateToDiscover, onAddToColl
 
               {/* Add to Collection Button */}
               <button
-                onClick={() => onAddToCollection(item)}
+                onClick={() => handleAddToCollection(item)}
                 style={{
                   marginTop: 'auto',
                   padding: designSystem.spacing.sm,
