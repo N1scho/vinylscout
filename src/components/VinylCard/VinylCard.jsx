@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon } from 'lucide-react';
 import { designSystem } from '../../designsystem';
@@ -28,8 +28,25 @@ const VinylCard = React.memo(function VinylCard({
   onPriceHistory,
   themes
 }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoadError, setImageLoadError] = useState(false);
+
   const hasPrice = price && (typeof price.value === 'number' || typeof price.value === 'string') && price.value !== null && price.value !== undefined;
   const hasPriceChange = priceChange && (typeof priceChange.amount === 'number' || typeof priceChange.amount === 'string') && priceChange.amount !== null && priceChange.amount !== undefined;
+
+  // Build images array from various sources
+  const images = [];
+  if (vinyl.images && Array.isArray(vinyl.images)) {
+    images.push(...vinyl.images.map(img => img.url || img));
+  }
+  if (vinyl.cover_image && !images.includes(vinyl.cover_image)) {
+    images.push(vinyl.cover_image);
+  }
+  if (vinyl.thumb && !images.includes(vinyl.thumb)) {
+    images.push(vinyl.thumb);
+  }
+
+  const currentImage = images[currentImageIndex] || vinyl.thumb || vinyl.cover_image || '/placeholder.jpg';
 
   // Memoize event handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback((e) => {
@@ -141,7 +158,7 @@ const VinylCard = React.memo(function VinylCard({
         }}
       >
         <img
-          src={vinyl.thumb || vinyl.cover_image || '/placeholder.jpg'}
+          src={currentImage}
           alt={vinyl.title}
           style={{
             position: 'absolute',
@@ -152,7 +169,64 @@ const VinylCard = React.memo(function VinylCard({
             objectFit: 'cover'
           }}
           loading="lazy"
+          onError={() => setImageLoadError(true)}
+          onLoad={() => setImageLoadError(false)}
         />
+
+        {/* Image Navigation */}
+        {images.length > 1 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: designSystem.spacing.xs,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: '4px',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
+              borderRadius: designSystem.borderRadius.circle,
+              color: 'white',
+              fontSize: '11px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setCurrentImageIndex(Math.max(0, currentImageIndex - 1))}
+              disabled={currentImageIndex === 0}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
+                opacity: currentImageIndex === 0 ? 0.4 : 1,
+                padding: 0,
+                fontSize: '12px'
+              }}
+            >
+              ◀
+            </button>
+            <span style={{ minWidth: '20px', textAlign: 'center' }}>
+              {currentImageIndex + 1}/{images.length}
+            </span>
+            <button
+              onClick={() => setCurrentImageIndex(Math.min(images.length - 1, currentImageIndex + 1))}
+              disabled={currentImageIndex === images.length - 1}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                cursor: currentImageIndex === images.length - 1 ? 'not-allowed' : 'pointer',
+                opacity: currentImageIndex === images.length - 1 ? 0.4 : 1,
+                padding: 0,
+                fontSize: '12px'
+              }}
+            >
+              ▶
+            </button>
+          </div>
+        )}
 
         {/* Favorite Badge */}
         {vinyl.isFavorite && (
@@ -203,7 +277,7 @@ const VinylCard = React.memo(function VinylCard({
             )}
             {typeof priceChange.amount === 'number' && !isNaN(priceChange.amount)
               ? Math.abs(priceChange.amount).toFixed(2)
-              : '0.00'} {priceChange.currency || 'USD'}
+              : '0.00'} EUR
           </div>
         )}
       </div>

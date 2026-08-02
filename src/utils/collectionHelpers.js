@@ -139,5 +139,5 @@ export const calculateCollectionValue = (collection) => {
  */
 export const formatPrice = (value, currency) => {
   if (value === null || value === undefined) return 'N/A';
-  return `${currency === 'USD' ? '$' : '€'}${value.toFixed(2)}`;
+  return `€${value.toFixed(2)}`;
 };

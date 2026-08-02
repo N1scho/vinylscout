@@ -104,7 +104,7 @@ export const fetchPriceInfo = async (releaseId) => {
       }
       return {
         value: data.lowest_price.value,
-        currency: data.lowest_price.currency,
+        currency: 'EUR',
         num_for_sale: data.num_for_sale,
         stats: data,
       };
