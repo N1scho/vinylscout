@@ -17,6 +17,7 @@ export default function AlbumGallery({ themes }) {
   const [touchStart, setTouchStart] = useState(null);
   const [discogsMetadata, setDiscogsMetadata] = useState(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const containerRef = useRef(null);
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
@@ -44,6 +45,8 @@ export default function AlbumGallery({ themes }) {
       setDiscogsMetadata(null);
       return;
     }
+
+    setCurrentImageIndex(0);
 
     const fetchMetadata = async () => {
       setLoadingMetadata(true);
@@ -124,47 +127,107 @@ export default function AlbumGallery({ themes }) {
         minHeight: '500px'
       }}
     >
-      {/* Album Cover */}
+      {/* Album Cover with Image Gallery */}
       <div style={{
-        width: '280px',
-        height: '280px',
-        borderRadius: '12px',
-        backgroundColor: themes.border,
         display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-        boxShadow: `0 4px 12px ${themes.primary}20`,
-        cursor: 'grab',
-        userSelect: 'none',
-        position: 'relative'
+        flexDirection: 'column',
+        gap: '8px',
+        alignItems: 'center'
       }}>
-        {/* Use Discogs cover if available, fallback to local */}
-        <img
-          src={discogsMetadata?.coverUrl || currentAlbum.coverUrl}
-          alt={`${currentAlbum.artist} - ${currentAlbum.album}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: loadingMetadata ? 0.5 : 1,
-            transition: 'opacity 200ms ease'
-          }}
-          onError={(e) => {
-            e.target.style.display = 'none';
-          }}
-        />
-        {/* Loading indicator */}
-        {loadingMetadata && (
+        <div style={{
+          width: '280px',
+          height: '280px',
+          borderRadius: '12px',
+          backgroundColor: themes.border,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflow: 'hidden',
+          boxShadow: `0 4px 12px ${themes.primary}20`,
+          cursor: 'grab',
+          userSelect: 'none',
+          position: 'relative'
+        }}>
+          {/* Use Discogs cover if available, fallback to local */}
+          <img
+            src={discogsMetadata?.images?.[currentImageIndex]?.url || discogsMetadata?.coverUrl || currentAlbum.coverUrl}
+            alt={`${currentAlbum.artist} - ${currentAlbum.album}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: loadingMetadata ? 0.5 : 1,
+              transition: 'opacity 200ms ease'
+            }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+          {/* Loading indicator */}
+          {loadingMetadata && (
+            <div style={{
+              position: 'absolute',
+              width: '20px',
+              height: '20px',
+              border: `2px solid ${themes.primary}`,
+              borderTop: `2px solid transparent`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+          )}
+        </div>
+
+        {/* Image Gallery Navigation */}
+        {discogsMetadata?.images && discogsMetadata.images.length > 1 && (
           <div style={{
-            position: 'absolute',
-            width: '20px',
-            height: '20px',
-            border: `2px solid ${themes.primary}`,
-            borderTop: `2px solid transparent`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <button
+              onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentImageIndex === 0}
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: currentImageIndex === 0 ? themes.border : themes.primary,
+                color: currentImageIndex === 0 ? themes.textTertiary : themes.buttonText,
+                fontSize: '12px',
+                cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
+                opacity: currentImageIndex === 0 ? 0.4 : 1
+              }}
+            >
+              ←
+            </button>
+            <div style={{
+              fontSize: '12px',
+              color: themes.textSecondary,
+              minWidth: '40px',
+              textAlign: 'center'
+            }}>
+              {currentImageIndex + 1}/{discogsMetadata.images.length}
+            </div>
+            <button
+              onClick={() => setCurrentImageIndex(prev => Math.min(discogsMetadata.images.length - 1, prev + 1))}
+              disabled={currentImageIndex === discogsMetadata.images.length - 1}
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: currentImageIndex === discogsMetadata.images.length - 1 ? themes.border : themes.primary,
+                color: currentImageIndex === discogsMetadata.images.length - 1 ? themes.textTertiary : themes.buttonText,
+                fontSize: '12px',
+                cursor: currentImageIndex === discogsMetadata.images.length - 1 ? 'not-allowed' : 'pointer',
+                opacity: currentImageIndex === discogsMetadata.images.length - 1 ? 0.4 : 1
+              }}
+            >
+              →
+            </button>
+          </div>
         )}
       </div>
 
@@ -197,6 +260,16 @@ export default function AlbumGallery({ themes }) {
           {discogsMetadata?.year > 0 ? discogsMetadata.year : (currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown')}
           {currentAlbum.label && ` • ${currentAlbum.label}`}
         </p>
+        {currentAlbum.genres && currentAlbum.genres.length > 0 && (
+          <p style={{
+            margin: '0 0 6px 0',
+            fontSize: '12px',
+            color: themes.primary,
+            fontWeight: 500
+          }}>
+            {currentAlbum.genres.join(' • ')}
+          </p>
+        )}
         {/* Price */}
         {discogsMetadata?.price ? (
           <p style={{

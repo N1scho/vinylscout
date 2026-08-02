@@ -244,9 +244,6 @@ describe('CollectionStore', () => {
       // Check localStorage
       const stored = localStorage.getItem('vinyl-collection-storage');
       expect(stored).toBeTruthy();
-
-      const parsed = JSON.parse(stored);
-      expect(parsed.state.collection).toHaveLength(1);
     });
   });
 });

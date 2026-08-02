@@ -175,9 +175,37 @@ export const getDiscogsAlbumMetadata = async (artist, album) => {
       return null;
     }
 
+    let images = [];
+    let year = result.year || 0;
+
+    // Fetch full release details to get all images
+    try {
+      const releaseDetails = await proxyRequest(`/releases/${result.id}`);
+      if (releaseDetails?.images && Array.isArray(releaseDetails.images)) {
+        images = releaseDetails.images
+          .filter(img => img.uri)
+          .map(img => ({
+            url: img.uri.replace(/_\d+\.(jpg|jpeg|png)$/i, '_350.$1'),
+            type: img.type
+          }));
+      }
+      if (releaseDetails?.year) year = releaseDetails.year;
+    } catch (error) {
+      console.warn(`Failed to fetch full release details for ${result.id}:`, error.message);
+    }
+
+    // Fallback to search result cover if no images fetched
+    if (images.length === 0 && result.cover_image) {
+      images = [{
+        url: result.cover_image.replace(/_\d+\.(jpg|jpeg|png)$/i, '_350.$1'),
+        type: 'primary'
+      }];
+    }
+
     const metadata = {
-      coverUrl: result.cover_image ? result.cover_image.replace(/_\d+\.(jpg|jpeg|png)$/i, '_350.$1') : null,
-      year: result.year || 0,
+      images,
+      coverUrl: images[0]?.url || null,
+      year,
       releaseId: result.id
     };
 

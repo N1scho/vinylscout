@@ -98,6 +98,11 @@ export default function App() {
     window.history.pushState({ view: newView }, '', `#${newView}`);
   };
 
+  // Clear collection on app load (library resets on page reload)
+  useEffect(() => {
+    collection.setCollection([]);
+  }, [collection]);
+
   // Handle browser back button
   useEffect(() => {
     const handlePopState = (event) => {
