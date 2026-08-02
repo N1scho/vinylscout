@@ -241,9 +241,13 @@ describe('CollectionStore', () => {
         result.current.addToCollection(vinyl);
       });
 
-      // Check localStorage
+      // Check localStorage has data
       const stored = localStorage.getItem('vinyl-collection-storage');
       expect(stored).toBeTruthy();
+
+      // Verify store has the item
+      expect(result.current.collection).toHaveLength(1);
+      expect(result.current.collection[0].id).toBe(1);
     });
   });
 });
