@@ -51,7 +51,9 @@ describe('backupStorage', () => {
   it('saves item successfully on first attempt', () => {
     const value = '{"state": {"collection": []}}';
     backupStorage.setItem('test-key', value);
-    expect(localStorage.getItem('test-key')).toBe(value);
+    const stored = localStorage.getItem('test-key');
+    expect(stored).toBeTruthy();
+    expect(JSON.parse(stored)).toEqual(JSON.parse(value));
   });
 
   it('retries and clears backups on QuotaExceededError', () => {

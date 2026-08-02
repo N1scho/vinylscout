@@ -47,40 +47,45 @@ function rotateBackups(previousValue) {
   }
 }
 
-function getBackupWithWishlist(collectionValue) {
+function getBackupWithWishlist(persistedValue) {
   try {
-    const discoverStore = localStorage.getItem('discover-store');
-    const backup = {
-      collection: collectionValue,
-      wishlist: null
-    };
+    // persistedValue is already a stringified Zustand state
+    // Parse it to extract collection
+    const parsed = JSON.parse(persistedValue);
 
+    // Extract wishlist from discover store if available
+    const discoverStore = localStorage.getItem('discover-store');
     if (discoverStore) {
       try {
-        const parsed = JSON.parse(discoverStore);
-        if (parsed.state && Array.isArray(parsed.state.wishlist)) {
-          backup.wishlist = parsed.state.wishlist;
+        const discoverParsed = JSON.parse(discoverStore);
+        if (discoverParsed.state && Array.isArray(discoverParsed.state.wishlist) && discoverParsed.state.wishlist.length > 0) {
+          // Only add wishlist if it has items
+          if (parsed.state) {
+            parsed.state.wishlist = discoverParsed.state.wishlist;
+          }
         }
       } catch {
         // Ignore parse errors
       }
     }
 
-    return JSON.stringify(backup);
+    return JSON.stringify(parsed);
   } catch {
-    return collectionValue;
+    return persistedValue;
   }
 }
 
 function restoreWishlistFromBackup(backupData) {
   try {
     const parsed = JSON.parse(backupData);
-    if (parsed.wishlist && Array.isArray(parsed.wishlist)) {
+    // Check if wishlist is in state.wishlist (new format)
+    const wishlist = parsed.state?.wishlist || parsed.wishlist;
+    if (wishlist && Array.isArray(wishlist)) {
       const discoverStore = localStorage.getItem('discover-store');
       if (discoverStore) {
         const parsed2 = JSON.parse(discoverStore);
         if (parsed2.state) {
-          parsed2.state.wishlist = parsed.wishlist;
+          parsed2.state.wishlist = wishlist;
           localStorage.setItem('discover-store', JSON.stringify(parsed2));
         }
       }
