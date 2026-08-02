@@ -1,15 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Search, Camera, Grid, BarChart3, Compass, Settings } from 'lucide-react';
+import { Search, Camera, Grid, BarChart3, Compass, Heart, Settings } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 
-const Navigation = React.memo(({ view, onViewChange, themes }) => {
+const Navigation = React.memo(({ view, onViewChange, themes, wishlistCount = 0 }) => {
   const navItems = [
     { id: 'search', icon: Search, label: 'Search' },
     { id: 'camera', icon: Camera, label: 'Camera' },
     { id: 'collection', icon: Grid, label: 'Collection' },
     { id: 'stats', icon: BarChart3, label: 'Stats' },
     { id: 'discover', icon: Compass, label: 'Discover' },
+    { id: 'wishlist', icon: Heart, label: 'Wishlist', badge: wishlistCount > 0 ? wishlistCount : null },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
 
@@ -30,7 +31,7 @@ const Navigation = React.memo(({ view, onViewChange, themes }) => {
       backdropFilter: 'blur(10px)',
       WebkitBackdropFilter: 'blur(10px)',
     }}>
-      {navItems.map(({ id, icon: Icon, label }) => {
+      {navItems.map(({ id, icon: Icon, label, badge }) => {
         const isActive = view === id;
         return (
           <button
@@ -63,11 +64,34 @@ const Navigation = React.memo(({ view, onViewChange, themes }) => {
               }
             }}
           >
-            <Icon
-              size={designSystem.iconSize.md}
-              strokeWidth={isActive ? 2 : 1.5}
-              style={{ transition: designSystem.transitions.fast }}
-            />
+            <div style={{ position: 'relative' }}>
+              <Icon
+                size={designSystem.iconSize.md}
+                strokeWidth={isActive ? 2 : 1.5}
+                style={{ transition: designSystem.transitions.fast }}
+              />
+              {badge && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    backgroundColor: themes.error,
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {badge}
+                </div>
+              )}
+            </div>
             <span style={{
               fontSize: designSystem.typography.sizes.xs,
               fontWeight: isActive ? 600 : 400,
@@ -95,8 +119,9 @@ const Navigation = React.memo(({ view, onViewChange, themes }) => {
 });
 
 Navigation.propTypes = {
-  view: PropTypes.oneOf(['search', 'camera', 'collection', 'stats', 'discover', 'settings']).isRequired,
+  view: PropTypes.oneOf(['search', 'camera', 'collection', 'stats', 'discover', 'wishlist', 'settings']).isRequired,
   onViewChange: PropTypes.func.isRequired,
+  wishlistCount: PropTypes.number,
   themes: PropTypes.shape({
     primary: PropTypes.string.isRequired,
     textSecondary: PropTypes.string.isRequired,

@@ -9,6 +9,7 @@ const CollectionView = lazy(() => import('./views/CollectionView'));
 const StatsView = lazy(() => import('./views/StatsView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const DiscoverView = lazy(() => import('./views/DiscoverView'));
+const WishlistView = lazy(() => import('./views/WishlistView'));
 
 // Components
 import ErrorModal from './components/ErrorModal/ErrorModal';
@@ -619,6 +620,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
+            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onAddToCollection={collection.addToCollection} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
@@ -632,7 +634,7 @@ return (
         }
       `}</style>
 
-      <Navigation view={view} onViewChange={handleViewChange} themes={themes} />
+      <Navigation view={view} onViewChange={handleViewChange} wishlistCount={wishlist.length} themes={themes} />
       <EnhancedDetailModal
         selectedResult={ui.selectedResult}
         collection={collection.collection}

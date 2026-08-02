@@ -578,7 +578,7 @@ export default function CollectionView({
           value={collectionFilter}
           onChange={(e) => onCollectionFilterChange(e.target.value)}
           style={{
-            minWidth: '160px',
+            minWidth: '120px',
             padding: designSystem.spacing.sm,
             fontSize: designSystem.typography.sizes.sm,
             backgroundColor: themes.background,
@@ -591,7 +591,6 @@ export default function CollectionView({
         >
           <option value="all">All Items</option>
           <option value="favorites">Favorites Only</option>
-          <option value="wishlist">Wishlist ({wishlistCount})</option>
         </select>
       </div>
 
