@@ -578,7 +578,7 @@ export default function CollectionView({
           value={collectionFilter}
           onChange={(e) => onCollectionFilterChange(e.target.value)}
           style={{
-            minWidth: '120px',
+            minWidth: '160px',
             padding: designSystem.spacing.sm,
             fontSize: designSystem.typography.sizes.sm,
             backgroundColor: themes.background,
@@ -591,42 +591,8 @@ export default function CollectionView({
         >
           <option value="all">All Items</option>
           <option value="favorites">Favorites Only</option>
+          <option value="wishlist">Wishlist ({wishlistCount})</option>
         </select>
-
-        {/* Wishlist Filter Button */}
-        <button
-          onClick={() => {
-            onCollectionFilterChange(
-              collectionFilter === 'wishlist' ? 'all' : 'wishlist'
-            );
-          }}
-          style={{
-            padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
-            minHeight: designSystem.touchTarget.min,
-            backgroundColor: collectionFilter === 'wishlist' ? themes.primary : themes.background,
-            color: collectionFilter === 'wishlist' ? '#FFFFFF' : themes.text,
-            border: `1px solid ${
-              collectionFilter === 'wishlist' ? themes.primary : themes.border
-            }`,
-            borderRadius: designSystem.borderRadius.sm,
-            fontSize: designSystem.typography.sizes.sm,
-            fontWeight: designSystem.typography.weights.medium,
-            cursor: 'pointer',
-            transition: designSystem.transitions.fast
-          }}
-          onMouseEnter={(e) => {
-            if (collectionFilter !== 'wishlist') {
-              e.currentTarget.style.borderColor = themes.primary;
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (collectionFilter !== 'wishlist') {
-              e.currentTarget.style.borderColor = themes.border;
-            }
-          }}
-        >
-          Wishlist ({wishlistCount})
-        </button>
       </div>
 
       {/* Empty State or Collection Grid */}
