@@ -11,7 +11,8 @@ export default function AlbumGallery({ themes }) {
     nextAlbum,
     prevAlbum,
     toggleWishlist,
-    isInWishlist
+    isInWishlist,
+    genres
   } = useDiscoverStore();
 
   const [touchStart, setTouchStart] = useState(null);
@@ -21,6 +22,7 @@ export default function AlbumGallery({ themes }) {
   const containerRef = useRef(null);
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
+  const genreName = currentAlbum && genres.find(g => g.id === currentAlbum.genreId)?.name;
 
   // Keyboard navigation (MUST be before conditional return)
   useEffect(() => {
@@ -260,14 +262,14 @@ export default function AlbumGallery({ themes }) {
           {discogsMetadata?.year > 0 ? discogsMetadata.year : (currentAlbum.year > 0 ? currentAlbum.year : 'Year unknown')}
           {currentAlbum.label && ` • ${currentAlbum.label}`}
         </p>
-        {currentAlbum.genres && currentAlbum.genres.length > 0 && (
+        {genreName && (
           <p style={{
             margin: '0 0 6px 0',
             fontSize: '12px',
             color: themes.primary,
             fontWeight: 500
           }}>
-            {currentAlbum.genres.join(' • ')}
+            {genreName}
           </p>
         )}
         {/* Price */}

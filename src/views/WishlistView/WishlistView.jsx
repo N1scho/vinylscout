@@ -100,6 +100,7 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
         {wishlistItems.map((item) => (
           <div
             key={item.id}
+            onClick={() => handleAddToCollection(item)}
             style={{
               position: 'relative',
               backgroundColor: themes.surface,
@@ -108,7 +109,17 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
               boxShadow: designSystem.shadows.md,
               border: `1px solid ${themes.border}`,
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = designSystem.shadows.lg;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = designSystem.shadows.md;
             }}
           >
             {/* Image */}
@@ -193,6 +204,18 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
               >
                 {item.artist || 'Unknown'}
               </p>
+
+              {item.year && (
+                <p
+                  style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `${designSystem.spacing.xs} 0 0 0`
+                  }}
+                >
+                  {item.year}
+                </p>
+              )}
 
               {/* Add to Collection Button */}
               <button

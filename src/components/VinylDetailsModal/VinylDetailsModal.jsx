@@ -622,6 +622,28 @@ const VinylDetailsModal = ({
             </button>
           </div>
 
+          <button
+            data-modal-button
+            onClick={async () => {
+              await onUpdatePrice(selectedVinyl.id);
+            }}
+            style={{
+              width: '100%',
+              padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+              minHeight: designSystem.touchTarget.min,
+              backgroundColor: themes.primary,
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: designSystem.borderRadius.md,
+              cursor: 'pointer',
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: designSystem.typography.weights.medium,
+              marginBottom: designSystem.spacing.md
+            }}
+          >
+            Update Price
+          </button>
+
           <div style={{ marginBottom: designSystem.spacing.md }}>
             <p style={{
               fontSize: designSystem.typography.sizes.xs,
