@@ -15,9 +15,12 @@
 export const calculateCollectionStats = (collection, getPriceChange) => {
   const total = collection.length;
   const favorites = collection.filter(v => v.isFavorite).length;
-  const withPrice = collection.filter(v => v.lowestPrice !== null && v.lowestPrice !== undefined).length;
+  const withPrice = collection.filter(v => {
+    const price = v.price?.value || v.lowestPrice;
+    return price !== null && price !== undefined;
+  }).length;
   const totalValue = collection.reduce((sum, v) => {
-    const price = v.lowestPrice;
+    const price = v.price?.value || v.lowestPrice;
     return sum + (typeof price === 'number' ? price : 0);
   }, 0);
   const avgValue = withPrice > 0 ? totalValue / withPrice : 0;
@@ -39,7 +42,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
   const genreCounts = {};
   const genreValue = {};
   collection.forEach(v => {
-    const price = v.lowestPrice || 0;
+    const price = v.price?.value || v.lowestPrice || 0;
     v.genres?.forEach(g => {
       genreCounts[g] = (genreCounts[g] || 0) + 1;
       genreValue[g] = (genreValue[g] || 0) + price;
@@ -62,8 +65,15 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
 
   // Most valuable record
   const mostValuable = collection
-    .filter(v => v.lowestPrice && v.lowestPrice > 0)
-    .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))[0] || null;
+    .filter(v => {
+      const price = v.price?.value || v.lowestPrice;
+      return price && price > 0;
+    })
+    .sort((a, b) => {
+      const priceA = a.price?.value || a.lowestPrice || 0;
+      const priceB = b.price?.value || b.lowestPrice || 0;
+      return priceB - priceA;
+    })[0] || null;
 
   // Recent additions (last 7 days)
   const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
@@ -115,7 +125,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
   collection.forEach(v => {
     const format = v.format || v.formats?.[0] || 'Unknown';
     formatCounts[format] = (formatCounts[format] || 0) + 1;
-    const price = v.lowestPrice || 0;
+    const price = v.price?.value || v.lowestPrice || 0;
     formatValue[format] = (formatValue[format] || 0) + price;
   });
   const topFormats = Object.entries(formatCounts)
@@ -220,7 +230,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
     '100+': 0
   };
   collection.forEach(v => {
-    const price = v.lowestPrice;
+    const price = v.price?.value || v.lowestPrice;
     if (typeof price === 'number') {
       if (price < 10) priceRanges['0-10']++;
       else if (price < 25) priceRanges['10-25']++;
@@ -246,8 +256,15 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
   // Rarest items (least collected on Discogs - placeholder, would need API data)
   // For now, show items with highest value as proxy for rarity
   const rarestItems = collection
-    .filter(v => v.lowestPrice && v.lowestPrice > 100)
-    .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))
+    .filter(v => {
+      const price = v.price?.value || v.lowestPrice;
+      return price && price > 100;
+    })
+    .sort((a, b) => {
+      const priceA = a.price?.value || a.lowestPrice || 0;
+      const priceB = b.price?.value || b.lowestPrice || 0;
+      return priceB - priceA;
+    })
     .slice(0, 5);
 
   // Total value growth (comparing first vs last price in history)
@@ -266,8 +283,15 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
 
   // Most valuable items (for stats display)
   const mostValuableItems = collection
-    .filter(v => v.lowestPrice && v.lowestPrice > 0)
-    .sort((a, b) => (b.lowestPrice || 0) - (a.lowestPrice || 0))
+    .filter(v => {
+      const price = v.price?.value || v.lowestPrice;
+      return price && price > 0;
+    })
+    .sort((a, b) => {
+      const priceA = a.price?.value || a.lowestPrice || 0;
+      const priceB = b.price?.value || b.lowestPrice || 0;
+      return priceB - priceA;
+    })
     .slice(0, 5);
 
   // Condition breakdown

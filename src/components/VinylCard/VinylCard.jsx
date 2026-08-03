@@ -258,6 +258,47 @@ const VinylCard = React.memo(function VinylCard({
           </div>
         )}
 
+        {/* Update Price Button */}
+        {inCollection && (
+          <button
+            onClick={handleRefreshPrice}
+            disabled={isRefreshing}
+            style={{
+              position: 'absolute',
+              top: designSystem.spacing.sm,
+              right: vinyl.isFavorite ? '40px' : designSystem.spacing.sm,
+              backgroundColor: themes.primary,
+              border: 'none',
+              borderRadius: designSystem.borderRadius.circle,
+              padding: designSystem.spacing.xs,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
+              opacity: isRefreshing ? 0.6 : 1,
+              transition: designSystem.transitions.fast
+            }}
+            onMouseEnter={(e) => {
+              if (!isRefreshing) {
+                e.currentTarget.style.backgroundColor = themes.primaryHover;
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = themes.primary;
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <RefreshCw
+              size={14}
+              color="white"
+              style={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none'
+              }}
+            />
+          </button>
+        )}
+
         {/* Price Change Indicator */}
         {hasPriceChange && (
           <div
