@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { designSystem } from './designsystem';
 import { version as APP_VERSION } from '../package.json';
 
@@ -80,6 +80,12 @@ export default function App() {
 
   const collectionValue = useCollectionStore(
     useShallow((s) => calculateCollectionValue(s.collection))
+  );
+
+  // Memoized collection stats (performance optimization for StatsView)
+  const collectionStats = useMemo(
+    () => calculateCollectionStats(collection.collection, collection.getPriceChange),
+    [collection.collection, collection.getPriceChange]
   );
 
   // Derived values
@@ -490,7 +496,7 @@ export default function App() {
   };
 
   const renderStatsView = () => {
-    const stats = calculateCollectionStats(collection.collection, collection.getPriceChange);
+    const stats = collectionStats;
 
     const handleGenreClick = (genre) => {
       collection.setActiveGenreFilter(genre);
