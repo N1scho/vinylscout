@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Heart, Trash2, Plus } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { useDiscoverStore } from '../../stores/discoverStore';
@@ -6,9 +6,17 @@ import { useCollectionStore } from '../../stores/collectionStore';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
 
-export default function WishlistView({ themes, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
-  const { wishlist, toggleWishlist } = useDiscoverStore();
+export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
+  const { toggleWishlist } = useDiscoverStore();
   const [selectedAlbumIndex, setSelectedAlbumIndex] = useState(null);
+
+  const wishlistItems = useMemo(() => {
+    if (!allAlbums || !wishlistIds) return [];
+    const albumMap = new Map(allAlbums.map(a => [String(a.id), a]));
+    return wishlistIds
+      .map(id => albumMap.get(String(id)))
+      .filter(Boolean);
+  }, [allAlbums, wishlistIds]);
 
   const handleAddToCollection = (item) => {
     if (onViewDetails) {
@@ -16,7 +24,7 @@ export default function WishlistView({ themes, onNavigateToDiscover, onAddToColl
     }
   };
 
-  if (!wishlist || wishlist.length === 0) {
+  if (!wishlistItems || wishlistItems.length === 0) {
     return (
       <div
         style={{
@@ -77,7 +85,7 @@ export default function WishlistView({ themes, onNavigateToDiscover, onAddToColl
             margin: 0
           }}
         >
-          {wishlist.length} item{wishlist.length !== 1 ? 's' : ''}
+          {wishlistItems.length} item{wishlistItems.length !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -89,7 +97,7 @@ export default function WishlistView({ themes, onNavigateToDiscover, onAddToColl
           gap: designSystem.spacing.md
         }}
       >
-        {wishlist.map((item) => (
+        {wishlistItems.map((item) => (
           <div
             key={item.id}
             style={{

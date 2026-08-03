@@ -29,6 +29,7 @@ export default function StatsView({
   onDecadeClick,
   onFormatClick,
   onDiscoverClick,
+  onWishlistClick,
   formatPrice,
 
   // Theme
@@ -118,7 +119,7 @@ export default function StatsView({
       {/* Wishlist Summary */}
       {wishlist && wishlist.length > 0 && (
         <div
-          onClick={onDiscoverClick}
+          onClick={onWishlistClick}
           style={{
             backgroundColor: themes.surface,
             padding: designSystem.spacing.lg,

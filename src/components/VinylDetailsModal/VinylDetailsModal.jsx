@@ -25,11 +25,12 @@ const VinylDetailsModal = ({
   const [additionalImages, setAdditionalImages] = useState([]);
   const [imageIndex, setImageIndex] = useState(0);
   const [loadingImages, setLoadingImages] = useState(false);
+  const [releaseTracklist, setReleaseTracklist] = useState(null);
 
   useEffect(() => {
     if (!selectedVinyl?.id) return;
 
-    const fetchImages = async () => {
+    const fetchReleaseData = async () => {
       setLoadingImages(true);
       try {
         const res = await fetch('/api/discogs-proxy', {
@@ -43,16 +44,20 @@ const VinylDetailsModal = ({
         if (res.ok) {
           const data = await res.json();
           const images = data.images || [];
+          const tracklist = data.tracklist || [];
           setAdditionalImages(images);
+          if (tracklist.length > 0) {
+            setReleaseTracklist(tracklist);
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch release images:', err);
+        console.error('Failed to fetch release data:', err);
       } finally {
         setLoadingImages(false);
       }
     };
 
-    fetchImages();
+    fetchReleaseData();
   }, [selectedVinyl?.id]);
 
   if (!selectedVinyl) return null;
@@ -661,7 +666,7 @@ const VinylDetailsModal = ({
             )}
           </div>
 
-          {renderTracklist(selectedVinyl.tracklist)}
+          {renderTracklist(releaseTracklist || selectedVinyl.tracklist)}
         </div>
       </div>
     </div>

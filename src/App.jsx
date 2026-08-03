@@ -57,6 +57,9 @@ export default function App() {
   // File input ref for Chrome compatibility
   const fileInputRef = useRef(null);
 
+  // Get allAlbums from discover store for wishlist mapping
+  const allAlbums = useDiscoverStore((s) => s.allAlbums);
+
   // Memoized selectors for computed values (fixes performance issue)
   const filteredAndSorted = useCollectionStore(
     useShallow((s) =>
@@ -513,6 +516,10 @@ export default function App() {
       handleViewChange('discover');
     };
 
+    const handleWishlistClick = () => {
+      handleViewChange('wishlist');
+    };
+
     return (
       <StatsView
         stats={stats}
@@ -520,6 +527,7 @@ export default function App() {
         onDecadeClick={handleDecadeClick}
         onFormatClick={handleFormatClick}
         onDiscoverClick={handleDiscoverClick}
+        onWishlistClick={handleWishlistClick}
         formatPrice={formatPrice}
         themes={themes}
       />
@@ -628,7 +636,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
-            {view === 'wishlist' && <WishlistView themes={themes} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} />}
+            {view === 'wishlist' && <WishlistView themes={themes} allAlbums={allAlbums} wishlistIds={wishlist} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
