@@ -5,8 +5,8 @@
  * Extracted from App.jsx v2.10.0
  */
 
-import React, { useState } from 'react';
-import { X, Heart, Settings, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Heart, Settings, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { designSystem, withOpacity } from '../../designsystem';
 
 const conditionGrades = ['Mint', 'NM', 'VG+', 'VG', 'Good', 'Fair', 'Poor'];
@@ -22,6 +22,38 @@ const VinylDetailsModal = ({
   themes
 }) => {
   const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [additionalImages, setAdditionalImages] = useState([]);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [loadingImages, setLoadingImages] = useState(false);
+
+  useEffect(() => {
+    if (!selectedVinyl?.id) return;
+
+    const fetchImages = async () => {
+      setLoadingImages(true);
+      try {
+        const res = await fetch('/api/discogs-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: `/releases/${selectedVinyl.id}`,
+            params: {}
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const images = data.images || [];
+          setAdditionalImages(images);
+        }
+      } catch (err) {
+        console.error('Failed to fetch release images:', err);
+      } finally {
+        setLoadingImages(false);
+      }
+    };
+
+    fetchImages();
+  }, [selectedVinyl?.id]);
 
   if (!selectedVinyl) return null;
 
@@ -171,6 +203,65 @@ const VinylDetailsModal = ({
           }}
         />
 
+        {additionalImages.length > 0 && (
+          <div style={{
+            position: 'relative',
+            backgroundColor: themes.background,
+            padding: designSystem.spacing.md,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: designSystem.spacing.sm
+          }}>
+            <button
+              data-modal-button
+              onClick={() => setImageIndex((i) => (i - 1 + additionalImages.length) % additionalImages.length)}
+              style={{
+                padding: designSystem.spacing.sm,
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: themes.text,
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+            >
+              <ChevronLeft size={designSystem.iconSize.md} />
+            </button>
+            <img
+              src={additionalImages[imageIndex]?.uri}
+              alt={`Album image ${imageIndex + 1}`}
+              style={{
+                height: '200px',
+                maxWidth: '200px',
+                objectFit: 'contain'
+              }}
+            />
+            <button
+              data-modal-button
+              onClick={() => setImageIndex((i) => (i + 1) % additionalImages.length)}
+              style={{
+                padding: designSystem.spacing.sm,
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: themes.text,
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+            >
+              <ChevronRight size={designSystem.iconSize.md} />
+            </button>
+            <div style={{
+              position: 'absolute',
+              bottom: designSystem.spacing.sm,
+              right: designSystem.spacing.sm,
+              fontSize: designSystem.typography.sizes.xs,
+              color: themes.textSecondary
+            }}>
+              {imageIndex + 1} / {additionalImages.length}
+            </div>
+          </div>
+        )}
+
         <div style={{ padding: designSystem.spacing.lg }}>
           <div style={{
             display: 'flex',
@@ -235,26 +326,64 @@ const VinylDetailsModal = ({
                 marginBottom: designSystem.spacing.md
               }}
             >
+              {selectedVinyl.artist && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    ARTIST
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {selectedVinyl.artist}
+                  </p>
+                </div>
+              )}
+
+              {selectedVinyl.title && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    ALBUM
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {selectedVinyl.title}
+                  </p>
+                </div>
+              )}
+
               {formatValue() && (
-                <>
-                  <div>
-                    <p style={{
-                      fontSize: designSystem.typography.sizes.xs,
-                      color: themes.textSecondary,
-                      margin: `0 0 ${designSystem.spacing.xs} 0`,
-                      fontWeight: designSystem.typography.weights.semibold
-                    }}>
-                      FORMAT
-                    </p>
-                    <p style={{
-                      fontSize: designSystem.typography.sizes.base,
-                      color: themes.text,
-                      margin: 0
-                    }}>
-                      {formatValue()}
-                    </p>
-                  </div>
-                </>
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    FORMAT
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {formatValue()}
+                  </p>
+                </div>
               )}
 
               {selectedVinyl.year && (
@@ -338,7 +467,7 @@ const VinylDetailsModal = ({
               )}
 
               {selectedVinyl.label && (
-                <div style={{ gridColumn: formatValue() ? '1 / -1' : '1 / -1' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <p style={{
                     fontSize: designSystem.typography.sizes.xs,
                     color: themes.textSecondary,
@@ -384,7 +513,7 @@ const VinylDetailsModal = ({
                 color: themes.text,
                 margin: 0
               }}>
-                ${selectedVinyl.lowestPrice ? selectedVinyl.lowestPrice.toFixed(2) : '0.00'}
+                EUR {selectedVinyl.lowestPrice ? selectedVinyl.lowestPrice.toFixed(2) : '0.00'}
               </p>
               <p style={{
                 fontSize: designSystem.typography.sizes.xs,
