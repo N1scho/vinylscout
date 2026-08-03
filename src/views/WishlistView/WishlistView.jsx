@@ -122,8 +122,8 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
               }}
             >
               <img
-                src={item.cover_image || item.thumb || '/placeholder.jpg'}
-                alt={item.title}
+                src={item.coverUrl || item.cover_image || item.thumb || '/placeholder.jpg'}
+                alt={item.album || item.title}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -181,7 +181,7 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
                   WebkitBoxOrient: 'vertical'
                 }}
               >
-                {item.title}
+                {item.album || item.title}
               </h3>
 
               <p
