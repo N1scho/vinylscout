@@ -19,7 +19,7 @@ import { calculateCollectionStats } from './utils/statistics';
 import { formatPrice, sortCollection, filterCollection, calculateCollectionValue } from './utils/collectionHelpers';
 import { captureAndAnalyzeVinyl, captureImageFromVideo } from './utils/cameraHelpers';
 import { validators } from './utils/validators';
-import { fetchMissingCovers } from './utils/fetchMissingCovers';
+import { fetchMissingCovers, fetchCoverFromDiscogs } from './utils/fetchMissingCovers';
 
 // Services
 import * as StorageService from './services/storageService';
@@ -480,6 +480,7 @@ export default function App() {
         onToggleFavorite={collection.toggleFavorite}
         onRefreshPrice={refreshPrice}
         onRemove={collection.removeFromCollection}
+        onReloadCover={handleReloadCover}
         onViewDetails={ui.setSelectedVinyl}
         onNavigateToSearch={() => handleViewChange('search')}
         getPriceChange={collection.getPriceChange}
@@ -552,6 +553,24 @@ export default function App() {
     } catch (error) {
       console.error('Fetch covers failed:', error);
       ui.showError('Fetch Covers Failed', `Error: ${error.message}`);
+    }
+  };
+
+  const handleReloadCover = async (vinylId) => {
+    try {
+      const cover = await fetchCoverFromDiscogs(vinylId);
+      if (cover) {
+        const updatedCollection = collection.collection.map(item =>
+          item.id === vinylId ? { ...item, cover_image: cover } : item
+        );
+        collection.setCollection(updatedCollection);
+        ui.showToast('Cover updated', 'success');
+      } else {
+        ui.showToast('No cover found', 'warning');
+      }
+    } catch (error) {
+      console.error('Reload cover failed:', error);
+      ui.showToast('Failed to reload cover', 'error');
     }
   };
 
@@ -667,6 +686,7 @@ return (
         onToggleFavorite={collection.toggleFavorite}
         onOpenValueModal={ui.openValueModal}
         onUpdatePrice={(id) => refreshPrice(id, true)}
+        onReloadCover={handleReloadCover}
         onUpdateVinyl={(vinyl) => collection.updateItemInCollection(vinyl.id, vinyl)}
         onConfirmDelete={ui.setConfirmDelete}
         themes={themes}

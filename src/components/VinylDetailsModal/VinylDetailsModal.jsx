@@ -17,6 +17,7 @@ const VinylDetailsModal = ({
   onToggleFavorite,
   onOpenValueModal,
   onUpdatePrice,
+  onReloadCover,
   onConfirmDelete,
   onUpdateVinyl,
   themes
@@ -26,6 +27,7 @@ const VinylDetailsModal = ({
   const [imageIndex, setImageIndex] = useState(0);
   const [loadingImages, setLoadingImages] = useState(false);
   const [releaseTracklist, setReleaseTracklist] = useState(null);
+  const [isReloadingCover, setIsReloadingCover] = useState(false);
 
   useEffect(() => {
     if (!selectedVinyl?.id) return;
@@ -144,6 +146,16 @@ const VinylDetailsModal = ({
     if (!selectedVinyl.format) return null;
     if (Array.isArray(selectedVinyl.format)) return selectedVinyl.format[0];
     return selectedVinyl.format;
+  };
+
+  const handleReloadCoverClick = async () => {
+    if (!onReloadCover) return;
+    setIsReloadingCover(true);
+    try {
+      await onReloadCover(selectedVinyl.id);
+    } finally {
+      setIsReloadingCover(false);
+    }
   };
 
   return (
@@ -555,7 +567,8 @@ const VinylDetailsModal = ({
             </button>
             <button
               data-modal-button
-              onClick={() => {}}
+              onClick={handleReloadCoverClick}
+              disabled={isReloadingCover}
               style={{
                 padding: `${designSystem.spacing.md}`,
                 minWidth: designSystem.touchTarget.min,
@@ -564,10 +577,17 @@ const VinylDetailsModal = ({
                 color: themes.textSecondary,
                 border: `1px solid ${themes.border}`,
                 borderRadius: designSystem.borderRadius.circle,
-                cursor: 'pointer'
+                cursor: isReloadingCover ? 'not-allowed' : 'pointer',
+                opacity: isReloadingCover ? 0.5 : 1
               }}
+              title="Reload Cover"
             >
-              <Settings size={designSystem.iconSize.md} />
+              <Settings
+                size={designSystem.iconSize.md}
+                style={{
+                  animation: isReloadingCover ? 'spin 1s linear infinite' : 'none'
+                }}
+              />
             </button>
           </div>
 

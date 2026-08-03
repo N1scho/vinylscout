@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon } from 'lucide-react';
+import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { getPriceHistory } from '../../services/priceHistoryService';
 
@@ -26,10 +26,12 @@ const VinylCard = React.memo(function VinylCard({
   onViewDetails,
   onAddToCollection,
   onPriceHistory,
+  onReloadCover,
   themes
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoadError, setImageLoadError] = useState(false);
+  const [isReloadingCover, setIsReloadingCover] = useState(false);
 
   const hasPrice = price && (typeof price.value === 'number' || typeof price.value === 'string') && price.value !== null && price.value !== undefined;
   const hasPriceChange = priceChange && (typeof priceChange.amount === 'number' || typeof priceChange.amount === 'string') && priceChange.amount !== null && priceChange.amount !== undefined;
@@ -105,6 +107,15 @@ const VinylCard = React.memo(function VinylCard({
       onAddToCollection(itemWithPrice);
     }
   }, [onAddToCollection, vinyl, price]);
+
+  const handleReloadCover = useCallback(async (e) => {
+    e.stopPropagation();
+    if (onReloadCover) {
+      setIsReloadingCover(true);
+      await onReloadCover(vinyl.id);
+      setIsReloadingCover(false);
+    }
+  }, [onReloadCover, vinyl.id]);
 
   const handleViewDetailsButton = useCallback((e) => {
     e.stopPropagation();
@@ -470,6 +481,35 @@ const VinylCard = React.memo(function VinylCard({
                   title="View Details"
                 >
                   <Eye size={16} />
+                </button>
+              )}
+
+              {onReloadCover && (
+                <button
+                  onClick={handleReloadCover}
+                  disabled={isReloadingCover}
+                  style={{
+                    flex: 1,
+                    padding: designSystem.spacing.sm,
+                    backgroundColor: 'transparent',
+                    color: themes.textSecondary,
+                    border: `1px solid ${themes.border}`,
+                    borderRadius: designSystem.borderRadius.sm,
+                    cursor: isReloadingCover ? 'not-allowed' : 'pointer',
+                    opacity: isReloadingCover ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: designSystem.transitions.fast
+                  }}
+                  title="Reload Cover"
+                >
+                  <Image
+                    size={16}
+                    style={{
+                      animation: isReloadingCover ? 'spin 1s linear infinite' : 'none'
+                    }}
+                  />
                 </button>
               )}
 

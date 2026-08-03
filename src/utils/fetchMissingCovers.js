@@ -3,7 +3,7 @@
  * Uses the Discogs ID to look up release and get thumb image
  */
 
-async function fetchCoverFromDiscogs(discogsId) {
+export async function fetchCoverFromDiscogs(discogsId) {
   try {
     const response = await fetch('/api/discogs-proxy', {
       method: 'POST',
