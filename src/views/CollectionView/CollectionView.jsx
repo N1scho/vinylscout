@@ -7,6 +7,7 @@ import FilterChip from '../../components/FilterChip';
 import EmptyState from '../../components/EmptyState';
 import PriceHistoryModal from '../../components/PriceHistoryModal/PriceHistoryModal';
 import { useDiscoverStore } from '../../stores/discoverStore';
+import { getFirstValue } from '../../utils/discogs';
 
 /**
  * CollectionView Component
@@ -107,7 +108,7 @@ export default function CollectionView({
         });
       }
       if (v.format) {
-        const fmt = Array.isArray(v.format) ? v.format[0] : v.format;
+        const fmt = getFirstValue(v.format);
         if (fmt) {
           formats[fmt] = (formats[fmt] || 0) + 1;
         }

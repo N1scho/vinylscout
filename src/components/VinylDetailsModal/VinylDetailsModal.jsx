@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Heart, Settings, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { designSystem, withOpacity } from '../../designsystem';
+import { getFirstValue } from '../../utils/discogs';
 
 const conditionGrades = ['Mint', 'NM', 'VG+', 'VG', 'Good', 'Fair', 'Poor'];
 
@@ -142,11 +143,7 @@ const VinylDetailsModal = ({
     return selectedVinyl.genres[0];
   };
 
-  const formatValue = () => {
-    if (!selectedVinyl.format) return null;
-    if (Array.isArray(selectedVinyl.format)) return selectedVinyl.format[0];
-    return selectedVinyl.format;
-  };
+  const formatValue = () => getFirstValue(selectedVinyl.format);
 
   const handleReloadCoverClick = async () => {
     if (!onReloadCover) return;
@@ -498,7 +495,7 @@ const VinylDetailsModal = ({
                     color: themes.text,
                     margin: 0
                   }}>
-                    {Array.isArray(selectedVinyl.label) ? selectedVinyl.label[0] : selectedVinyl.label}
+                    {getFirstValue(selectedVinyl.label)}
                   </p>
                 </div>
               )}
