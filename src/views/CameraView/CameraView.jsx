@@ -54,8 +54,7 @@ export default function CameraView({
           flex: 1,
           objectFit: 'cover',
           backgroundColor: '#000',
-          display: capturedImageData ? 'none' : 'block',
-          transform: 'scale(0.85)'
+          display: capturedImageData ? 'none' : 'block'
         }}
       />
 
