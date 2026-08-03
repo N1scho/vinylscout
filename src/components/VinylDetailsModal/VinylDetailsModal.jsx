@@ -5,8 +5,8 @@
  * Extracted from App.jsx v2.10.0
  */
 
-import React from 'react';
-import { X, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Heart, Settings, ChevronUp } from 'lucide-react';
 import { designSystem, withOpacity } from '../../designsystem';
 
 const conditionGrades = ['Mint', 'NM', 'VG+', 'VG', 'Good', 'Fair', 'Poor'];
@@ -21,6 +21,8 @@ const VinylDetailsModal = ({
   onUpdateVinyl,
   themes
 }) => {
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
+
   if (!selectedVinyl) return null;
 
   const renderTracklist = (tracklist) => {
@@ -94,6 +96,17 @@ const VinylDetailsModal = ({
         ))}
       </div>
     );
+  };
+
+  const getPrimaryGenre = () => {
+    if (!selectedVinyl.genres || selectedVinyl.genres.length === 0) return null;
+    return selectedVinyl.genres[0];
+  };
+
+  const formatValue = () => {
+    if (!selectedVinyl.format) return null;
+    if (Array.isArray(selectedVinyl.format)) return selectedVinyl.format[0];
+    return selectedVinyl.format;
   };
 
   return (
@@ -179,39 +192,180 @@ const VinylDetailsModal = ({
                 color: themes.textSecondary,
                 margin: 0
               }}>
-                {selectedVinyl.artist} • {selectedVinyl.year}
+                {selectedVinyl.artist}
               </p>
             </div>
-            <button
-              data-modal-button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(selectedVinyl.id);
-              }}
+          </div>
+
+          <button
+            data-modal-button
+            onClick={() => setDetailsExpanded(!detailsExpanded)}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: designSystem.spacing.xs,
+              color: themes.primary,
+              cursor: 'pointer',
+              padding: 0,
+              marginBottom: designSystem.spacing.md,
+              fontSize: designSystem.typography.sizes.base
+            }}
+          >
+            <ChevronUp
+              size={designSystem.iconSize.sm}
               style={{
-                padding: designSystem.spacing.sm,
-                minWidth: designSystem.touchTarget.min,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: 'transparent',
-                border: `1px solid ${themes.border}`,
-                borderRadius: designSystem.borderRadius.circle,
-                color: selectedVinyl.isFavorite ? themes.warning : themes.textSecondary,
-                cursor: 'pointer'
+                transform: detailsExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
+                transition: 'transform 0.2s'
+              }}
+            />
+            {detailsExpanded ? 'Hide Details' : 'Show Details'}
+          </button>
+
+          {detailsExpanded && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: designSystem.spacing.md,
+                padding: designSystem.spacing.md,
+                backgroundColor: withOpacity(themes.primary, 0.05),
+                borderRadius: designSystem.borderRadius.md,
+                marginBottom: designSystem.spacing.md
               }}
             >
-              <Heart
-                size={designSystem.iconSize.md}
-                fill={selectedVinyl.isFavorite ? themes.warning : 'none'}
-              />
-            </button>
-          </div>
+              {formatValue() && (
+                <>
+                  <div>
+                    <p style={{
+                      fontSize: designSystem.typography.sizes.xs,
+                      color: themes.textSecondary,
+                      margin: `0 0 ${designSystem.spacing.xs} 0`,
+                      fontWeight: designSystem.typography.weights.semibold
+                    }}>
+                      FORMAT
+                    </p>
+                    <p style={{
+                      fontSize: designSystem.typography.sizes.base,
+                      color: themes.text,
+                      margin: 0
+                    }}>
+                      {formatValue()}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {selectedVinyl.year && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    YEAR
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {selectedVinyl.year}
+                  </p>
+                </div>
+              )}
+
+              {selectedVinyl.country && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    COUNTRY
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {selectedVinyl.country}
+                  </p>
+                </div>
+              )}
+
+              {getPrimaryGenre() && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    GENRE
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {getPrimaryGenre()}
+                  </p>
+                </div>
+              )}
+
+              {selectedVinyl.catalog_number && (
+                <div>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    CATALOG #
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {selectedVinyl.catalog_number}
+                  </p>
+                </div>
+              )}
+
+              {selectedVinyl.label && (
+                <div style={{ gridColumn: formatValue() ? '1 / -1' : '1 / -1' }}>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.xs,
+                    color: themes.textSecondary,
+                    margin: `0 0 ${designSystem.spacing.xs} 0`,
+                    fontWeight: designSystem.typography.weights.semibold
+                  }}>
+                    LABEL
+                  </p>
+                  <p style={{
+                    fontSize: designSystem.typography.sizes.base,
+                    color: themes.text,
+                    margin: 0
+                  }}>
+                    {Array.isArray(selectedVinyl.label) ? selectedVinyl.label[0] : selectedVinyl.label}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {selectedVinyl.lowestPrice !== null && (
             <div
               onClick={() => onOpenValueModal(selectedVinyl)}
               style={{
                 padding: designSystem.spacing.md,
-                backgroundColor: withOpacity(themes.primary, 0.1),
+                backgroundColor: withOpacity('#FFA500', 0.1),
+                border: `2px solid #FFA500`,
                 borderRadius: designSystem.borderRadius.md,
                 marginBottom: designSystem.spacing.md,
                 cursor: 'pointer'
@@ -222,41 +376,124 @@ const VinylDetailsModal = ({
                 color: themes.textSecondary,
                 margin: `0 0 ${designSystem.spacing.xs} 0`
               }}>
-                Current Value
+                Marketplace Price
               </p>
               <p style={{
                 fontSize: designSystem.typography.sizes.xl,
                 fontWeight: designSystem.typography.weights.bold,
-                color: themes.primary,
+                color: themes.text,
                 margin: 0
               }}>
                 ${selectedVinyl.lowestPrice ? selectedVinyl.lowestPrice.toFixed(2) : '0.00'}
               </p>
+              <p style={{
+                fontSize: designSystem.typography.sizes.xs,
+                color: themes.textSecondary,
+                margin: `${designSystem.spacing.xs} 0 0 0`
+              }}>
+                4 available • Lowest price
+              </p>
             </div>
           )}
 
-          <div style={{ marginBottom: designSystem.spacing.md }}>
-            <p style={{
-              fontSize: designSystem.typography.sizes.xs,
-              color: themes.textSecondary,
-              margin: `0 0 ${designSystem.spacing.xs} 0`
-            }}>
-              Label
-            </p>
-            <p style={{
-              fontSize: designSystem.typography.sizes.base,
-              color: themes.text,
-              margin: 0
-            }}>
-              {selectedVinyl.label}
-            </p>
+          <div style={{
+            display: 'flex',
+            gap: designSystem.spacing.sm,
+            marginBottom: designSystem.spacing.md
+          }}>
+            <button
+              data-modal-button
+              onClick={() => onConfirmDelete(selectedVinyl.id)}
+              style={{
+                flex: 1,
+                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: themes.error,
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: designSystem.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: designSystem.typography.sizes.base,
+                fontWeight: designSystem.typography.weights.medium
+              }}
+            >
+              Remove from Collection
+            </button>
+            <button
+              data-modal-button
+              onClick={() => {}}
+              style={{
+                padding: `${designSystem.spacing.md}`,
+                minWidth: designSystem.touchTarget.min,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: withOpacity(themes.textSecondary, 0.1),
+                color: themes.textSecondary,
+                border: `1px solid ${themes.border}`,
+                borderRadius: designSystem.borderRadius.circle,
+                cursor: 'pointer'
+              }}
+            >
+              <Settings size={designSystem.iconSize.md} />
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            gap: designSystem.spacing.sm,
+            marginBottom: designSystem.spacing.md
+          }}>
+            <button
+              data-modal-button
+              onClick={() => {}}
+              style={{
+                flex: 1,
+                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: '#1DB954',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: designSystem.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: designSystem.typography.sizes.base,
+                fontWeight: designSystem.typography.weights.medium,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: designSystem.spacing.xs
+              }}
+            >
+              ♪ Play on Spotify
+            </button>
+            <button
+              data-modal-button
+              onClick={() => {}}
+              style={{
+                flex: 1,
+                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
+                minHeight: designSystem.touchTarget.min,
+                backgroundColor: '#000000',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: designSystem.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: designSystem.typography.sizes.base,
+                fontWeight: designSystem.typography.weights.medium,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: designSystem.spacing.xs
+              }}
+            >
+              ♪ Play on Tidal
+            </button>
           </div>
 
           <div style={{ marginBottom: designSystem.spacing.md }}>
             <p style={{
               fontSize: designSystem.typography.sizes.xs,
               color: themes.textSecondary,
-              margin: `0 0 ${designSystem.spacing.xs} 0`
+              margin: `0 0 ${designSystem.spacing.xs} 0`,
+              fontWeight: designSystem.typography.weights.semibold
             }}>
               Condition
             </p>
@@ -295,108 +532,7 @@ const VinylDetailsModal = ({
             )}
           </div>
 
-          {selectedVinyl.genres && selectedVinyl.genres.length > 0 && (
-            <div style={{ marginBottom: designSystem.spacing.md }}>
-              <p style={{
-                fontSize: designSystem.typography.sizes.xs,
-                color: themes.textSecondary,
-                margin: `0 0 ${designSystem.spacing.xs} 0`
-              }}>
-                Genres
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: designSystem.spacing.xs }}>
-                {selectedVinyl.genres.map(genre => (
-                  <span
-                    key={genre}
-                    style={{
-                      padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
-                      backgroundColor: withOpacity(themes.primary, 0.1),
-                      color: themes.primary,
-                      borderRadius: designSystem.borderRadius.sm,
-                      fontSize: designSystem.typography.sizes.xs
-                    }}
-                  >
-                    {genre}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {selectedVinyl.styles && selectedVinyl.styles.length > 0 && (
-            <div style={{ marginBottom: designSystem.spacing.md }}>
-              <p style={{
-                fontSize: designSystem.typography.sizes.xs,
-                color: themes.textSecondary,
-                margin: `0 0 ${designSystem.spacing.xs} 0`
-              }}>
-                Styles
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: designSystem.spacing.xs }}>
-                {selectedVinyl.styles.map(style => (
-                  <span
-                    key={style}
-                    style={{
-                      padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
-                      backgroundColor: withOpacity(themes.textSecondary, 0.1),
-                      color: themes.textSecondary,
-                      borderRadius: designSystem.borderRadius.sm,
-                      fontSize: designSystem.typography.sizes.xs
-                    }}
-                  >
-                    {style}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {renderTracklist(selectedVinyl.tracklist)}
-
-          <div style={{
-            display: 'flex',
-            gap: designSystem.spacing.sm,
-            marginTop: designSystem.spacing.lg
-          }}>
-            <button
-              data-modal-button
-              onClick={async () => {
-                await onUpdatePrice(selectedVinyl.id);
-              }}
-              style={{
-                flex: 1,
-                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: themes.primary,
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: designSystem.borderRadius.md,
-                cursor: 'pointer',
-                fontSize: designSystem.typography.sizes.base,
-                fontWeight: designSystem.typography.weights.medium
-              }}
-            >
-              Update Price
-            </button>
-            <button
-              data-modal-button
-              onClick={() => onConfirmDelete(selectedVinyl.id)}
-              style={{
-                flex: 1,
-                padding: `${designSystem.spacing.md} ${designSystem.spacing.lg}`,
-                minHeight: designSystem.touchTarget.min,
-                backgroundColor: themes.error,
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: designSystem.borderRadius.md,
-                cursor: 'pointer',
-                fontSize: designSystem.typography.sizes.base,
-                fontWeight: designSystem.typography.weights.medium
-              }}
-            >
-              Remove
-            </button>
-          </div>
         </div>
       </div>
     </div>
