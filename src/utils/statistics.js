@@ -123,7 +123,7 @@ export const calculateCollectionStats = (collection, getPriceChange) => {
   const formatCounts = {};
   const formatValue = {};
   collection.forEach(v => {
-    const format = v.format || v.formats?.[0] || 'Unknown';
+    const format = Array.isArray(v.format) ? v.format[0] : v.format || v.formats?.[0] || 'Unknown';
     formatCounts[format] = (formatCounts[format] || 0) + 1;
     const price = v.price?.value || v.lowestPrice || 0;
     formatValue[format] = (formatValue[format] || 0) + price;

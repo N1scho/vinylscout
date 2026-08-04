@@ -22,8 +22,8 @@ const applyAllFilters = (albums, selectedGenreIds, yearRange, priceRange) => {
   return albums.filter(album => {
     // Must match genre
     if (!selectedSet.has(album.genreId)) return false;
-    // Must be in year range
-    if (album.year && (album.year < yearRange[0] || album.year > yearRange[1])) return false;
+    // Must be in year range (include albums with no year)
+    if (album.year !== undefined && album.year !== null && (album.year < yearRange[0] || album.year > yearRange[1])) return false;
     // Must be in price range
     const price = getAlbumPrice(album);
     if (price < priceRange[0] || price > priceRange[1]) return false;
@@ -187,12 +187,21 @@ export const useDiscoverStore = create(
     }),
     {
       name: 'discover-store',
+      partialize: (state) => ({
+        wishlist: state.wishlist,
+        selectedGenreIds: state.selectedGenreIds,
+        yearRange: state.yearRange,
+        priceRange: state.priceRange,
+        currentAlbumIndex: state.currentAlbumIndex
+      }),
       onRehydrateStorage: () => (state, error) => {
         if (state && !error) {
           state.wishlist = Array.isArray(state.wishlist) ? state.wishlist : [];
           if (!Array.isArray(state.selectedGenreIds)) {
             state.selectedGenreIds = [];
           }
+          state.userClearedGenres = false;
+          state.userClearTimestamp = 0;
         }
       }
     }

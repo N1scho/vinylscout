@@ -661,7 +661,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
-            {view === 'wishlist' && <WishlistView themes={themes} allAlbums={allAlbums} wishlistIds={wishlist} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} />}
+            {view === 'wishlist' && <WishlistView key="wishlist" themes={themes} allAlbums={allAlbums} wishlistIds={wishlist} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
