@@ -21,7 +21,7 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       .filter(Boolean);
   }, [allAlbums, wishlistIds]);
 
-  // Fetch prices for all wishlist items on mount
+  // Fetch prices for all wishlist items on mount/change
   useEffect(() => {
     const fetchAllPrices = async () => {
       for (const item of wishlistItems) {
@@ -44,7 +44,7 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
     if (wishlistItems.length > 0) {
       fetchAllPrices();
     }
-  }, [wishlistItems, priceCache, loadingPrices]);
+  }, [wishlistItems]);
 
   const refreshPrice = async (albumId) => {
     try {
