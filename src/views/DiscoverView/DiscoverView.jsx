@@ -25,7 +25,7 @@ export default function DiscoverView({ themes }) {
     if (allAlbums.length === 0 || (allAlbums.length > 0 && selectedGenreIds.length === 0 && !userClearedGenres)) {
       initializeAlbums(discoverData);
     }
-  }, [allAlbums.length, selectedGenreIds.length, initializeAlbums, userClearedGenres]);
+  }, [allAlbums.length, selectedGenreIds.length, userClearedGenres]);
 
   return (
     <div
