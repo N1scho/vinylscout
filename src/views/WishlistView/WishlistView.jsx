@@ -25,15 +25,20 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
   useEffect(() => {
     const fetchAllPrices = async () => {
       for (const item of wishlistItems) {
-        if (!priceCache[item.id] && !loadingPrices[item.id]) {
+        if (!priceCache.hasOwnProperty(item.id) && !loadingPrices[item.id]) {
           try {
             setLoadingPrices(prev => ({ ...prev, [item.id]: true }));
             const priceData = await fetchPriceInfo(item.id);
             if (priceData) {
               setPriceCache(prev => ({ ...prev, [item.id]: priceData }));
+            } else {
+              // Mark as tried but no price available
+              setPriceCache(prev => ({ ...prev, [item.id]: null }));
             }
           } catch (error) {
-            console.error(`Failed to fetch price for ${item.id}:`, error);
+            console.error(`Failed to fetch price for ${item.id}:`, error.message);
+            // Mark as tried but failed
+            setPriceCache(prev => ({ ...prev, [item.id]: null }));
           } finally {
             setLoadingPrices(prev => ({ ...prev, [item.id]: false }));
           }
@@ -52,9 +57,14 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       const priceData = await fetchPriceInfo(albumId);
       if (priceData) {
         setPriceCache(prev => ({ ...prev, [albumId]: priceData }));
+      } else {
+        // No price available for this item
+        setPriceCache(prev => ({ ...prev, [albumId]: null }));
       }
     } catch (error) {
-      console.error(`Failed to refresh price for ${albumId}:`, error);
+      console.error(`Failed to refresh price for ${albumId}:`, error.message);
+      // Mark as tried but failed so we don't retry immediately
+      setPriceCache(prev => ({ ...prev, [albumId]: null }));
     } finally {
       setLoadingPrices(prev => ({ ...prev, [albumId]: false }));
     }
