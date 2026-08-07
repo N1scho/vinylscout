@@ -24,6 +24,7 @@ import { fetchMissingCovers, fetchCoverFromDiscogs } from './utils/fetchMissingC
 // Services
 import * as StorageService from './services/storageService';
 import { savePriceRecord } from './services/priceHistoryService';
+import discoverData from './data/discoverAlbums.json';
 
 // Zustand Stores
 import { useCollectionStore } from './stores/collectionStore';
@@ -177,6 +178,14 @@ export default function App() {
   const triggerImportInput = () => {
     fileInputRef.current?.click();
   };
+
+  // Initialize discover data on app mount so wishlist works on reload
+  useEffect(() => {
+    const discover = useDiscoverStore.getState();
+    if (discover.allAlbums.length === 0) {
+      discover.initializeAlbums(discoverData);
+    }
+  }, []);
 
   // Load Google Fonts Inter & Add CSS Animations (once on mount)
   useEffect(() => {

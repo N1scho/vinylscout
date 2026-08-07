@@ -1,14 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { Heart, Trash2, Plus } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Heart, Trash2, Plus, RotateCcw } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import { useCollectionStore } from '../../stores/collectionStore';
+import { fetchPriceInfo } from '../../services/discogsService';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
 
 export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
   const { toggleWishlist } = useDiscoverStore();
   const [selectedAlbumIndex, setSelectedAlbumIndex] = useState(null);
+  const [priceCache, setPriceCache] = useState({});
+  const [loadingPrices, setLoadingPrices] = useState({});
 
   const wishlistItems = useMemo(() => {
     if (!allAlbums || !wishlistIds) return [];
@@ -17,6 +20,45 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       .map(id => albumMap.get(String(id)))
       .filter(Boolean);
   }, [allAlbums, wishlistIds]);
+
+  // Fetch prices for all wishlist items on mount
+  useEffect(() => {
+    const fetchAllPrices = async () => {
+      for (const item of wishlistItems) {
+        if (!priceCache[item.id] && !loadingPrices[item.id]) {
+          try {
+            setLoadingPrices(prev => ({ ...prev, [item.id]: true }));
+            const priceData = await fetchPriceInfo(item.id);
+            if (priceData) {
+              setPriceCache(prev => ({ ...prev, [item.id]: priceData }));
+            }
+          } catch (error) {
+            console.error(`Failed to fetch price for ${item.id}:`, error);
+          } finally {
+            setLoadingPrices(prev => ({ ...prev, [item.id]: false }));
+          }
+        }
+      }
+    };
+
+    if (wishlistItems.length > 0) {
+      fetchAllPrices();
+    }
+  }, [wishlistItems, priceCache, loadingPrices]);
+
+  const refreshPrice = async (albumId) => {
+    try {
+      setLoadingPrices(prev => ({ ...prev, [albumId]: true }));
+      const priceData = await fetchPriceInfo(albumId);
+      if (priceData) {
+        setPriceCache(prev => ({ ...prev, [albumId]: priceData }));
+      }
+    } catch (error) {
+      console.error(`Failed to refresh price for ${albumId}:`, error);
+    } finally {
+      setLoadingPrices(prev => ({ ...prev, [albumId]: false }));
+    }
+  };
 
   const handleAddToCollection = (item) => {
     if (onViewDetails) {
@@ -216,6 +258,80 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
                   {item.year}
                 </p>
               )}
+
+              {/* Price and Refresh Button */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: designSystem.spacing.xs
+                }}
+              >
+                <div>
+                  {priceCache[item.id] ? (
+                    <p
+                      style={{
+                        fontSize: designSystem.typography.sizes.xs,
+                        color: themes.primary,
+                        fontWeight: 600,
+                        margin: 0
+                      }}
+                    >
+                      {priceCache[item.id].currency} {
+                        typeof priceCache[item.id].value === 'number'
+                          ? priceCache[item.id].value.toFixed(2)
+                          : '—'
+                      }
+                    </p>
+                  ) : loadingPrices[item.id] ? (
+                    <p
+                      style={{
+                        fontSize: designSystem.typography.sizes.xs,
+                        color: themes.textTertiary,
+                        margin: 0
+                      }}
+                    >
+                      Loading...
+                    </p>
+                  ) : (
+                    <p
+                      style={{
+                        fontSize: designSystem.typography.sizes.xs,
+                        color: themes.textTertiary,
+                        margin: 0
+                      }}
+                    >
+                      —
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    refreshPrice(item.id);
+                  }}
+                  disabled={loadingPrices[item.id]}
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    padding: 0,
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: themes.primary,
+                    cursor: loadingPrices[item.id] ? 'not-allowed' : 'pointer',
+                    opacity: loadingPrices[item.id] ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: designSystem.transitions.fast,
+                    animation: loadingPrices[item.id] ? 'spin 1s linear infinite' : 'none'
+                  }}
+                  title="Refresh price"
+                >
+                  <RotateCcw size={14} />
+                </button>
+              </div>
 
               {/* Add to Collection Button */}
               <button
