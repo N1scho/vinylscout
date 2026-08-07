@@ -186,7 +186,37 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
                   objectFit: 'cover'
                 }}
               />
-              {/* Remove from Wishlist */}
+              {/* Refresh Price Button (top-left) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  refreshPrice(item.id);
+                }}
+                disabled={loadingPrices[item.id]}
+                style={{
+                  position: 'absolute',
+                  top: designSystem.spacing.sm,
+                  left: designSystem.spacing.sm,
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: themes.primary,
+                  border: 'none',
+                  color: 'white',
+                  cursor: loadingPrices[item.id] ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: designSystem.transitions.fast,
+                  opacity: loadingPrices[item.id] ? 0.6 : 1,
+                  animation: loadingPrices[item.id] ? 'spin 1s linear infinite' : 'none'
+                }}
+                title="Refresh price"
+              >
+                <RotateCcw size={16} />
+              </button>
+
+              {/* Remove from Wishlist (top-right) */}
               <button
                 onClick={() => toggleWishlist(item.id)}
                 style={{
@@ -211,64 +241,53 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
               </button>
             </div>
 
-            {/* Info */}
-            <div
-              style={{
-                padding: designSystem.spacing.lg,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: designSystem.spacing.sm,
-                flex: 1
-              }}
-            >
-              <h3
+              {/* Refresh Button (top-left, over image area) */}
+              {/* Positioned absolutely on parent card later */}
+
+              {/* Info */}
+              <div
                 style={{
-                  fontSize: designSystem.typography.sizes.sm,
-                  fontWeight: 600,
-                  color: themes.text,
-                  margin: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical'
+                  padding: designSystem.spacing.lg,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: designSystem.spacing.sm,
+                  flex: 1
                 }}
               >
-                {item.album || item.title}
-              </h3>
+                <h3
+                  style={{
+                    fontSize: designSystem.typography.sizes.sm,
+                    fontWeight: 600,
+                    color: themes.text,
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}
+                >
+                  {item.album || item.title}
+                </h3>
 
-              <p
-                style={{
-                  fontSize: designSystem.typography.sizes.xs,
-                  color: themes.textSecondary,
-                  margin: 0
-                }}
-              >
-                {item.artist || 'Unknown'}
-              </p>
-
-              {item.year && (
                 <p
                   style={{
                     fontSize: designSystem.typography.sizes.xs,
                     color: themes.textSecondary,
-                    margin: `${designSystem.spacing.xs} 0 0 0`
+                    margin: 0
                   }}
                 >
-                  {item.year}
+                  {item.artist || 'Unknown'}
                 </p>
-              )}
 
-              {/* Price and Refresh Button */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginTop: designSystem.spacing.xs
-                }}
-              >
-                <div>
+                {/* Price */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: designSystem.spacing.sm
+                  }}
+                >
                   {priceCache[item.id] ? (
                     <p
                       style={{
@@ -306,63 +325,49 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
                     </p>
                   )}
                 </div>
+
+                {item.year && (
+                  <p
+                    style={{
+                      fontSize: designSystem.typography.sizes.xs,
+                      color: themes.textSecondary,
+                      margin: 0
+                    }}
+                  >
+                    {item.year}
+                  </p>
+                )}
+
+                {/* Add to Collection Button */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    refreshPrice(item.id);
-                  }}
-                  disabled={loadingPrices[item.id]}
+                  onClick={() => handleAddToCollection(item)}
                   style={{
-                    width: '24px',
-                    height: '24px',
-                    padding: 0,
-                    backgroundColor: 'transparent',
+                    marginTop: 'auto',
+                    padding: designSystem.spacing.sm,
+                    backgroundColor: themes.primary,
+                    color: themes.buttonText || 'white',
                     border: 'none',
-                    color: themes.primary,
-                    cursor: loadingPrices[item.id] ? 'not-allowed' : 'pointer',
-                    opacity: loadingPrices[item.id] ? 0.5 : 1,
+                    borderRadius: designSystem.borderRadius.sm,
+                    cursor: 'pointer',
+                    fontSize: designSystem.typography.sizes.xs,
+                    fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: designSystem.transitions.fast,
-                    animation: loadingPrices[item.id] ? 'spin 1s linear infinite' : 'none'
+                    gap: designSystem.spacing.xs,
+                    transition: designSystem.transitions.fast
                   }}
-                  title="Refresh price"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
                 >
-                  <RotateCcw size={14} />
+                  <Plus size={14} />
+                  Add to Collection
                 </button>
               </div>
-
-              {/* Add to Collection Button */}
-              <button
-                onClick={() => handleAddToCollection(item)}
-                style={{
-                  marginTop: 'auto',
-                  padding: designSystem.spacing.sm,
-                  backgroundColor: themes.primary,
-                  color: themes.buttonText || 'white',
-                  border: 'none',
-                  borderRadius: designSystem.borderRadius.sm,
-                  cursor: 'pointer',
-                  fontSize: designSystem.typography.sizes.xs,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: designSystem.spacing.xs,
-                  transition: designSystem.transitions.fast
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.9';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                }}
-              >
-                <Plus size={14} />
-                Add to Collection
-              </button>
-            </div>
           </div>
         ))}
       </div>
