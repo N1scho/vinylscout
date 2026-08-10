@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus } from 'lucide-react';
+import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { getPriceHistory } from '../../services/priceHistoryService';
@@ -217,13 +217,11 @@ const VinylCard = React.memo(function VinylCard({
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
-              gap: '4px',
+              gap: '6px',
               alignItems: 'center',
-              backgroundColor: 'rgba(0,0,0,0.6)',
+              backgroundColor: 'rgba(0,0,0,0.7)',
               padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
-              borderRadius: designSystem.borderRadius.circle,
-              color: 'white',
-              fontSize: '11px'
+              borderRadius: designSystem.borderRadius.circle
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -236,13 +234,15 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === 0 ? 0.4 : 1,
-                padding: 0,
-                fontSize: '12px'
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              ◀
+              <ChevronLeft size={16} />
             </button>
-            <span style={{ minWidth: '20px', textAlign: 'center' }}>
+            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '11px', color: 'white' }}>
               {currentImageIndex + 1}/{images.length}
             </span>
             <button
@@ -254,11 +254,13 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === images.length - 1 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === images.length - 1 ? 0.4 : 1,
-                padding: 0,
-                fontSize: '12px'
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              ▶
+              <ChevronRight size={16} />
             </button>
           </div>
         )}
