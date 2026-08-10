@@ -274,6 +274,24 @@ async function parseGenreCovers() {
     const sortedGenres = Array.from(genreMap.values()).sort((a, b) => a.id.localeCompare(b.id));
     genres.push(...sortedGenres);
 
+    // Add the 13 new genres that don't have Excel files
+    const newGenresToAdd = [
+      { id: "81", name: "Psychedelic Pop", albumCount: 75 },
+      { id: "82", name: "Cumbia", albumCount: 75 },
+      { id: "83", name: "Reggaeton", albumCount: 75 },
+      { id: "84", name: "Bachata", albumCount: 75 },
+      { id: "85", name: "Merengue", albumCount: 75 },
+      { id: "86", name: "Timba", albumCount: 75 },
+      { id: "87", name: "Forró", albumCount: 75 },
+      { id: "88", name: "Champeta", albumCount: 75 },
+      { id: "89", name: "Tango", albumCount: 75 },
+      { id: "90", name: "Flamenco", albumCount: 75 },
+      { id: "91", name: "Fado", albumCount: 75 },
+      { id: "92", name: "Raï", albumCount: 75 },
+      { id: "93", name: "Tuvan Throat Singing", albumCount: 75 }
+    ];
+    genres.push(...newGenresToAdd);
+
     // Create output JSON
     const output = {
       genres,

@@ -394,6 +394,71 @@
       "id": "80",
       "name": "Salsa",
       "albumCount": 75
+    },
+    {
+      "id": "81",
+      "name": "Psychedelic Pop",
+      "albumCount": 75
+    },
+    {
+      "id": "82",
+      "name": "Cumbia",
+      "albumCount": 75
+    },
+    {
+      "id": "83",
+      "name": "Reggaeton",
+      "albumCount": 75
+    },
+    {
+      "id": "84",
+      "name": "Bachata",
+      "albumCount": 75
+    },
+    {
+      "id": "85",
+      "name": "Merengue",
+      "albumCount": 75
+    },
+    {
+      "id": "86",
+      "name": "Timba",
+      "albumCount": 75
+    },
+    {
+      "id": "87",
+      "name": "Forró",
+      "albumCount": 75
+    },
+    {
+      "id": "88",
+      "name": "Champeta",
+      "albumCount": 75
+    },
+    {
+      "id": "89",
+      "name": "Tango",
+      "albumCount": 75
+    },
+    {
+      "id": "90",
+      "name": "Flamenco",
+      "albumCount": 75
+    },
+    {
+      "id": "91",
+      "name": "Fado",
+      "albumCount": 75
+    },
+    {
+      "id": "92",
+      "name": "Raï",
+      "albumCount": 75
+    },
+    {
+      "id": "93",
+      "name": "Tuvan Throat Singing",
+      "albumCount": 75
     }
   ],
   "albums": [
