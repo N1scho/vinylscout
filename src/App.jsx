@@ -598,6 +598,8 @@ export default function App() {
         onCustomColorChange={settings.updateCustomColor}
         selectedShops={settings.selectedShops}
         onSelectedShopsChange={settings.setSelectedShops}
+        designTheme={settings.designTheme}
+        onDesignThemeChange={settings.setDesignTheme}
         onExportCollection={exportCollection}
         onExportCollectionAsCSV={exportCollectionAsCSV}
         onImportCollection={handleImportCollection}

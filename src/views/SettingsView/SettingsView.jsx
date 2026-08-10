@@ -28,6 +28,10 @@ export default function SettingsView({
   selectedShops,
   onSelectedShopsChange,
 
+  // Design Theme
+  designTheme,
+  onDesignThemeChange,
+
   // Actions
   onExportCollection,
   onExportCollectionAsCSV,
@@ -131,6 +135,55 @@ export default function SettingsView({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Design Theme Selection */}
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontSize: designSystem.typography.sizes.sm,
+              fontWeight: designSystem.typography.weights.medium,
+              color: themes.text,
+              marginBottom: designSystem.spacing.sm
+            }}
+          >
+            Design Theme
+          </label>
+          <div
+            style={{
+              display: 'flex',
+              gap: designSystem.spacing.sm
+            }}
+          >
+            {['subtle', 'bold', 'hybrid'].map((themeOption) => (
+              <button
+                key={themeOption}
+                onClick={() => onDesignThemeChange(themeOption)}
+                style={{
+                  flex: 1,
+                  padding: designSystem.spacing.md,
+                  backgroundColor: designTheme === themeOption
+                    ? themes.primary
+                    : themes.surface,
+                  color: designTheme === themeOption
+                    ? '#ffffff'
+                    : themes.text,
+                  border: designTheme === themeOption
+                    ? `2px solid ${themes.primary}`
+                    : `1px solid ${themes.border}`,
+                  borderRadius: designSystem.borderRadius.md,
+                  cursor: 'pointer',
+                  fontSize: designSystem.typography.sizes.sm,
+                  fontWeight: designSystem.typography.weights.medium,
+                  transition: 'all 200ms ease',
+                  textTransform: 'capitalize'
+                }}
+              >
+                {themeOption}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Custom Colors (only for custom theme) */}
