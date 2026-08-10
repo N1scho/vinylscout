@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { designSystem } from '../../designsystem';
 import RangeSlider from '../../components/RangeSlider';
 
@@ -17,6 +18,32 @@ export default function GenreSelector({ themes }) {
     shuffle
   } = useDiscoverStore();
 
+  const designTheme = useSettingsStore(s => s.designTheme);
+
+  const getGlassStyle = () => {
+    const glass = designSystem.glassMorphism[designTheme];
+    if (designTheme === 'hybrid') {
+      // Hybrid: only cards get glass, keep container solid
+      return {
+        padding: '16px',
+        borderBottom: `1px solid ${themes.border}`,
+        backgroundColor: themes.surface
+      };
+    }
+    // Subtle and Bold: apply glass to container
+    const isLight = themes.background === '#ffffff' || themes.background === '#fff';
+    const bgRGB = isLight ? '255, 255, 255' : '30, 30, 30';
+    const glowRGB = isLight ? '0, 0, 0' : '0, 183, 255';
+    return {
+      padding: '16px',
+      background: `rgba(${bgRGB}, ${glass.bgOpacity})`,
+      backdropFilter: `blur(${glass.blur})`,
+      borderRadius: glass.radius,
+      border: `1px solid ${glass.borderColor}`,
+      boxShadow: `0 8px 32px rgba(${glowRGB}, ${glass.glowAlpha})`
+    };
+  };
+
   const handleGenreToggle = (genreId) => {
     const newSelected = new Set(selectedGenreIds);
     if (newSelected.has(genreId)) {
@@ -30,11 +57,7 @@ export default function GenreSelector({ themes }) {
   const selectAllCount = useMemo(() => selectedGenreIds.length === genres.length, [selectedGenreIds.length, genres.length]);
 
   return (
-    <div style={{
-      padding: '16px',
-      borderBottom: `1px solid ${themes.border}`,
-      backgroundColor: themes.surface
-    }}>
+    <div style={getGlassStyle()}>
       {/* Control Buttons */}
       <div style={{
         display: 'flex',
