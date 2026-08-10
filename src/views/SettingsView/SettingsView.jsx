@@ -406,11 +406,21 @@ export default function SettingsView({
         </div>
 
         {/* Refresh & Clear Cache */}
-        <div style={{ display: 'flex', gap: designSystem.spacing.sm }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: designSystem.spacing.sm }}>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              onNotify?.('Refreshing app...', 'info');
+              if ('caches' in window) {
+                caches.keys().then(names => {
+                  names.forEach(name => caches.delete(name));
+                });
+              }
+              setTimeout(() => {
+                window.location.href = window.location.href;
+              }, 200);
+            }}
             style={{
-              flex: 1,
+              width: '100%',
               padding: designSystem.spacing.md,
               backgroundColor: themes.primary,
               color: '#ffffff',
@@ -422,12 +432,12 @@ export default function SettingsView({
               minHeight: designSystem.touchTarget.min
             }}
           >
-            Refresh App
+            Refresh App (keep collection)
           </button>
           <button
             onClick={handleClearCache}
             style={{
-              flex: 1,
+              width: '100%',
               padding: designSystem.spacing.md,
               backgroundColor: '#dc2626',
               color: '#ffffff',
@@ -439,7 +449,7 @@ export default function SettingsView({
               minHeight: designSystem.touchTarget.min
             }}
           >
-            Clear Cache & Storage
+            Clear All Data & Reload
           </button>
         </div>
 
