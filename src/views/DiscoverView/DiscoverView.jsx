@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import discoverData from '../../data/discoverAlbums.json';
 import { designSystem } from '../../designsystem';
+import SubtabBar from '../../components/SubtabBar';
 import GenreSelector from './GenreSelector';
 import AlbumGallery from './AlbumGallery';
 
 export default function DiscoverView({ themes }) {
+  const [discoverySubTab, setDiscoverySubTab] = useState('filter');
   const {
     allAlbums,
     selectedGenreIds,
@@ -41,8 +43,17 @@ export default function DiscoverView({ themes }) {
         paddingBottom: `calc(${designSystem.spacing.nav} + ${designSystem.spacing.md})`
       }}
     >
-      <GenreSelector themes={themes} />
-      <AlbumGallery themes={themes} />
+      <SubtabBar
+        currentTab={discoverySubTab}
+        onTabChange={setDiscoverySubTab}
+        themes={themes}
+      />
+      {discoverySubTab === 'filter' && (
+        <GenreSelector themes={themes} />
+      )}
+      {discoverySubTab === 'discover' && (
+        <AlbumGallery themes={themes} />
+      )}
     </div>
   );
 }
