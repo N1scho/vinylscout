@@ -1,15 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Heart, Trash2, Plus, RotateCcw } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { useDiscoverStore } from '../../stores/discoverStore';
-import { useCollectionStore } from '../../stores/collectionStore';
-import { fetchPriceInfo } from '../../services/discogsService';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
+import { fetchPriceInfo } from '../../services/discogsService';
 
 export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
   const { toggleWishlist } = useDiscoverStore();
-  const [selectedAlbumIndex, setSelectedAlbumIndex] = useState(null);
   const [priceCache, setPriceCache] = useState({});
   const [loadingPrices, setLoadingPrices] = useState({});
 
@@ -32,12 +29,10 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
             if (priceData) {
               setPriceCache(prev => ({ ...prev, [item.id]: priceData }));
             } else {
-              // Mark as tried but no price available
               setPriceCache(prev => ({ ...prev, [item.id]: null }));
             }
           } catch (error) {
             console.error(`Failed to fetch price for ${item.id}:`, error.message);
-            // Mark as tried but failed
             setPriceCache(prev => ({ ...prev, [item.id]: null }));
           } finally {
             setLoadingPrices(prev => ({ ...prev, [item.id]: false }));
@@ -58,21 +53,13 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       if (priceData) {
         setPriceCache(prev => ({ ...prev, [albumId]: priceData }));
       } else {
-        // No price available for this item
         setPriceCache(prev => ({ ...prev, [albumId]: null }));
       }
     } catch (error) {
       console.error(`Failed to refresh price for ${albumId}:`, error.message);
-      // Mark as tried but failed so we don't retry immediately
       setPriceCache(prev => ({ ...prev, [albumId]: null }));
     } finally {
       setLoadingPrices(prev => ({ ...prev, [albumId]: false }));
-    }
-  };
-
-  const handleAddToCollection = (item) => {
-    if (onViewDetails) {
-      onViewDetails(item);
     }
   };
 
@@ -150,235 +137,18 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
         }}
       >
         {wishlistItems.map((item) => (
-          <div
+          <VinylCard
             key={item.id}
-            onClick={() => handleAddToCollection(item)}
-            style={{
-              position: 'relative',
-              backgroundColor: themes.surface,
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: designSystem.shadows.md,
-              border: `1px solid ${themes.border}`,
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer',
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.02)';
-              e.currentTarget.style.boxShadow = designSystem.shadows.lg;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = designSystem.shadows.md;
-            }}
-          >
-            {/* Image */}
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                paddingTop: '100%',
-                backgroundColor: themes.surfaceVariant,
-                overflow: 'hidden'
-              }}
-            >
-              <img
-                src={item.coverUrl || item.cover_image || item.thumb || '/placeholder.jpg'}
-                alt={item.album || item.title}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-              />
-              {/* Refresh Price Button (top-left) */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  refreshPrice(item.id);
-                }}
-                disabled={loadingPrices[item.id]}
-                style={{
-                  position: 'absolute',
-                  top: designSystem.spacing.sm,
-                  left: designSystem.spacing.sm,
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: themes.primary,
-                  border: 'none',
-                  color: 'white',
-                  cursor: loadingPrices[item.id] ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: designSystem.transitions.fast,
-                  opacity: loadingPrices[item.id] ? 0.6 : 1,
-                  animation: loadingPrices[item.id] ? 'spin 1s linear infinite' : 'none'
-                }}
-                title="Refresh price"
-              >
-                <RotateCcw size={16} />
-              </button>
-
-              {/* Remove from Wishlist (top-right) */}
-              <button
-                onClick={() => toggleWishlist(item.id)}
-                style={{
-                  position: 'absolute',
-                  top: designSystem.spacing.sm,
-                  right: designSystem.spacing.sm,
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: themes.error,
-                  border: 'none',
-                  color: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: designSystem.transitions.fast
-                }}
-                title="Remove from Wishlist"
-              >
-                <Heart size={16} fill="white" />
-              </button>
-            </div>
-
-              {/* Refresh Button (top-left, over image area) */}
-              {/* Positioned absolutely on parent card later */}
-
-              {/* Info */}
-              <div
-                style={{
-                  padding: designSystem.spacing.lg,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: designSystem.spacing.sm,
-                  flex: 1
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: designSystem.typography.sizes.sm,
-                    fontWeight: 600,
-                    color: themes.text,
-                    margin: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                  }}
-                >
-                  {item.album || item.title}
-                </h3>
-
-                <p
-                  style={{
-                    fontSize: designSystem.typography.sizes.xs,
-                    color: themes.textSecondary,
-                    margin: 0
-                  }}
-                >
-                  {item.artist || 'Unknown'}
-                </p>
-
-                {/* Price */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: designSystem.spacing.sm
-                  }}
-                >
-                  {priceCache[item.id] ? (
-                    <p
-                      style={{
-                        fontSize: designSystem.typography.sizes.xs,
-                        color: themes.primary,
-                        fontWeight: 600,
-                        margin: 0
-                      }}
-                    >
-                      {priceCache[item.id].currency} {
-                        typeof priceCache[item.id].value === 'number'
-                          ? priceCache[item.id].value.toFixed(2)
-                          : '—'
-                      }
-                    </p>
-                  ) : loadingPrices[item.id] ? (
-                    <p
-                      style={{
-                        fontSize: designSystem.typography.sizes.xs,
-                        color: themes.textTertiary,
-                        margin: 0
-                      }}
-                    >
-                      Loading...
-                    </p>
-                  ) : (
-                    <p
-                      style={{
-                        fontSize: designSystem.typography.sizes.xs,
-                        color: themes.textTertiary,
-                        margin: 0
-                      }}
-                    >
-                      —
-                    </p>
-                  )}
-                </div>
-
-                {item.year && (
-                  <p
-                    style={{
-                      fontSize: designSystem.typography.sizes.xs,
-                      color: themes.textSecondary,
-                      margin: 0
-                    }}
-                  >
-                    {item.year}
-                  </p>
-                )}
-
-                {/* Add to Collection Button */}
-                <button
-                  onClick={() => handleAddToCollection(item)}
-                  style={{
-                    marginTop: 'auto',
-                    padding: designSystem.spacing.sm,
-                    backgroundColor: themes.primary,
-                    color: themes.buttonText || 'white',
-                    border: 'none',
-                    borderRadius: designSystem.borderRadius.sm,
-                    cursor: 'pointer',
-                    fontSize: designSystem.typography.sizes.xs,
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: designSystem.spacing.xs,
-                    transition: designSystem.transitions.fast
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '0.9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '1';
-                  }}
-                >
-                  <Plus size={14} />
-                  Add to Collection
-                </button>
-              </div>
-          </div>
+            vinyl={item}
+            price={priceCache[item.id] || null}
+            isRefreshing={loadingPrices[item.id]}
+            inCollection={false}
+            onRefreshPrice={() => refreshPrice(item.id)}
+            onRemove={() => toggleWishlist(item.id)}
+            onViewDetails={() => onViewDetails(item)}
+            onAddToCollection={() => onAddToCollection(item)}
+            themes={themes}
+          />
         ))}
       </div>
     </div>
