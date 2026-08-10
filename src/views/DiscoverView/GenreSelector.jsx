@@ -31,7 +31,7 @@ export default function GenreSelector({ themes }) {
       };
     }
     // Subtle and Bold: apply glass to container
-    const isLight = themes.background === '#ffffff' || themes.background === '#fff';
+    const isLight = parseInt(themes.background.slice(1, 3), 16) >= 128;
     const bgRGB = isLight ? '255, 255, 255' : '30, 30, 30';
     const glowRGB = isLight ? '0, 0, 0' : '0, 183, 255';
     return {
