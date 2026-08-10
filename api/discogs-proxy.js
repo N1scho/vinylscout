@@ -20,12 +20,23 @@ export default async function handler(req, res) {
 
   const { endpoint, params } = req.body || {};
 
+  console.log('[discogs-proxy] Received endpoint:', endpoint, 'Type:', typeof endpoint);
+  console.log('[discogs-proxy] Params:', params);
+
+  const isAllowed = ALLOWED_ENDPOINTS.some((re) => re.test(endpoint));
+  console.log('[discogs-proxy] Allowed?', isAllowed);
+
   if (
     !endpoint ||
     typeof endpoint !== 'string' ||
-    !ALLOWED_ENDPOINTS.some((re) => re.test(endpoint))
+    !isAllowed
   ) {
-    return res.status(400).json({ error: 'Endpoint not allowed', endpoint });
+    console.error('[discogs-proxy] REJECTED. Endpoint:', endpoint, 'Regex tests:', ALLOWED_ENDPOINTS.map((re, i) => ({ regex: re.source, matches: re.test(endpoint) })));
+    return res.status(400).json({
+      error: 'Endpoint not allowed',
+      endpoint,
+      allowed: ALLOWED_ENDPOINTS.map(re => re.source)
+    });
   }
 
   const token = process.env.DISCOGS_TOKEN;
