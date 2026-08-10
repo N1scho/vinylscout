@@ -14,7 +14,15 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
     if (!allAlbums || !wishlistIds) return [];
     const albumMap = new Map(allAlbums.map(a => [String(a.id), a]));
     return wishlistIds
-      .map(id => albumMap.get(String(id)))
+      .map(id => {
+        const item = albumMap.get(String(id));
+        if (!item) return null;
+        return {
+          ...item,
+          cover_image: item.coverUrl || item.cover_image,
+          title: item.album || item.title
+        };
+      })
       .filter(Boolean);
   }, [allAlbums, wishlistIds]);
 
