@@ -42,6 +42,7 @@ export const useSettingsStore = create(
         warning: '#ff9800'
       },
       selectedShops: ['Discogs Marketplace'],
+      designTheme: 'subtle', // 'subtle' | 'bold' | 'hybrid'
 
       // Computed: Get current theme object
       getThemes: () => {
@@ -86,6 +87,8 @@ export const useSettingsStore = create(
           console.error('Failed to save shops:', e);
         }
       },
+
+      setDesignTheme: (designTheme) => set({ designTheme }),
       }),
       {
         name: 'vinyl-settings-storage',
@@ -99,6 +102,7 @@ export const useSettingsStore = create(
           theme: state.theme,
           customColors: state.customColors,
           selectedShops: state.selectedShops,
+          designTheme: state.designTheme,
         }),
       }
     ),
