@@ -181,6 +181,13 @@ export const getDiscogsAlbumMetadata = async (artist, album) => {
     // Fetch full release details to get all images
     try {
       const releaseDetails = await proxyRequest(`/releases/${result.id}`);
+      console.warn(`[Discogs] Release ${result.id} response keys:`, {
+        has_images: !!releaseDetails?.images,
+        images_array: releaseDetails?.images ? `${releaseDetails.images.length} items` : 'null',
+        image_sample: releaseDetails?.images?.[0],
+        all_keys: Object.keys(releaseDetails || {}).slice(0, 20)
+      });
+
       if (releaseDetails?.images && Array.isArray(releaseDetails.images)) {
         images = releaseDetails.images
           .filter(img => img.uri)
