@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import { getDiscogsAlbumMetadata, fetchPriceInfo } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 export default function AlbumGallery({ themes }) {
   const {
@@ -21,8 +22,35 @@ export default function AlbumGallery({ themes }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const containerRef = useRef(null);
 
+  const designTheme = useSettingsStore(s => s.designTheme);
+
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
   const genreName = currentAlbum && genres.find(g => g.id === currentAlbum.genreId)?.name;
+
+  // Get glass morphism styles based on current design theme
+  const getCardGlassStyle = () => {
+    const glass = designSystem.glassMorphism[designTheme];
+    const isDarkBg = themes.background && parseInt(themes.background.slice(1, 3), 16) < 128;
+
+    if (designTheme === 'hybrid') {
+      // Hybrid: subtle glass effect on cards
+      return {
+        background: `rgba(${isDarkBg ? '30, 30, 30' : '255, 255, 255'}, 0.85)`,
+        backdropFilter: `blur(${glass.cardBlur})`,
+        borderRadius: glass.radius,
+        border: `1px solid rgba(255, 255, 255, 0.2)`
+      };
+    }
+
+    // Subtle and Bold: apply their respective glass settings
+    return {
+      background: `rgba(${isDarkBg ? '30, 30, 30' : '255, 255, 255'}, ${glass.bgOpacity})`,
+      backdropFilter: `blur(${glass.blur})`,
+      borderRadius: glass.radius,
+      border: `1px solid ${glass.borderColor}`,
+      boxShadow: `0 8px 32px rgba(${isDarkBg ? '0, 183, 255' : '0, 0, 0'}, ${glass.glowAlpha})`
+    };
+  };
 
   // Keyboard navigation (MUST be before conditional return)
   useEffect(() => {
@@ -139,16 +167,14 @@ export default function AlbumGallery({ themes }) {
         <div style={{
           width: '280px',
           height: '280px',
-          borderRadius: '12px',
-          backgroundColor: themes.border,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           overflow: 'hidden',
-          boxShadow: `0 4px 12px ${themes.primary}20`,
           cursor: 'grab',
           userSelect: 'none',
-          position: 'relative'
+          position: 'relative',
+          ...getCardGlassStyle()
         }}>
           {/* Use Discogs cover if available, fallback to local */}
           <img
