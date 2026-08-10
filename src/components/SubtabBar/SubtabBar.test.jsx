@@ -46,4 +46,48 @@ describe('SubtabBar', () => {
     await userEvent.click(screen.getByText('discover'));
     expect(mockOnChange).toHaveBeenCalledWith('discover');
   });
+
+  it('meets the 50px minimum touch-target height on tab buttons', () => {
+    render(
+      <SubtabBar currentTab="filter" onTabChange={() => {}} themes={mockThemes} />
+    );
+    expect(screen.getByText('filter')).toHaveStyle('minHeight: 50px');
+    expect(screen.getByText('discover')).toHaveStyle('minHeight: 50px');
+  });
+
+  it('renders without crashing for the bold design theme', () => {
+    useSettingsStore.mockReturnValue('bold');
+    render(
+      <SubtabBar currentTab="filter" onTabChange={() => {}} themes={mockThemes} />
+    );
+    expect(screen.getByText('filter')).toBeInTheDocument();
+    expect(screen.getByText('discover')).toBeInTheDocument();
+  });
+
+  it('renders without crashing for the hybrid design theme', () => {
+    useSettingsStore.mockReturnValue('hybrid');
+    render(
+      <SubtabBar currentTab="filter" onTabChange={() => {}} themes={mockThemes} />
+    );
+    expect(screen.getByText('filter')).toBeInTheDocument();
+    expect(screen.getByText('discover')).toBeInTheDocument();
+  });
+
+  it('renders using the light-theme glass branch for a full 6-digit white background', () => {
+    const lightThemes = { ...mockThemes, background: '#ffffff' };
+    render(
+      <SubtabBar currentTab="filter" onTabChange={() => {}} themes={lightThemes} />
+    );
+    expect(screen.getByText('filter')).toBeInTheDocument();
+    expect(screen.getByText('discover')).toBeInTheDocument();
+  });
+
+  it('renders using the dark-theme glass branch for a dark background', () => {
+    const darkThemes = { ...mockThemes, background: '#1a1a1a' };
+    render(
+      <SubtabBar currentTab="filter" onTabChange={() => {}} themes={darkThemes} />
+    );
+    expect(screen.getByText('filter')).toBeInTheDocument();
+    expect(screen.getByText('discover')).toBeInTheDocument();
+  });
 });
