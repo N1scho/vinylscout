@@ -63,6 +63,34 @@ export const designSystem = {
   },
 
   // ============================================
+  // GLASS MORPHISM - Frosted glass effects
+  // ============================================
+  glassMorphism: {
+    subtle: {
+      blur: '12px',
+      radius: '12px',
+      bgOpacity: 0.85,
+      glowAlpha: 0.2,
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      description: 'Refined, minimal, readable'
+    },
+    bold: {
+      blur: '20px',
+      radius: '16px',
+      bgOpacity: 0.75,
+      glowAlpha: 0.4,
+      borderColor: 'rgba(255, 255, 255, 0.25)',
+      description: 'Premium, dramatic, statement'
+    },
+    hybrid: {
+      cardBlur: '12px',
+      buttonBlur: 'none',
+      radius: '12px',
+      description: 'Balanced, mobile-optimized, snappy'
+    }
+  },
+
+  // ============================================
   // ICON SIZES - 3 semantic sizes
   // ============================================
   iconSize: {
