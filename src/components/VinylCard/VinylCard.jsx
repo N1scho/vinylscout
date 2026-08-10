@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image } from 'lucide-react';
+import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { getPriceHistory } from '../../services/priceHistoryService';
 
@@ -592,7 +592,11 @@ const VinylCard = React.memo(function VinylCard({
                     cursor: 'pointer',
                     fontSize: designSystem.typography.sizes.sm,
                     fontWeight: 600,
-                    transition: designSystem.transitions.fast
+                    transition: designSystem.transitions.fast,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = themes.primaryHover;
@@ -603,6 +607,7 @@ const VinylCard = React.memo(function VinylCard({
                     e.currentTarget.style.transform = 'scale(1)';
                   }}
                 >
+                  <Plus size={16} />
                   Add to Collection
                 </button>
               )}
