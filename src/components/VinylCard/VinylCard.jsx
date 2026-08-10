@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus } from 'lucide-react';
 import { designSystem } from '../../designsystem';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { getPriceHistory } from '../../services/priceHistoryService';
@@ -234,16 +234,17 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === 0 ? 0.4 : 1,
-                padding: '6px',
+                padding: '4px 6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold'
+                fontSize: '18px',
+                lineHeight: 1
               }}
             >
-              <ChevronLeft size={18} strokeWidth={3} />
+              ❮
             </button>
-            <span style={{ minWidth: '24px', textAlign: 'center', fontSize: '12px', color: 'white', fontWeight: 600 }}>
+            <span style={{ minWidth: '26px', textAlign: 'center', fontSize: '12px', color: 'white', fontWeight: 600 }}>
               {currentImageIndex + 1}/{images.length}
             </span>
             <button
@@ -255,14 +256,15 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === images.length - 1 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === images.length - 1 ? 0.4 : 1,
-                padding: '6px',
+                padding: '4px 6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold'
+                fontSize: '18px',
+                lineHeight: 1
               }}
             >
-              <ChevronRight size={18} strokeWidth={3} />
+              ❯
             </button>
           </div>
         )}

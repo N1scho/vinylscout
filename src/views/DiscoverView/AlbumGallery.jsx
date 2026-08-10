@@ -1,6 +1,5 @@
 // src/views/DiscoverView/AlbumGallery.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import { getDiscogsAlbumMetadata, fetchPriceInfo } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
@@ -236,8 +235,8 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
               disabled={currentImageIndex === 0}
               style={{
-                width: '40px',
-                height: '40px',
+                width: '42px',
+                height: '42px',
                 borderRadius: designSystem.borderRadius.circle,
                 ...getButtonGlassStyle(),
                 color: currentImageIndex === 0 ? themes.textTertiary : themes.primary,
@@ -247,12 +246,13 @@ export default function AlbumGallery({ themes }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '20px',
-                fontWeight: 'bold'
+                fontSize: '24px',
+                fontWeight: 'bold',
+                lineHeight: 1
               }}
               title="Previous image"
             >
-              <ChevronLeft size={22} strokeWidth={3} />
+              ❮
             </button>
             <div style={{
               fontSize: '13px',
@@ -267,8 +267,8 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.min(discogsMetadata.images.length - 1, prev + 1))}
               disabled={currentImageIndex === discogsMetadata.images.length - 1}
               style={{
-                width: '40px',
-                height: '40px',
+                width: '42px',
+                height: '42px',
                 borderRadius: designSystem.borderRadius.circle,
                 ...getButtonGlassStyle(),
                 color: currentImageIndex === discogsMetadata.images.length - 1 ? themes.textTertiary : themes.primary,
@@ -278,12 +278,13 @@ export default function AlbumGallery({ themes }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '20px',
-                fontWeight: 'bold'
+                fontSize: '24px',
+                fontWeight: 'bold',
+                lineHeight: 1
               }}
               title="Next image"
             >
-              <ChevronRight size={22} strokeWidth={3} />
+              ❯
             </button>
           </div>
         )}
@@ -367,8 +368,8 @@ export default function AlbumGallery({ themes }) {
           onClick={prevAlbum}
           disabled={currentAlbumIndex === 0}
           style={{
-            width: '52px',
-            height: '52px',
+            width: '54px',
+            height: '54px',
             borderRadius: designSystem.borderRadius.circle,
             ...getButtonGlassStyle(),
             color: currentAlbumIndex === 0 ? themes.textTertiary : themes.primary,
@@ -377,17 +378,19 @@ export default function AlbumGallery({ themes }) {
             transition: 'all 200ms ease',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            fontSize: '28px',
+            lineHeight: 1
           }}
         >
-          <ChevronLeft size={24} />
+          ❮
         </button>
 
         <button
           onClick={() => toggleWishlist(currentAlbum.id)}
           style={{
-            width: '52px',
-            height: '52px',
+            width: '54px',
+            height: '54px',
             borderRadius: designSystem.borderRadius.circle,
             ...getButtonGlassStyle(),
             color: inWishlist ? themes.primary : themes.text,
@@ -395,7 +398,8 @@ export default function AlbumGallery({ themes }) {
             transition: 'all 200ms ease',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            fontSize: '28px'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -405,15 +409,15 @@ export default function AlbumGallery({ themes }) {
           }}
           title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
         >
-          <Heart size={24} fill={inWishlist ? 'currentColor' : 'none'} />
+          {inWishlist ? '♥' : '♡'}
         </button>
 
         <button
           onClick={nextAlbum}
           disabled={currentAlbumIndex === shuffledAlbums.length - 1}
           style={{
-            width: '52px',
-            height: '52px',
+            width: '54px',
+            height: '54px',
             borderRadius: designSystem.borderRadius.circle,
             ...getButtonGlassStyle(),
             color: currentAlbumIndex === shuffledAlbums.length - 1 ? themes.textTertiary : themes.primary,
@@ -422,10 +426,12 @@ export default function AlbumGallery({ themes }) {
             transition: 'all 200ms ease',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            fontSize: '28px',
+            lineHeight: 1
           }}
         >
-          <ChevronRight size={24} />
+          ❯
         </button>
       </div>
 
