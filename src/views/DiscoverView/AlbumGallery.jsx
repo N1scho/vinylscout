@@ -236,8 +236,8 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
               disabled={currentImageIndex === 0}
               style={{
-                width: '36px',
-                height: '36px',
+                width: '40px',
+                height: '40px',
                 borderRadius: designSystem.borderRadius.circle,
                 ...getButtonGlassStyle(),
                 color: currentImageIndex === 0 ? themes.textTertiary : themes.primary,
@@ -246,16 +246,20 @@ export default function AlbumGallery({ themes }) {
                 transition: 'all 200ms ease',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                fontSize: '20px',
+                fontWeight: 'bold'
               }}
+              title="Previous image"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={22} strokeWidth={3} />
             </button>
             <div style={{
-              fontSize: '12px',
+              fontSize: '13px',
               color: themes.textSecondary,
-              minWidth: '40px',
-              textAlign: 'center'
+              minWidth: '45px',
+              textAlign: 'center',
+              fontWeight: 500
             }}>
               {currentImageIndex + 1}/{discogsMetadata.images.length}
             </div>
@@ -263,8 +267,8 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.min(discogsMetadata.images.length - 1, prev + 1))}
               disabled={currentImageIndex === discogsMetadata.images.length - 1}
               style={{
-                width: '36px',
-                height: '36px',
+                width: '40px',
+                height: '40px',
                 borderRadius: designSystem.borderRadius.circle,
                 ...getButtonGlassStyle(),
                 color: currentImageIndex === discogsMetadata.images.length - 1 ? themes.textTertiary : themes.primary,
@@ -273,10 +277,13 @@ export default function AlbumGallery({ themes }) {
                 transition: 'all 200ms ease',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                fontSize: '20px',
+                fontWeight: 'bold'
               }}
+              title="Next image"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={22} strokeWidth={3} />
             </button>
           </div>
         )}

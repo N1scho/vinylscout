@@ -234,15 +234,16 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === 0 ? 0.4 : 1,
-                padding: '4px',
+                padding: '6px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                fontWeight: 'bold'
               }}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} strokeWidth={3} />
             </button>
-            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '11px', color: 'white' }}>
+            <span style={{ minWidth: '24px', textAlign: 'center', fontSize: '12px', color: 'white', fontWeight: 600 }}>
               {currentImageIndex + 1}/{images.length}
             </span>
             <button
@@ -254,13 +255,14 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === images.length - 1 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === images.length - 1 ? 0.4 : 1,
-                padding: '4px',
+                padding: '6px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                fontWeight: 'bold'
               }}
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={18} strokeWidth={3} />
             </button>
           </div>
         )}
