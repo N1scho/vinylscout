@@ -234,12 +234,13 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === 0 ? 0.4 : 1,
-                padding: '4px 6px',
+                padding: '2px 4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
-                lineHeight: 1
+                fontSize: '16px',
+                lineHeight: '1em',
+                margin: 0
               }}
             >
               ❮
@@ -256,12 +257,13 @@ const VinylCard = React.memo(function VinylCard({
                 color: 'white',
                 cursor: currentImageIndex === images.length - 1 ? 'not-allowed' : 'pointer',
                 opacity: currentImageIndex === images.length - 1 ? 0.4 : 1,
-                padding: '4px 6px',
+                padding: '2px 4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
-                lineHeight: 1
+                fontSize: '16px',
+                lineHeight: '1em',
+                margin: 0
               }}
             >
               ❯

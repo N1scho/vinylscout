@@ -246,9 +246,10 @@ export default function AlbumGallery({ themes }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                lineHeight: 1
+                fontSize: '22px',
+                padding: 0,
+                margin: 0,
+                lineHeight: '1em'
               }}
               title="Previous image"
             >
@@ -278,9 +279,10 @@ export default function AlbumGallery({ themes }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                lineHeight: 1
+                fontSize: '22px',
+                padding: 0,
+                margin: 0,
+                lineHeight: '1em'
               }}
               title="Next image"
             >
@@ -379,8 +381,10 @@ export default function AlbumGallery({ themes }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '28px',
-            lineHeight: 1
+            fontSize: '26px',
+            padding: 0,
+            margin: 0,
+            lineHeight: '1em'
           }}
         >
           ❮
@@ -399,7 +403,10 @@ export default function AlbumGallery({ themes }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '28px'
+            fontSize: '26px',
+            padding: 0,
+            margin: 0,
+            lineHeight: '1em'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -427,8 +434,10 @@ export default function AlbumGallery({ themes }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '28px',
-            lineHeight: 1
+            fontSize: '26px',
+            padding: 0,
+            margin: 0,
+            lineHeight: '1em'
           }}
         >
           ❯
