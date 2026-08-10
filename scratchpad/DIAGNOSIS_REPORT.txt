@@ -1,0 +1,139 @@
+VINYLSCOUT REACT ERROR DIAGNOSIS
+=================================
+
+TEST RESULTS
+============
+- Maximum Update Depth Exceeded errors: 2 (confirmed)
+- Error Boundary Status: TRIGGERED - App crashed on load
+- Additional Console Errors: 1 ("The result of getSnapshot should be cached to avoid an infinite loop")
+- Page Status: Shows error boundary only, no views rendered
+- Navigation Status: NOT TESTED - App crashed before interaction possible
+- Wishlist Toggle: NOT TESTED - App crashed before interaction possible
+
+ERROR DETAILS
+=============
+
+Primary Error:
+"Maximum update depth exceeded. This can happen when a component repeatedly
+calls setState inside componentWillUpdate or componentDidUpdate. React limits
+the number of nested updates to prevent infinite loops."
+
+Related Error:
+"The result of getSnapshot should be cached to avoid an infinite loop"
+
+ROOT CAUSE ANALYSIS
+===================
+
+The issue is in App.jsx with unstable/uncached selector functions in Zustand store hooks:
+
+PROBLEMATIC CODE (lines 54, 60):
+--------
+const wishlist = useDiscoverStore((s) => s.wishlist);
+const allAlbums = useDiscoverStore((s) => s.allAlbums);
+--------
+
+ISSUE:
+- These inline arrow functions are created as NEW OBJECTS on every render
+- Zustand's internal useSyncExternalStore cannot cache the getSnapshot function
+- When selectors change reference, the store thinks the snapshot changed
+- This triggers a re-render, which creates new selectors again
+- Result: Infinite render loop that React detects and stops with "Maximum update depth exceeded"
+
+SECONDARY ISSUE (lines 63-76):
+--------
+const filteredAndSorted = useCollectionStore((s) =>
+  sortCollection(
+    filterCollection(
+      s.collection,
+      s.collectionFilter,
+      s.collectionSearch,
+      s.activeGenreFilter,
+      s.activeDecadeFilter,
+      s.activeFormatFilter,
+      wishlist  <-- depends on unstable selector above
+    ),
+    s.sortBy
+  )
+);
+--------
+
+ISSUE:
+- This computed selector depends on `wishlist` (which is unstable)
+- The function itself is recreated on every render
+- Combined with the unstable wishlist dependency, this amplifies the problem
+
+TERTIARY ISSUE (line 127):
+--------
+}, [ui, view]); // Fixed dependencies
+--------
+
+ISSUE:
+- `ui` is the entire UI store state object reference
+- When ANY part of the UI store changes (toast, modal, etc.), the reference changes
+- This causes the effect to re-run and re-attach event listeners
+- This can trigger store updates that cause re-renders
+
+RECOMMENDED FIXES
+=================
+
+Fix 1: Memoize Selectors with useCallback
+-----------------------------------------
+Import useCallback at the top:
+import { useCallback } from 'react';
+
+Then memoize the selectors:
+const wishlist = useDiscoverStore(
+  useCallback(s => s.wishlist, [])
+);
+
+const allAlbums = useDiscoverStore(
+  useCallback(s => s.allAlbums, [])
+);
+
+Fix 2: Move Selectors Outside Component (BETTER)
+-------------------------------------------------
+Create selector functions outside the component:
+const selectWishlist = (s) => s.wishlist;
+const selectAllAlbums = (s) => s.allAlbums;
+
+Then use them inside the component:
+const wishlist = useDiscoverStore(selectWishlist);
+const allAlbums = useDiscoverStore(selectAllAlbums);
+
+Fix 3: Fix useEffect Dependencies
+----------------------------------
+Change the useEffect to depend only on specific values:
+}, [ui.setView, view]);
+
+Or better, refactor to avoid needing ui as a dependency:
+useEffect(() => {
+  const handlePopState = (event) => {
+    event.preventDefault();
+    ui.goBack();
+  };
+
+  window.addEventListener('popstate', handlePopState);
+  return () => {
+    window.removeEventListener('popstate', handlePopState);
+  };
+}, []); // Only set up once, not on every render
+
+IMPACT
+======
+- App crashes on load - completely broken
+- No views are accessible
+- Error boundary is the only UI shown
+- Users cannot interact with the app
+
+PRIORITY
+========
+CRITICAL - App is non-functional
+
+VERIFICATION STEPS
+==================
+1. Apply one or more of the recommended fixes
+2. Run: npm run dev
+3. Check browser console - should show NO "Maximum update depth exceeded" errors
+4. Page should load normally with navigation buttons visible
+5. Run diagnostic test again: npx playwright test tests/diagnose-react-error.spec.js
+6. Test should pass without assertion errors

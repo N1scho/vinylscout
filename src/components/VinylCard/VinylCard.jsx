@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Heart, RefreshCw, Trash2, TrendingUp, TrendingDown, Eye, TrendingUpIcon, Image, Plus } from 'lucide-react';
 import { designSystem } from '../../designsystem';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { getPriceHistory } from '../../services/priceHistoryService';
 
 /**
@@ -32,6 +33,29 @@ const VinylCard = React.memo(function VinylCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isReloadingCover, setIsReloadingCover] = useState(false);
+
+  const designTheme = useSettingsStore(s => s.designTheme);
+  const isDarkBg = themes.background && parseInt(themes.background.slice(1, 3), 16) < 128;
+  const glass = designSystem.glassMorphism[designTheme];
+
+  const getButtonGlassStyle = () => {
+    if (designTheme === 'hybrid') {
+      return {
+        backgroundColor: `rgba(${isDarkBg ? '60, 60, 60' : '240, 240, 240'}, 0.9)`,
+        color: themes.text,
+        border: `1px solid ${themes.border}`,
+        backdropFilter: 'none'
+      };
+    }
+
+    return {
+      backgroundColor: `rgba(${isDarkBg ? '20, 20, 20' : '255, 255, 255'}, ${glass.bgOpacity})`,
+      color: themes.textSecondary,
+      border: `1px solid ${glass.borderColor}`,
+      backdropFilter: `blur(${glass.blur})`,
+      boxShadow: `0 4px 12px rgba(${isDarkBg ? '0, 183, 255' : '0, 0, 0'}, ${glass.glowAlpha * 0.6})`
+    };
+  };
 
   const hasPrice = price && (typeof price.value === 'number' || typeof price.value === 'string') && price.value !== null && price.value !== undefined;
   const hasPriceChange = priceChange && (typeof priceChange.amount === 'number' || typeof priceChange.amount === 'string') && priceChange.amount !== null && priceChange.amount !== undefined;
@@ -429,14 +453,12 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: vinyl.isFavorite
-                      ? themes.error
-                      : 'transparent',
-                    color: vinyl.isFavorite ? 'white' : themes.textSecondary,
-                    border: vinyl.isFavorite
-                      ? 'none'
-                      : `1px solid ${themes.border}`,
+                    backgroundColor: vinyl.isFavorite ? themes.error : getButtonGlassStyle().backgroundColor,
+                    color: vinyl.isFavorite ? 'white' : getButtonGlassStyle().color,
+                    border: vinyl.isFavorite ? 'none' : getButtonGlassStyle().border,
                     borderRadius: designSystem.borderRadius.sm,
+                    backdropFilter: vinyl.isFavorite ? 'none' : getButtonGlassStyle().backdropFilter,
+                    boxShadow: vinyl.isFavorite ? 'none' : getButtonGlassStyle().boxShadow,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -459,9 +481,7 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.textSecondary,
-                    border: `1px solid ${themes.border}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
                     cursor: isRefreshing ? 'not-allowed' : 'pointer',
                     opacity: isRefreshing ? 0.5 : 1,
@@ -487,10 +507,9 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.primary,
-                    border: `1px solid ${themes.primary}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
+                    color: themes.primary,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -509,9 +528,7 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.textSecondary,
-                    border: `1px solid ${themes.border}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
                     cursor: 'pointer',
                     display: 'flex',
@@ -532,9 +549,7 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.textSecondary,
-                    border: `1px solid ${themes.border}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
                     cursor: isReloadingCover ? 'not-allowed' : 'pointer',
                     opacity: isReloadingCover ? 0.5 : 1,
@@ -560,10 +575,9 @@ const VinylCard = React.memo(function VinylCard({
                   style={{
                     flex: 1,
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.error,
-                    border: `1px solid ${themes.border}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
+                    color: themes.error,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -586,9 +600,11 @@ const VinylCard = React.memo(function VinylCard({
                     flex: 1,
                     padding: `${designSystem.spacing.sm} ${designSystem.spacing.md}`,
                     backgroundColor: themes.primary,
-                    color: '#0f0f0f',
+                    color: themes.buttonText,
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: designSystem.borderRadius.sm,
+                    backdropFilter: designTheme !== 'hybrid' ? `blur(${glass.blur})` : 'none',
+                    boxShadow: designTheme !== 'hybrid' ? `0 4px 12px rgba(${isDarkBg ? '0, 183, 255' : '0, 0, 0'}, ${glass.glowAlpha * 0.4})` : 'none',
                     cursor: 'pointer',
                     fontSize: designSystem.typography.sizes.sm,
                     fontWeight: 600,
@@ -617,9 +633,7 @@ const VinylCard = React.memo(function VinylCard({
                   onClick={handleViewDetailsButton}
                   style={{
                     padding: designSystem.spacing.sm,
-                    backgroundColor: 'transparent',
-                    color: themes.textSecondary,
-                    border: `1px solid ${themes.border}`,
+                    ...getButtonGlassStyle(),
                     borderRadius: designSystem.borderRadius.sm,
                     cursor: 'pointer',
                     display: 'flex',

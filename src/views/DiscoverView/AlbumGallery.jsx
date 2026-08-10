@@ -27,11 +27,11 @@ export default function AlbumGallery({ themes }) {
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
   const genreName = currentAlbum && genres.find(g => g.id === currentAlbum.genreId)?.name;
 
+  const isDarkBg = themes.background && parseInt(themes.background.slice(1, 3), 16) < 128;
+  const glass = designSystem.glassMorphism[designTheme];
+
   // Get glass morphism styles based on current design theme
   const getCardGlassStyle = () => {
-    const glass = designSystem.glassMorphism[designTheme];
-    const isDarkBg = themes.background && parseInt(themes.background.slice(1, 3), 16) < 128;
-
     if (designTheme === 'hybrid') {
       // Hybrid: subtle glass effect on cards
       return {
@@ -49,6 +49,24 @@ export default function AlbumGallery({ themes }) {
       borderRadius: glass.radius,
       border: `1px solid ${glass.borderColor}`,
       boxShadow: `0 8px 32px rgba(${isDarkBg ? '0, 183, 255' : '0, 0, 0'}, ${glass.glowAlpha})`
+    };
+  };
+
+  // Get glass button styles
+  const getButtonGlassStyle = () => {
+    if (designTheme === 'hybrid') {
+      return {
+        background: `rgba(${isDarkBg ? '60, 60, 60' : '240, 240, 240'}, 0.9)`,
+        backdropFilter: 'none',
+        border: `1.5px solid ${themes.primary}`
+      };
+    }
+
+    return {
+      background: `rgba(${isDarkBg ? '20, 20, 20' : '255, 255, 255'}, ${glass.bgOpacity})`,
+      backdropFilter: `blur(${glass.blur})`,
+      border: `1px solid ${glass.borderColor}`,
+      boxShadow: `0 4px 12px rgba(${isDarkBg ? '0, 183, 255' : '0, 0, 0'}, ${glass.glowAlpha * 0.6})`
     };
   };
 
@@ -217,15 +235,16 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
               disabled={currentImageIndex === 0}
               style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: currentImageIndex === 0 ? themes.border : themes.primary,
-                color: currentImageIndex === 0 ? themes.textTertiary : themes.buttonText,
-                fontSize: '12px',
+                width: '32px',
+                height: '32px',
+                borderRadius: designSystem.borderRadius.circle,
+                ...getButtonGlassStyle(),
+                color: currentImageIndex === 0 ? themes.textTertiary : themes.primary,
+                fontSize: '14px',
+                fontWeight: 600,
                 cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
-                opacity: currentImageIndex === 0 ? 0.4 : 1
+                opacity: currentImageIndex === 0 ? 0.4 : 1,
+                transition: 'all 200ms ease'
               }}
             >
               ←
@@ -242,15 +261,16 @@ export default function AlbumGallery({ themes }) {
               onClick={() => setCurrentImageIndex(prev => Math.min(discogsMetadata.images.length - 1, prev + 1))}
               disabled={currentImageIndex === discogsMetadata.images.length - 1}
               style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: currentImageIndex === discogsMetadata.images.length - 1 ? themes.border : themes.primary,
-                color: currentImageIndex === discogsMetadata.images.length - 1 ? themes.textTertiary : themes.buttonText,
-                fontSize: '12px',
+                width: '32px',
+                height: '32px',
+                borderRadius: designSystem.borderRadius.circle,
+                ...getButtonGlassStyle(),
+                color: currentImageIndex === discogsMetadata.images.length - 1 ? themes.textTertiary : themes.primary,
+                fontSize: '14px',
+                fontWeight: 600,
                 cursor: currentImageIndex === discogsMetadata.images.length - 1 ? 'not-allowed' : 'pointer',
-                opacity: currentImageIndex === discogsMetadata.images.length - 1 ? 0.4 : 1
+                opacity: currentImageIndex === discogsMetadata.images.length - 1 ? 0.4 : 1,
+                transition: 'all 200ms ease'
               }}
             >
               →
@@ -337,13 +357,13 @@ export default function AlbumGallery({ themes }) {
           onClick={prevAlbum}
           disabled={currentAlbumIndex === 0}
           style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: `2px solid ${themes.primary}`,
-            backgroundColor: themes.surface,
-            color: themes.primary,
+            width: '50px',
+            height: '50px',
+            borderRadius: designSystem.borderRadius.circle,
+            ...getButtonGlassStyle(),
+            color: currentAlbumIndex === 0 ? themes.textTertiary : themes.primary,
             fontSize: '20px',
+            fontWeight: 600,
             cursor: currentAlbumIndex === 0 ? 'not-allowed' : 'pointer',
             opacity: currentAlbumIndex === 0 ? 0.4 : 1,
             transition: 'all 200ms ease'
@@ -355,21 +375,20 @@ export default function AlbumGallery({ themes }) {
         <button
           onClick={() => toggleWishlist(currentAlbum.id)}
           style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: 'none',
-            backgroundColor: inWishlist ? themes.primary : themes.border,
-            color: inWishlist ? themes.buttonText : themes.text,
+            width: '50px',
+            height: '50px',
+            borderRadius: designSystem.borderRadius.circle,
+            ...getButtonGlassStyle(),
+            color: inWishlist ? themes.primary : themes.text,
             fontSize: '20px',
             cursor: 'pointer',
             transition: 'all 200ms ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'scale(1.1)';
+            e.currentTarget.style.transform = 'scale(1.1)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
           title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
         >
@@ -380,13 +399,13 @@ export default function AlbumGallery({ themes }) {
           onClick={nextAlbum}
           disabled={currentAlbumIndex === shuffledAlbums.length - 1}
           style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: `2px solid ${themes.primary}`,
-            backgroundColor: themes.surface,
-            color: themes.primary,
+            width: '50px',
+            height: '50px',
+            borderRadius: designSystem.borderRadius.circle,
+            ...getButtonGlassStyle(),
+            color: currentAlbumIndex === shuffledAlbums.length - 1 ? themes.textTertiary : themes.primary,
             fontSize: '20px',
+            fontWeight: 600,
             cursor: currentAlbumIndex === shuffledAlbums.length - 1 ? 'not-allowed' : 'pointer',
             opacity: currentAlbumIndex === shuffledAlbums.length - 1 ? 0.4 : 1,
             transition: 'all 200ms ease'
