@@ -314,6 +314,16 @@ const VinylDetailsModal = ({
               }}>
                 {selectedVinyl.artist}
               </p>
+              {!/^\d+$/.test(String(selectedVinyl.id)) && (
+                <p style={{
+                  fontSize: designSystem.typography.sizes.sm,
+                  color: themes.textSecondary,
+                  margin: `${designSystem.spacing.xs} 0 0 0`,
+                  fontStyle: 'italic'
+                }}>
+                  Limited data (catalog item)
+                </p>
+              )}
             </div>
           </div>
 
