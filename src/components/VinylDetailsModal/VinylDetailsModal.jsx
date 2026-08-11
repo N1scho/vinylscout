@@ -33,6 +33,13 @@ const VinylDetailsModal = ({
   useEffect(() => {
     if (!selectedVinyl?.id) return;
 
+    // Skip fetch if ID is not a valid Discogs release ID (internal catalog IDs like "01-001" won't work)
+    const isValidDiscogsId = /^\d+$/.test(String(selectedVinyl.id));
+    if (!isValidDiscogsId) {
+      setLoadingImages(false);
+      return;
+    }
+
     const fetchReleaseData = async () => {
       setLoadingImages(true);
       try {
