@@ -1,14 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { designSystem } from '../../designsystem';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
-import { fetchPriceInfo } from '../../services/discogsService';
 
-export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
+export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails, onRefreshPrice }) {
   const { toggleWishlist } = useDiscoverStore();
-  const [priceCache, setPriceCache] = useState({});
-  const [loadingPrices, setLoadingPrices] = useState({});
 
   const wishlistItems = useMemo(() => {
     if (!allAlbums || !wishlistIds) return [];
@@ -26,48 +23,9 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       .filter(Boolean);
   }, [allAlbums, wishlistIds]);
 
-  // Fetch prices for all wishlist items on mount/change
-  useEffect(() => {
-    const fetchAllPrices = async () => {
-      for (const item of wishlistItems) {
-        if (!priceCache.hasOwnProperty(item.id) && !loadingPrices[item.id]) {
-          try {
-            setLoadingPrices(prev => ({ ...prev, [item.id]: true }));
-            const priceData = await fetchPriceInfo(item.id);
-            if (priceData) {
-              setPriceCache(prev => ({ ...prev, [item.id]: priceData }));
-            } else {
-              setPriceCache(prev => ({ ...prev, [item.id]: null }));
-            }
-          } catch (error) {
-            console.error(`Failed to fetch price for ${item.id}:`, error.message);
-            setPriceCache(prev => ({ ...prev, [item.id]: null }));
-          } finally {
-            setLoadingPrices(prev => ({ ...prev, [item.id]: false }));
-          }
-        }
-      }
-    };
-
-    if (wishlistItems.length > 0) {
-      fetchAllPrices();
-    }
-  }, [wishlistItems]);
-
-  const refreshPrice = async (albumId) => {
-    try {
-      setLoadingPrices(prev => ({ ...prev, [albumId]: true }));
-      const priceData = await fetchPriceInfo(albumId);
-      if (priceData) {
-        setPriceCache(prev => ({ ...prev, [albumId]: priceData }));
-      } else {
-        setPriceCache(prev => ({ ...prev, [albumId]: null }));
-      }
-    } catch (error) {
-      console.error(`Failed to refresh price for ${albumId}:`, error.message);
-      setPriceCache(prev => ({ ...prev, [albumId]: null }));
-    } finally {
-      setLoadingPrices(prev => ({ ...prev, [albumId]: false }));
+  const handleRefreshPrice = (albumId) => {
+    if (onRefreshPrice) {
+      onRefreshPrice(albumId, false);
     }
   };
 
@@ -148,10 +106,9 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
           <VinylCard
             key={item.id}
             vinyl={item}
-            price={priceCache[item.id] || null}
-            isRefreshing={loadingPrices[item.id]}
+            price={null}
             inCollection={false}
-            onRefreshPrice={() => refreshPrice(item.id)}
+            onRefreshPrice={() => handleRefreshPrice(item.id)}
             onRemove={() => toggleWishlist(item.id)}
             onViewDetails={() => onViewDetails(item)}
             onAddToCollection={() => onAddToCollection(item)}
