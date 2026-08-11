@@ -36,6 +36,7 @@ const VinylDetailsModal = ({
     // Skip fetch if ID is not a valid Discogs release ID (internal catalog IDs like "01-001" won't work)
     const isValidDiscogsId = /^\d+$/.test(String(selectedVinyl.id));
     if (!isValidDiscogsId) {
+      console.warn(`[VinylDetailsModal] Skipping API fetch for non-Discogs ID: ${selectedVinyl.id}`);
       setLoadingImages(false);
       return;
     }
@@ -58,6 +59,13 @@ const VinylDetailsModal = ({
           setAdditionalImages(images);
           if (tracklist.length > 0) {
             setReleaseTracklist(tracklist);
+          }
+        } else if (res.status === 400) {
+          const data = await res.json();
+          if (data.error?.includes('not allowed')) {
+            console.warn('Discogs ID not available for this item (internal catalog ID)');
+          } else {
+            console.error('API error:', data.error);
           }
         }
       } catch (err) {
