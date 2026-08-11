@@ -62,22 +62,29 @@ export default function App() {
   const allAlbums = useDiscoverStore((s) => s.allAlbums);
 
   // Memoized selectors for computed values (fixes performance issue)
-  const filteredAndSorted = useCollectionStore(
-    useShallow((s) =>
-      sortCollection(
-        filterCollection(
-          s.collection,
-          s.collectionFilter,
-          s.collectionSearch,
-          s.activeGenreFilter,
-          s.activeDecadeFilter,
-          s.activeFormatFilter,
-          wishlist
-        ),
-        s.sortBy
-      )
-    )
-  );
+  const filteredAndSorted = useMemo(() => {
+    const wishlistIds = useDiscoverStore.getState().wishlist;
+    return sortCollection(
+      filterCollection(
+        collection.collection,
+        collection.collectionFilter,
+        collection.collectionSearch,
+        collection.activeGenreFilter,
+        collection.activeDecadeFilter,
+        collection.activeFormatFilter,
+        wishlistIds
+      ),
+      collection.sortBy
+    );
+  }, [
+    collection.collection,
+    collection.collectionFilter,
+    collection.collectionSearch,
+    collection.activeGenreFilter,
+    collection.activeDecadeFilter,
+    collection.activeFormatFilter,
+    wishlist
+  ]);
 
   const collectionValue = useCollectionStore(
     useShallow((s) => calculateCollectionValue(s.collection))
