@@ -124,11 +124,18 @@ export default function App() {
     });
   };
 
-  // Handle browser back button
+  // Handle browser back button (Android & iOS)
   useEffect(() => {
     const handlePopState = (event) => {
       event.preventDefault();
-      ui.goBack();
+      // Close open item modal first, then navigate back
+      if (ui.selectedVinyl) {
+        ui.setSelectedVinyl(null);
+      } else if (ui.showValueModal) {
+        ui.setShowValueModal(false);
+      } else {
+        ui.goBack();
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
