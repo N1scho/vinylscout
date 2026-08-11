@@ -592,7 +592,7 @@ const VinylCard = React.memo(function VinylCard({
                     justifyContent: 'center',
                     transition: designSystem.transitions.fast
                   }}
-                  title="Remove from Collection"
+                  title={inCollection ? "Remove from Collection" : "Remove from Wishlist"}
                 >
                   <Trash2 size={16} />
                 </button>

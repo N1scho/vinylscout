@@ -4,7 +4,7 @@ import { useDiscoverStore } from '../../stores/discoverStore';
 import VinylCard from '../../components/VinylCard';
 import EmptyState from '../../components/EmptyState';
 
-export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails, onRefreshPrice }) {
+export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigateToDiscover, onAddToCollection, onViewDetails }) {
   const { toggleWishlist } = useDiscoverStore();
 
   const wishlistItems = useMemo(() => {
@@ -23,11 +23,6 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
       .filter(Boolean);
   }, [allAlbums, wishlistIds]);
 
-  const handleRefreshPrice = (albumId) => {
-    if (onRefreshPrice) {
-      onRefreshPrice(albumId, false);
-    }
-  };
 
   if (!wishlistItems || wishlistItems.length === 0) {
     return (
@@ -108,7 +103,6 @@ export default function WishlistView({ themes, allAlbums, wishlistIds, onNavigat
             vinyl={item}
             price={null}
             inCollection={false}
-            onRefreshPrice={() => handleRefreshPrice(item.id)}
             onRemove={() => toggleWishlist(item.id)}
             onViewDetails={() => onViewDetails(item)}
             onAddToCollection={() => onAddToCollection(item)}
