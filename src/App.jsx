@@ -124,6 +124,13 @@ export default function App() {
     });
   };
 
+  // Handle viewing collection items with fresh data
+  const handleViewCollectionItem = (item) => {
+    // Get fresh item from collection to ensure latest price data
+    const freshItem = collection.collection.find(v => v.id === item.id) || item;
+    ui.setSelectedVinyl(freshItem);
+  };
+
   // Handle browser back button (Android & iOS)
   useEffect(() => {
     const handlePopState = (event) => {
@@ -510,7 +517,7 @@ export default function App() {
         onRefreshPrice={refreshPrice}
         onRemove={collection.removeFromCollection}
         onReloadCover={handleReloadCover}
-        onViewDetails={ui.setSelectedVinyl}
+        onViewDetails={handleViewCollectionItem}
         onNavigateToSearch={() => handleViewChange('search')}
         getPriceChange={collection.getPriceChange}
         themes={themes}
