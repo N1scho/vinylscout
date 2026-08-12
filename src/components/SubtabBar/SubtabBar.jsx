@@ -50,7 +50,7 @@ export default function SubtabBar({ currentTab, onTabChange, themes }) {
         ...getGlassStyle
       }}
     >
-      {['filter', 'discover'].map(tab => (
+      {['filter', 'discover', 'guess'].map(tab => (
         <button
           key={tab}
           onClick={() => onTabChange(tab)}

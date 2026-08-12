@@ -5,6 +5,7 @@ import { designSystem } from '../../designsystem';
 import SubtabBar from '../../components/SubtabBar';
 import GenreSelector from './GenreSelector';
 import AlbumGallery from './AlbumGallery';
+import PriceGuessGame from './PriceGuessGame';
 
 export default function DiscoverView({ themes }) {
   const [discoverySubTab, setDiscoverySubTab] = useState('filter');
@@ -53,6 +54,9 @@ export default function DiscoverView({ themes }) {
       )}
       {discoverySubTab === 'discover' && (
         <AlbumGallery themes={themes} />
+      )}
+      {discoverySubTab === 'guess' && (
+        <PriceGuessGame themes={themes} />
       )}
     </div>
   );
