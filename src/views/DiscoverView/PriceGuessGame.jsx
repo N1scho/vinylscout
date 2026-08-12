@@ -96,11 +96,11 @@ export default function PriceGuessGame({ themes }) {
       total: prev.total + 1
     }));
     setGameState('answered');
+  }, [correctIndex]);
 
-    setTimeout(() => {
-      nextAlbum();
-    }, 1200);
-  }, [correctIndex, nextAlbum]);
+  const handleNext = useCallback(() => {
+    nextAlbum();
+  }, [nextAlbum]);
 
   if (!currentAlbum) {
     return (
@@ -343,22 +343,50 @@ export default function PriceGuessGame({ themes }) {
         </div>
       )}
 
-      {gameState === 'answered' && priceInfo && (
-        <div style={{
-          marginTop: '12px',
-          padding: '12px 16px',
-          backgroundColor: themes.surface,
-          borderRadius: '8px',
-          border: `1px solid ${themes.border}`,
-          fontSize: designSystem.typography.sizes.sm,
-          color: themes.textSecondary,
-          textAlign: 'center'
-        }}>
-          <div>Lowest price: €{priceInfo.value.toFixed(2)}</div>
-          <div style={{ marginTop: '4px', fontSize: '12px' }}>
-            {priceInfo.num_for_sale} for sale on Discogs
-          </div>
-        </div>
+      {gameState === 'answered' && (
+        <>
+          {priceInfo && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px 16px',
+              backgroundColor: themes.surface,
+              borderRadius: '8px',
+              border: `1px solid ${themes.border}`,
+              fontSize: designSystem.typography.sizes.sm,
+              color: themes.textSecondary,
+              textAlign: 'center'
+            }}>
+              <div>Lowest price: €{priceInfo.value.toFixed(2)}</div>
+              <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                {priceInfo.num_for_sale} for sale on Discogs
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleNext}
+            style={{
+              marginTop: '16px',
+              width: '100%',
+              padding: '12px 16px',
+              backgroundColor: themes.primary,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: designSystem.typography.sizes.base,
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.opacity = '0.9';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.opacity = '1';
+            }}
+          >
+            Next
+          </button>
+        </>
       )}
     </div>
   );
