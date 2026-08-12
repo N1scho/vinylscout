@@ -23,11 +23,14 @@ export default function PriceGuessGame({ themes }) {
     shuffledAlbums,
     currentAlbumIndex,
     nextAlbum,
-    genres
+    genres,
+    toggleWishlist,
+    isInWishlist
   } = useDiscoverStore();
 
   const [gameState, setGameState] = useState('loading'); // loading, ready, answered
   const [priceInfo, setPriceInfo] = useState(null);
+  const [discogsMetadata, setDiscogsMetadata] = useState(null);
   const [prices, setPrices] = useState([]);
   const [correctIndex, setCorrectIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -49,13 +52,16 @@ export default function PriceGuessGame({ themes }) {
       setCorrectIndex(null);
 
       try {
-        // First search for the release to get Discogs ID
+        // First search for the release to get Discogs ID + high-res images
         const metadata = await getDiscogsAlbumMetadata(currentAlbum.artist, currentAlbum.album);
 
         if (!metadata?.releaseId) {
           setGameState('no-price');
           return;
         }
+
+        // Store metadata for high-res images + wishlist integration
+        setDiscogsMetadata(metadata);
 
         // Then fetch price using the release ID
         const price = await fetchPriceInfo(metadata.releaseId);
@@ -152,17 +158,49 @@ export default function PriceGuessGame({ themes }) {
         alignItems: 'center',
         gap: '8px'
       }}>
-        <img
-          src={currentAlbum.coverUrl}
-          alt={currentAlbum.album}
-          style={{
-            width: '240px',
-            height: '240px',
-            borderRadius: '8px',
-            objectFit: 'cover',
-            border: `2px solid ${themes.border}`
-          }}
-        />
+        <div style={{
+          position: 'relative',
+          width: '240px',
+          height: '240px'
+        }}>
+          <img
+            src={discogsMetadata?.images?.[0]?.url || currentAlbum.coverUrl}
+            alt={currentAlbum.album}
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '8px',
+              objectFit: 'cover',
+              border: `2px solid ${themes.border}`
+            }}
+          />
+          {gameState === 'answered' && (
+            <button
+              onClick={() => toggleWishlist(currentAlbum.id)}
+              style={{
+                position: 'absolute',
+                bottom: '8px',
+                right: '8px',
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                backgroundColor: isInWishlist(currentAlbum.id) ? themes.primary : themes.surface,
+                border: `2px solid ${themes.primary}`,
+                color: isInWishlist(currentAlbum.id) ? '#ffffff' : themes.primary,
+                cursor: 'pointer',
+                fontSize: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 200ms ease',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+              }}
+              title={isInWishlist(currentAlbum.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            >
+              ♥
+            </button>
+          )}
+        </div>
         <div style={{
           textAlign: 'center'
         }}>
