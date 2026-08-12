@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
-import { fetchPriceInfo } from '../../services/discogsService';
+import { fetchPriceInfo, getDiscogsAlbumMetadata } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
 import { useErrorStore } from '../../stores/errorStore';
 
@@ -49,7 +49,16 @@ export default function PriceGuessGame({ themes }) {
       setCorrectIndex(null);
 
       try {
-        const price = await fetchPriceInfo(currentAlbum.discogsId || currentAlbum.id);
+        // First search for the release to get Discogs ID
+        const metadata = await getDiscogsAlbumMetadata(currentAlbum.artist, currentAlbum.album);
+
+        if (!metadata?.releaseId) {
+          setGameState('no-price');
+          return;
+        }
+
+        // Then fetch price using the release ID
+        const price = await fetchPriceInfo(metadata.releaseId);
 
         if (price?.value) {
           const { prices: priceList, correctIndex: correctIdx } = generateFakePrices(price.value);
@@ -62,6 +71,10 @@ export default function PriceGuessGame({ themes }) {
         }
       } catch (error) {
         console.error('Failed to load price:', error);
+        useErrorStore.getState().addError({
+          message: `Failed to load price for ${currentAlbum.artist} - ${currentAlbum.album}`,
+          details: error.message
+        });
         setGameState('error');
       }
     };
