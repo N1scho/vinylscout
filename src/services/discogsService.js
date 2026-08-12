@@ -4,6 +4,7 @@
  */
 
 import { NetworkError, RateLimitError, ApiError } from '../utils/errors';
+import { useErrorStore } from '../stores/errorStore';
 
 const PROXY_URL = '/api/discogs-proxy';
 
@@ -43,11 +44,18 @@ async function proxyRequest(endpoint, params = {}, retries = 3) {
       }
     }
 
-    throw new ApiError(
-      data.error || `Anfrage fehlgeschlagen (HTTP ${response.status})`,
-      response.status,
-      data.details
-    );
+    const errorMsg = data.error || `Anfrage fehlgeschlagen (HTTP ${response.status})`;
+    const apiError = new ApiError(errorMsg, response.status, data.details);
+
+    // Log error to error store
+    useErrorStore.getState().addError({
+      message: errorMsg,
+      endpoint: data.endpoint || endpoint,
+      status: response.status,
+      details: data.allowed ? `Allowed endpoints: ${data.allowed?.join(', ')}` : data.details
+    });
+
+    throw apiError;
   }
 
   throw lastError || new ApiError('Max retries exceeded', 429);
@@ -114,6 +122,12 @@ export const fetchPriceInfo = async (releaseId) => {
     if (error instanceof ApiError && error.status === 404) {
       return null; // Release ohne Marketplace-Daten
     }
+    useErrorStore.getState().addError({
+      message: `Price fetch failed for ${releaseId}`,
+      endpoint: `/marketplace/stats/${releaseId}`,
+      status: error.status,
+      details: error.details || error.message
+    });
     throw error;
   }
 };
@@ -199,6 +213,14 @@ export const getDiscogsAlbumMetadata = async (artist, album) => {
       if (releaseDetails?.year) year = releaseDetails.year;
     } catch (error) {
       console.warn(`Failed to fetch full release details for ${result.id}:`, error.message);
+      if (error instanceof ApiError) {
+        useErrorStore.getState().addError({
+          message: `Failed to fetch release ${result.id}`,
+          endpoint: `/releases/${result.id}`,
+          status: error.status,
+          details: error.details || error.message
+        });
+      }
     }
 
     // Fallback to search result cover if no images fetched
@@ -220,6 +242,14 @@ export const getDiscogsAlbumMetadata = async (artist, album) => {
     return metadata;
   } catch (error) {
     console.warn(`Metadata fetch failed for ${artist} - ${album}:`, error.message);
+    if (error instanceof ApiError) {
+      useErrorStore.getState().addError({
+        message: `Metadata fetch failed: ${error.message}`,
+        endpoint: '/database/search',
+        status: error.status,
+        details: error.details || error.message
+      });
+    }
     albumMetadataCache.set(cacheKey, null);
     return null;
   }

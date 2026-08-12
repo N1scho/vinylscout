@@ -1,6 +1,7 @@
 import React from 'react';
 import { designSystem, themeDefinitions } from '../../designsystem';
 import RecoveryPanel from './RecoveryPanel';
+import ErrorConsole from './ErrorConsole';
 
 /**
  * SettingsView Component
@@ -452,6 +453,9 @@ export default function SettingsView({
             Clear All Data & Reload
           </button>
         </div>
+
+        {/* Error Console */}
+        <ErrorConsole themes={themes} />
 
         {/* App Version */}
         <div
