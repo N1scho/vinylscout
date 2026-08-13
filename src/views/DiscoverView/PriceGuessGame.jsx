@@ -6,11 +6,19 @@ import { useErrorStore } from '../../stores/errorStore';
 import { ChevronRight } from 'lucide-react';
 
 function generateFakePrices(correctPrice) {
-  const fake1 = Math.round(correctPrice * 0.6 * 100) / 100;
-  const fake2 = Math.round(correctPrice * 1.5 * 100) / 100;
-  const fake3 = Math.round(correctPrice * 0.85 * 100) / 100;
+  // Generate 3 random wrong prices in range 50%-150% of correct price
+  // Avoid duplicates and the correct price itself
+  const fakes = new Set();
+  while (fakes.size < 3) {
+    const multiplier = 0.5 + Math.random(); // 0.5 to 1.5
+    const fakePrice = Math.round(correctPrice * multiplier * 100) / 100;
+    // Skip if it's the correct price or already exists
+    if (Math.abs(fakePrice - correctPrice) > 0.01 && !fakes.has(fakePrice)) {
+      fakes.add(fakePrice);
+    }
+  }
 
-  const prices = [correctPrice, fake1, fake2, fake3];
+  const prices = [correctPrice, ...Array.from(fakes)];
   // Shuffle
   for (let i = prices.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
