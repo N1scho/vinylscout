@@ -693,7 +693,7 @@ return (
             {view === 'collection' && renderCollectionView()}
             {view === 'stats' && renderStatsView()}
             {view === 'discover' && renderDiscoverView()}
-            {view === 'wishlist' && <WishlistView key="wishlist" themes={themes} allAlbums={allAlbums} wishlistIds={wishlist} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} onAddToCollection={collection.addToCollection} />}
+            {view === 'wishlist' && <WishlistView key="wishlist" themes={themes} allAlbums={allAlbums} wishlistIds={wishlist} onNavigateToDiscover={() => handleViewChange('discover')} onViewDetails={handleViewSearchResult} onAddToCollection={collection.addToCollection} onRefreshPrice={refreshPrice} />}
             {view === 'settings' && renderSettingsView()}
           </ViewErrorBoundary>
         </Suspense>
