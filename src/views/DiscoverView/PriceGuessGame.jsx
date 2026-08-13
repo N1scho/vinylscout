@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDiscoverStore } from '../../stores/discoverStore';
 import { fetchPriceInfo, getDiscogsAlbumMetadata } from '../../services/discogsService';
 import { designSystem } from '../../designsystem';
 import { useErrorStore } from '../../stores/errorStore';
+import { ChevronRight } from 'lucide-react';
 
 function generateFakePrices(correctPrice) {
   const fake1 = Math.round(correctPrice * 0.6 * 100) / 100;
@@ -35,6 +36,9 @@ export default function PriceGuessGame({ themes }) {
   const [correctIndex, setCorrectIndex] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+
+  const touchStartRef = useRef(null);
+  const MIN_SWIPE_DISTANCE = 50;
 
   const currentAlbum = shuffledAlbums[currentAlbumIndex];
   const genreName = currentAlbum && genres.find(g => g.id === currentAlbum.genreId)?.name;
@@ -102,6 +106,26 @@ export default function PriceGuessGame({ themes }) {
     nextAlbum();
   }, [nextAlbum]);
 
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartRef.current || gameState !== 'answered') return;
+
+    const touchEnd = e.changedTouches[0].clientX;
+    const distance = touchStartRef.current - touchEnd;
+
+    if (Math.abs(distance) >= MIN_SWIPE_DISTANCE) {
+      if (distance > 0) {
+        // Swiped left, go to next album
+        handleNext();
+      }
+    }
+
+    touchStartRef.current = null;
+  };
+
   if (!currentAlbum) {
     return (
       <div style={{
@@ -156,53 +180,102 @@ export default function PriceGuessGame({ themes }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '8px'
+        gap: '12px',
+        width: '100%'
       }}>
+        {/* Cover + Next Button */}
         <div style={{
-          position: 'relative',
-          width: '240px',
-          height: '240px'
-        }}>
-          <img
-            src={discogsMetadata?.images?.[0]?.url || currentAlbum.coverUrl}
-            alt={currentAlbum.album}
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '8px',
-              objectFit: 'cover',
-              border: `2px solid ${themes.border}`
-            }}
-          />
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          justifyContent: 'center'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        >
+          <div style={{
+            position: 'relative',
+            width: '200px',
+            height: '200px',
+            flexShrink: 0
+          }}>
+            <img
+              src={discogsMetadata?.images?.[0]?.url || currentAlbum.coverUrl}
+              alt={currentAlbum.album}
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '8px',
+                objectFit: 'cover',
+                border: `2px solid ${themes.border}`
+              }}
+            />
+            {gameState === 'answered' && (
+              <button
+                onClick={() => toggleWishlist(currentAlbum.id)}
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  right: '8px',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  backgroundColor: isInWishlist(currentAlbum.id) ? themes.primary : themes.surface,
+                  border: `2px solid ${themes.primary}`,
+                  color: isInWishlist(currentAlbum.id) ? '#ffffff' : themes.primary,
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 200ms ease',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                }}
+                title={isInWishlist(currentAlbum.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                ♥
+              </button>
+            )}
+          </div>
+
+          {/* Next Button */}
           {gameState === 'answered' && (
             <button
-              onClick={() => toggleWishlist(currentAlbum.id)}
+              onClick={handleNext}
               style={{
-                position: 'absolute',
-                bottom: '8px',
-                right: '8px',
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                backgroundColor: isInWishlist(currentAlbum.id) ? themes.primary : themes.surface,
-                border: `2px solid ${themes.primary}`,
-                color: isInWishlist(currentAlbum.id) ? '#ffffff' : themes.primary,
-                cursor: 'pointer',
-                fontSize: '20px',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                width: '60px',
+                height: '60px',
+                backgroundColor: themes.primary,
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontSize: '24px',
                 transition: 'all 200ms ease',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                flexShrink: 0,
+                padding: 0
               }}
-              title={isInWishlist(currentAlbum.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+              }}
+              title="Next album (or swipe left)"
             >
-              ♥
+              <ChevronRight size={32} />
             </button>
           )}
         </div>
+
+        {/* Album Details */}
         <div style={{
-          textAlign: 'center'
+          textAlign: 'center',
+          width: '100%'
         }}>
           <div style={{
             fontSize: designSystem.typography.sizes.base,
@@ -343,50 +416,21 @@ export default function PriceGuessGame({ themes }) {
         </div>
       )}
 
-      {gameState === 'answered' && (
-        <>
-          {priceInfo && (
-            <div style={{
-              marginTop: '12px',
-              padding: '12px 16px',
-              backgroundColor: themes.surface,
-              borderRadius: '8px',
-              border: `1px solid ${themes.border}`,
-              fontSize: designSystem.typography.sizes.sm,
-              color: themes.textSecondary,
-              textAlign: 'center'
-            }}>
-              <div>Lowest price: €{priceInfo.value.toFixed(2)}</div>
-              <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                {priceInfo.num_for_sale} for sale on Discogs
-              </div>
-            </div>
-          )}
-          <button
-            onClick={handleNext}
-            style={{
-              marginTop: '16px',
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: themes.primary,
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: designSystem.typography.sizes.base,
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 200ms ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.opacity = '0.9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.opacity = '1';
-            }}
-          >
-            Next
-          </button>
-        </>
+      {gameState === 'answered' && priceInfo && (
+        <div style={{
+          padding: '12px 16px',
+          backgroundColor: themes.surface,
+          borderRadius: '8px',
+          border: `1px solid ${themes.border}`,
+          fontSize: designSystem.typography.sizes.sm,
+          color: themes.textSecondary,
+          textAlign: 'center'
+        }}>
+          <div>Lowest price: €{priceInfo.value.toFixed(2)}</div>
+          <div style={{ marginTop: '4px', fontSize: '12px' }}>
+            {priceInfo.num_for_sale} for sale on Discogs
+          </div>
+        </div>
       )}
     </div>
   );
